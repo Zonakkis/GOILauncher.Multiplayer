@@ -9,7 +9,8 @@ namespace GOILauncher.Multiplayer.Shared.Game
         public Transform Handle { get; private set; }
         public Transform Slider { get; private set; }
         public Move Move { get; protected set; }
-        public Move NextMove { get; set; }
+        public Move NextMove { get; protected set; }
+        public bool IsRenderersEnabled { get; private set; } = true;
 
         public void Awake()
         {
@@ -45,6 +46,15 @@ namespace GOILauncher.Multiplayer.Shared.Game
         public virtual void SetNextMove(Move move)
         {
             NextMove = move;
+        }
+
+        public void SetRenderersEnabled(bool enabled)
+        {
+            if(IsRenderersEnabled == enabled)
+                return;
+            foreach (var renderer in Player.GetComponentsInChildren<Renderer>())
+                renderer.enabled = enabled;
+            IsRenderersEnabled = enabled;
         }
     }
 }

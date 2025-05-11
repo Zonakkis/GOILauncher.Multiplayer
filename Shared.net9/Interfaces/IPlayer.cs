@@ -10,11 +10,14 @@ namespace GOILauncher.Multiplayer.Shared.Interfaces
         Move Move { get; }
 
         Move NextMove { get; }
+        bool IsRenderersEnabled { get; }
 
         Move GetMove();
 
         void ApplyMove(Move move);
 
         void SetNextMove(Move move);
+
+        void SetRenderersEnabled(bool enabled);
     }
 }

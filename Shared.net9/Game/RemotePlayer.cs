@@ -61,6 +61,9 @@ namespace GOILauncher.Multiplayer.Shared.Game
             Handle.rotation = Quaternion.Slerp(Move.HandleRotation, NextMove.HandleRotation, t);
             Slider.position = Vector3.Lerp(Move.SliderPosition, NextMove.SliderPosition, t);
             Slider.rotation = Quaternion.Slerp(Move.SliderRotation, NextMove.SliderRotation, t);
+            var cameraPosition = Camera.main.transform.position;
+            cameraPosition.z = 0;
+            SetRenderersEnabled(!((Player.position - cameraPosition).sqrMagnitude >= 225f));
         }
 
         public override void SetNextMove(Move move)
