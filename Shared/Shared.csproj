@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{55664CD6-42F3-486B-B7F1-EEE3AE25E0A2}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>GOILauncher.Multiplayer.Shared</RootNamespace>
+    <AssemblyName>GOILauncher.Multiplayer.Shared</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="NLog, Version=5.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.5.4.0\lib\net35\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Configuration\NLogConfiguration.cs" />
+    <Compile Include="Constants\ConnectionConstants.cs" />
+    <Compile Include="Constants\GameConstants.cs" />
+    <Compile Include="Events\ServerDisconnectedEventArgs.cs" />
+    <Compile Include="Events\ClientDisconnectedEventArgs.cs" />
+    <Compile Include="Events\ClientConnectedEventArgs.cs" />
+    <Compile Include="Extensions\DisconnectReasonExtensions.cs" />
+    <Compile Include="Extensions\LongExtensions.cs" />
+    <Compile Include="Extensions\NetDataReaderExtensions.cs" />
+    <Compile Include="Extensions\NetDataWriterExtensions.cs" />
+    <Compile Include="Extensions\NetPeerExtensions.cs" />
+    <Compile Include="Game\LocalPlayer.cs" />
+    <Compile Include="Game\RemotePlayer.cs" />
+    <Compile Include="Interfaces\IPlayer.cs" />
+    <Compile Include="Interfaces\IUnitySceneManager.cs" />
+    <Compile Include="Game\Move.cs" />
+    <Compile Include="Game\PlayerBase.cs" />
+    <Compile Include="Game\UnitySceneManager.cs" />
+    <Compile Include="Net\INet.cs" />
+    <Compile Include="Net\INetClient.cs" />
+    <Compile Include="Net\INetServer.cs" />
+    <Compile Include="Net\NetClient.cs" />
+    <Compile Include="Net\NetServer.cs" />
+    <Compile Include="Packets\ChatMessagePacket.cs" />
+    <Compile Include="Packets\IPacket.cs" />
+    <Compile Include="Packets\NetPacketWriter.cs" />
+    <Compile Include="Packets\PacketType.cs" />
+    <Compile Include="Packets\PlayerConnectedPacket.cs" />
+    <Compile Include="Packets\PlayerDisconnectedPacket.cs" />
+    <Compile Include="Packets\PlayerLeftPacket.cs" />
+    <Compile Include="Packets\PlayerEnteredPacket.cs" />
+    <Compile Include="Packets\PlayerMovePacket.cs" />
+    <Compile Include="Packets\ServerConnectedPacket.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utilities\ByteConvertor.cs" />
+    <Compile Include="Utilities\IdGenerator.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj">
+      <Project>{cd19dc5d-b660-02ac-3533-05551bf84ace}</Project>
+      <Name>LiteNetLib</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Lib\Acornima.dll" />
+    <Content Include="Lib\ArabicSupport.dll" />
+    <Content Include="Lib\Assembly-CSharp-firstpass.dll" />
+    <Content Include="Lib\Assembly-CSharp.dll" />
+    <Content Include="Lib\Assembly-UnityScript-firstpass.dll" />
+    <Content Include="Lib\Boo.Lang.dll" />
+    <Content Include="Lib\InGameDebugger.dll" />
+    <Content Include="Lib\Jint.dll" />
+    <Content Include="Lib\LeanTween.dll" />
+    <Content Include="Lib\LibTessDotNet.dll" />
+    <Content Include="Lib\Lidgren.Network.dll" />
+    <Content Include="Lib\MeshExtension.dll" />
+    <Content Include="Lib\Mono.Security.dll" />
+    <Content Include="Lib\mscorlib.dll" />
+    <Content Include="Lib\netstandard.dll" />
+    <Content Include="Lib\Nuguilib.dll" />
+    <Content Include="Lib\P31RestKit.dll" />
+    <Content Include="Lib\pepluginlib.dll" />
+    <Content Include="Lib\SexyExtending.Android.dll" />
+    <Content Include="Lib\SkinCustomizer.dll" />
+    <Content Include="Lib\SplitsTimer.dll" />
+    <Content Include="Lib\System.Core.dll" />
+    <Content Include="Lib\System.dll" />
+    <Content Include="Lib\System.Xml.dll" />
+    <Content Include="Lib\TextMeshPro-1.0.55.2017.1.0b11.dll" />
+    <Content Include="Lib\UnityEngine.AccessibilityModule.dll" />
+    <Content Include="Lib\UnityEngine.AIModule.dll" />
+    <Content Include="Lib\UnityEngine.Analytics.dll" />
+    <Content Include="Lib\UnityEngine.AnimationModule.dll" />
+    <Content Include="Lib\UnityEngine.ARModule.dll" />
+    <Content Include="Lib\UnityEngine.AssetBundleModule.dll" />
+    <Content Include="Lib\UnityEngine.AudioModule.dll" />
+    <Content Include="Lib\UnityEngine.ClothModule.dll" />
+    <Content Include="Lib\UnityEngine.CoreModule.dll" />
+    <Content Include="Lib\UnityEngine.CrashReportingModule.dll" />
+    <Content Include="Lib\UnityEngine.DirectorModule.dll" />
+    <Content Include="Lib\UnityEngine.dll" />
+    <Content Include="Lib\UnityEngine.GameCenterModule.dll" />
+    <Content Include="Lib\UnityEngine.GridModule.dll" />
+    <Content Include="Lib\UnityEngine.ImageConversionModule.dll" />
+    <Content Include="Lib\UnityEngine.IMGUIModule.dll" />
+    <Content Include="Lib\UnityEngine.InputModule.dll" />
+    <Content Include="Lib\UnityEngine.JSONSerializeModule.dll" />
+    <Content Include="Lib\UnityEngine.Networking.dll" />
+    <Content Include="Lib\UnityEngine.ParticlesLegacyModule.dll" />
+    <Content Include="Lib\UnityEngine.ParticleSystemModule.dll" />
+    <Content Include="Lib\UnityEngine.PerformanceReportingModule.dll" />
+    <Content Include="Lib\UnityEngine.Physics2DModule.dll" />
+    <Content Include="Lib\UnityEngine.PhysicsModule.dll" />
+    <Content Include="Lib\UnityEngine.ScreenCaptureModule.dll" />
+    <Content Include="Lib\UnityEngine.SharedInternalsModule.dll" />
+    <Content Include="Lib\UnityEngine.SpatialTracking.dll" />
+    <Content Include="Lib\UnityEngine.SpriteMaskModule.dll" />
+    <Content Include="Lib\UnityEngine.SpriteShapeModule.dll" />
+    <Content Include="Lib\UnityEngine.StandardEvents.dll" />
+    <Content Include="Lib\UnityEngine.StyleSheetsModule.dll" />
+    <Content Include="Lib\UnityEngine.TerrainModule.dll" />
+    <Content Include="Lib\UnityEngine.TerrainPhysicsModule.dll" />
+    <Content Include="Lib\UnityEngine.TextRenderingModule.dll" />
+    <Content Include="Lib\UnityEngine.TilemapModule.dll" />
+    <Content Include="Lib\UnityEngine.Timeline.dll" />
+    <Content Include="Lib\UnityEngine.UI.dll" />
+    <Content Include="Lib\UnityEngine.UIElementsModule.dll" />
+    <Content Include="Lib\UnityEngine.UIModule.dll" />
+    <Content Include="Lib\UnityEngine.UNETModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityAnalyticsModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityConnectModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityWebRequestAudioModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityWebRequestModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityWebRequestTextureModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityWebRequestWWWModule.dll" />
+    <Content Include="Lib\UnityEngine.VehiclesModule.dll" />
+    <Content Include="Lib\UnityEngine.VideoModule.dll" />
+    <Content Include="Lib\UnityEngine.VRModule.dll" />
+    <Content Include="Lib\UnityEngine.WebModule.dll" />
+    <Content Include="Lib\UnityEngine.WindModule.dll" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

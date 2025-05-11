@@ -1,0 +1,116 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>GOILauncher.Multiplayer.Shared</RootNamespace>
+    <AssemblyName>GOILauncher.Multiplayer.Shared</AssemblyName>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <TargetFrameworks>net9.0</TargetFrameworks>
+    <AssemblyTitle>GOILauncher.Multiplayer.Shared</AssemblyTitle>
+    <Product>GOILauncher.Multiplayer.Shared</Product>
+    <Copyright>Copyright ©  2025</Copyright>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\UnityEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Lib\Acornima.dll" />
+    <Content Include="Lib\ArabicSupport.dll" />
+    <Content Include="Lib\Assembly-CSharp-firstpass.dll" />
+    <Content Include="Lib\Assembly-CSharp.dll" />
+    <Content Include="Lib\Assembly-UnityScript-firstpass.dll" />
+    <Content Include="Lib\Boo.Lang.dll" />
+    <Content Include="Lib\InGameDebugger.dll" />
+    <Content Include="Lib\Jint.dll" />
+    <Content Include="Lib\LeanTween.dll" />
+    <Content Include="Lib\LibTessDotNet.dll" />
+    <Content Include="Lib\Lidgren.Network.dll" />
+    <Content Include="Lib\MeshExtension.dll" />
+    <Content Include="Lib\Mono.Security.dll" />
+    <Content Include="Lib\mscorlib.dll" />
+    <Content Include="Lib\netstandard.dll" />
+    <Content Include="Lib\Nuguilib.dll" />
+    <Content Include="Lib\P31RestKit.dll" />
+    <Content Include="Lib\pepluginlib.dll" />
+    <Content Include="Lib\SexyExtending.Android.dll" />
+    <Content Include="Lib\SkinCustomizer.dll" />
+    <Content Include="Lib\SplitsTimer.dll" />
+    <Content Include="Lib\System.Core.dll" />
+    <Content Include="Lib\System.dll" />
+    <Content Include="Lib\System.Xml.dll" />
+    <Content Include="Lib\TextMeshPro-1.0.55.2017.1.0b11.dll" />
+    <Content Include="Lib\UnityEngine.AccessibilityModule.dll" />
+    <Content Include="Lib\UnityEngine.AIModule.dll" />
+    <Content Include="Lib\UnityEngine.Analytics.dll" />
+    <Content Include="Lib\UnityEngine.AnimationModule.dll" />
+    <Content Include="Lib\UnityEngine.ARModule.dll" />
+    <Content Include="Lib\UnityEngine.AssetBundleModule.dll" />
+    <Content Include="Lib\UnityEngine.AudioModule.dll" />
+    <Content Include="Lib\UnityEngine.ClothModule.dll" />
+    <Content Include="Lib\UnityEngine.CoreModule.dll" />
+    <Content Include="Lib\UnityEngine.CrashReportingModule.dll" />
+    <Content Include="Lib\UnityEngine.DirectorModule.dll" />
+    <Content Include="Lib\UnityEngine.dll" />
+    <Content Include="Lib\UnityEngine.GameCenterModule.dll" />
+    <Content Include="Lib\UnityEngine.GridModule.dll" />
+    <Content Include="Lib\UnityEngine.ImageConversionModule.dll" />
+    <Content Include="Lib\UnityEngine.IMGUIModule.dll" />
+    <Content Include="Lib\UnityEngine.InputModule.dll" />
+    <Content Include="Lib\UnityEngine.JSONSerializeModule.dll" />
+    <Content Include="Lib\UnityEngine.Networking.dll" />
+    <Content Include="Lib\UnityEngine.ParticlesLegacyModule.dll" />
+    <Content Include="Lib\UnityEngine.ParticleSystemModule.dll" />
+    <Content Include="Lib\UnityEngine.PerformanceReportingModule.dll" />
+    <Content Include="Lib\UnityEngine.Physics2DModule.dll" />
+    <Content Include="Lib\UnityEngine.PhysicsModule.dll" />
+    <Content Include="Lib\UnityEngine.ScreenCaptureModule.dll" />
+    <Content Include="Lib\UnityEngine.SharedInternalsModule.dll" />
+    <Content Include="Lib\UnityEngine.SpatialTracking.dll" />
+    <Content Include="Lib\UnityEngine.SpriteMaskModule.dll" />
+    <Content Include="Lib\UnityEngine.SpriteShapeModule.dll" />
+    <Content Include="Lib\UnityEngine.StandardEvents.dll" />
+    <Content Include="Lib\UnityEngine.StyleSheetsModule.dll" />
+    <Content Include="Lib\UnityEngine.TerrainModule.dll" />
+    <Content Include="Lib\UnityEngine.TerrainPhysicsModule.dll" />
+    <Content Include="Lib\UnityEngine.TextRenderingModule.dll" />
+    <Content Include="Lib\UnityEngine.TilemapModule.dll" />
+    <Content Include="Lib\UnityEngine.Timeline.dll" />
+    <Content Include="Lib\UnityEngine.UI.dll" />
+    <Content Include="Lib\UnityEngine.UIElementsModule.dll" />
+    <Content Include="Lib\UnityEngine.UIModule.dll" />
+    <Content Include="Lib\UnityEngine.UNETModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityAnalyticsModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityConnectModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityWebRequestAudioModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityWebRequestModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityWebRequestTextureModule.dll" />
+    <Content Include="Lib\UnityEngine.UnityWebRequestWWWModule.dll" />
+    <Content Include="Lib\UnityEngine.VehiclesModule.dll" />
+    <Content Include="Lib\UnityEngine.VideoModule.dll" />
+    <Content Include="Lib\UnityEngine.VRModule.dll" />
+    <Content Include="Lib\UnityEngine.WebModule.dll" />
+    <Content Include="Lib\UnityEngine.WindModule.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NLog" Version="5.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LiteNetLib.net9\LiteNetLib.net9.csproj" />
+  </ItemGroup>
+</Project>

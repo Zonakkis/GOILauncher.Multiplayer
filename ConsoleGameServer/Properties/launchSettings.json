@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ConsoleGameServer": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}
