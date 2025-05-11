@@ -66,6 +66,7 @@
     <Compile Include="Extensions\NetDataReaderExtensions.cs" />
     <Compile Include="Extensions\NetDataWriterExtensions.cs" />
     <Compile Include="Extensions\NetPeerExtensions.cs" />
+    <Compile Include="Extensions\RuntimePlatformExtensions.cs" />
     <Compile Include="Game\LocalPlayer.cs" />
     <Compile Include="Game\RemotePlayer.cs" />
     <Compile Include="Interfaces\IPlayer.cs" />

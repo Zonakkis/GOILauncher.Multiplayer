@@ -1,4 +1,5 @@
 ﻿using GOILauncher.Multiplayer.Shared.Constants;
+using GOILauncher.Multiplayer.Shared.Extensions;
 using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Shared.Game
@@ -30,7 +31,7 @@ namespace GOILauncher.Multiplayer.Shared.Game
         {
             Vector2 screenPosition = Camera.current.WorldToScreenPoint(transform.position + transform.up * 1.5f);
             screenPosition.y = Screen.height - screenPosition.y;
-            var nameContent = new GUIContent($"[{Id}][{Platform}]{Name}");
+            var nameContent = new GUIContent($"[{Id}][{Platform.ToReadableString()}]{Name}");
             var textSize = GUI.skin.label.CalcSize(nameContent);
             if (screenPosition.x < 0 || screenPosition.y < 0 || screenPosition.x >= Screen.width || screenPosition.y >= Screen.height)
             {
