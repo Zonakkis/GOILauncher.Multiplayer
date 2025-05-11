@@ -5,13 +5,15 @@ FROM mcr.microsoft.com/dotnet/runtime:9.0 AS base
 USER $APP_UID
 WORKDIR /app
 
-EXPOSE 9050/udp
 
 # 此阶段用于生成服务项目
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["ConsoleGameServer/ConsoleGameServer.csproj", "ConsoleGameServer/"]
+COPY ["Server.net9/Server.net9.csproj", "Server.net9/"]
+COPY ["Shared.net9/Shared.net9.csproj", "Shared.net9/"]
+COPY ["LiteNetLib.net9/LiteNetLib.net9.csproj", "LiteNetLib.net9/"]
 RUN dotnet restore "./ConsoleGameServer/ConsoleGameServer.csproj"
 COPY . .
 WORKDIR "/src/ConsoleGameServer"
