@@ -3,9 +3,9 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 COPY ["ConsoleGameServer/ConsoleGameServer.csproj", "ConsoleGameServer/"]
-COPY ["GOILauncher.Multiplayer.Server/GOILauncher.Multiplayer.Server.csproj", "GOILauncher.Multiplayer.Server/"]
-COPY ["GOILauncher.Multiplayer.Shared/GOILauncher.Multiplayer.Shared.csproj", "GOILauncher.Multiplayer.Shared/"]
-COPY ["LiteNetLib/LiteNetLib.csproj", "LiteNetLib/"]
+COPY ["Server.net9/Server.net9.csproj", "Server.net9/"]
+COPY ["Shared.net9/Shared.net9.csproj", "Shared.net9/"]
+COPY ["LiteNetLib.net9/LiteNetLib.net9.csproj", "LiteNetLib.net9/"]
 
 RUN dotnet restore "ConsoleGameServer/ConsoleGameServer.csproj"
 
