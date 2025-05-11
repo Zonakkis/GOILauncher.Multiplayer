@@ -13,7 +13,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\Shared\Lib\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\Shared.net9\Lib\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
