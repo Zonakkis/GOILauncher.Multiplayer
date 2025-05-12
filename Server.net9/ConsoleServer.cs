@@ -162,7 +162,7 @@ namespace GOILauncher.Multiplayer.Server
             _logger?.Info($"玩家[{playerId}][{packet.Platform}]{packet.PlayerName}连接到服务器。");
         }
 
-        private void OnPlayerDisconnected(object sender, ClientDisconnectedEventArgs e)
+        private void OnPlayerDisconnected(object _, ClientDisconnectedEventArgs e)
         {
             var playerId = e.ClientId;
             if (Players.TryRemove(playerId, out var player))
@@ -184,19 +184,23 @@ namespace GOILauncher.Multiplayer.Server
         private void OnPlayerEntered(NetPeer _, PlayerEnteredPacket playerEnteredPacket)
         {
             var playerId = playerEnteredPacket.PlayerId;
-            var player = Players[playerId];
-            player.Move = playerEnteredPacket.InitMove;
-            player.IsInGame = true;
-            _server.SendToAllExcept(playerId, playerEnteredPacket, DeliveryMethod.ReliableOrdered);
-            _logger?.Info($"[{playerId}]{player.Name}进入游戏。");
+            if (Players.TryGetValue(playerId, out var player))
+            {
+                player.Move = playerEnteredPacket.InitMove;
+                player.IsInGame = true;
+                _server.SendToAllExcept(playerId, playerEnteredPacket, DeliveryMethod.ReliableOrdered);
+                _logger?.Info($"[{playerId}]{player.Name}进入游戏。");
+            }
         }
         private void OnPlayerLeft(NetPeer _, PlayerLeftPacket playerLeftPacket)
         {
             var playerId = playerLeftPacket.PlayerId;
-            var player = Players[playerId];
-            player.IsInGame = false;
-            _server.SendToAllExcept(playerId, playerLeftPacket, DeliveryMethod.ReliableOrdered);
-            _logger?.Info($"[{playerId}]{player.Name}离开游戏。");
+            if (Players.TryGetValue(playerId, out var player))
+            {
+                player.IsInGame = false;
+                _server.SendToAllExcept(playerId, playerLeftPacket, DeliveryMethod.ReliableOrdered);
+                _logger?.Info($"[{playerId}]{player.Name}离开游戏。");
+            }
         }
 
         private void OnPlayerMoved(NetPeer _, PlayerMovePacket packet)
@@ -213,19 +217,20 @@ namespace GOILauncher.Multiplayer.Server
             }
         }
 
-        public void OnChatMessageReceived(NetPeer peer, ChatMessagePacket packet)
+        public void OnChatMessageReceived(NetPeer _, ChatMessagePacket packet)
         {
-            var id = packet.PlayerId;
-            var player = Players[id];
-            var message = packet.Message;
-            _server.SendToAllExcept(id, packet, DeliveryMethod.ReliableOrdered);
-            ChatMessageReceived?.Invoke(this, new ChatMessageReceivedEventArgs
+            var playerId = packet.PlayerId;
+            if (Players.TryGetValue(playerId, out var player))
             {
-                Player = player,
-                Message = message
-            });
-            _logger?.Info($"[{id}]{player.Name}：{message}");
+                var message = packet.Message;
+                _server.SendToAllExcept(playerId, packet, DeliveryMethod.ReliableOrdered);
+                ChatMessageReceived?.Invoke(this, new ChatMessageReceivedEventArgs
+                {
+                    Player = player,
+                    Message = message
+                });
+                _logger?.Info($"[{playerId}]{player.Name}：{message}");
+            }
         }
-
     }
 }
