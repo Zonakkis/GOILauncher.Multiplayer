@@ -202,12 +202,14 @@ namespace GOILauncher.Multiplayer.Server
         private void OnPlayerMoved(NetPeer _, PlayerMovePacket packet)
         {
             var playerId = packet.PlayerId;
-            var player = Players[playerId];
-            player.Move = packet.Move;
-            foreach (var serverPlayer in Players.Values
-                .Where(serverPlayer => player.IsInGame && serverPlayer != player))
+            if(Players.TryGetValue(playerId,out var player))
             {
-                serverPlayer.Peer.Send(packet, DeliveryMethod.Unreliable);
+                player.Move = packet.Move;
+                foreach (var serverPlayer in Players.Values
+                             .Where(serverPlayer => player.IsInGame && !Equals(serverPlayer, player)))
+                {
+                    serverPlayer.Peer.Send(packet, DeliveryMethod.Unreliable);
+                }
             }
         }
 
