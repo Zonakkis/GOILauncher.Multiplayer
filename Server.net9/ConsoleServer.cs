@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -24,7 +25,7 @@ namespace GOILauncher.Multiplayer.Server
         public event EventHandler<PlayerDisconnectedEventArgs> PlayerDisconnected;
         public event EventHandler<ChatMessageReceivedEventArgs> ChatMessageReceived;
 
-        public Dictionary<int, ServerPlayer> Players { get; } = new Dictionary<int, ServerPlayer>();
+        public ConcurrentDictionary<int, ServerPlayer> Players { get; } = new();
         public bool IsRunning => _server.IsRunning;
 
         public ConsoleServer()
@@ -153,7 +154,7 @@ namespace GOILauncher.Multiplayer.Server
                 peer.Send(playerConnectedPacket, DeliveryMethod.ReliableOrdered);
                 player.Peer.Send(packet, DeliveryMethod.ReliableOrdered);
             }
-            Players.Add(playerId, serverPlayer);
+            Players.TryAdd(playerId, serverPlayer);
             PlayerConnected?.Invoke(this, new PlayerConnectedEventArgs
             {
                 Player = serverPlayer
@@ -164,9 +165,8 @@ namespace GOILauncher.Multiplayer.Server
         private void OnPlayerDisconnected(object sender, ClientDisconnectedEventArgs e)
         {
             var playerId = e.ClientId;
-            if (Players.TryGetValue(playerId, out var player))
+            if (Players.TryRemove(playerId, out var player))
             {
-                Players.Remove(playerId);
                 var playerDisconnectedPacket = new PlayerDisconnectedPacket
                 {
                     PlayerId = playerId
