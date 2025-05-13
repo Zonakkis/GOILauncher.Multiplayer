@@ -59,14 +59,14 @@ namespace GOILauncher.Multiplayer.Server
                 {
                     if (Players.Count > 0)
                     {
-                        _logger.Info("----------------统计数据----------------");
+                        _logger.Info($"----------------统计数据（当前{Players.Count}人在线）----------------");
                         _logger.Info($"接收到的数据：{_server.BytesReceived.FormatBytes()}");
                         _logger.Info($"发送的数据：  {_server.BytesSent.FormatBytes()}");
                         _logger.Info($"丢包率：      {_server.PacketLossPercentage}%");
                         foreach (var player in Players.Values)
-                            _logger.Info($"[{player.Id}][{player.Platform}]{player.Name}：延迟：{player.Peer.Ping}ms");
+                            _logger.Info($"[{player.Id}][{player.Platform}]{player.Name}：延迟：{player.Peer.Ping}ms{(player.IsInGame ? "（游戏中）" : "")}");
                     }
-                    Thread.Sleep(5000);
+                    Thread.Sleep(10000);
                 }
             })
             {
