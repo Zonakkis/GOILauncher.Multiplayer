@@ -94,9 +94,6 @@
     <Compile Include="Utilities\IdGenerator.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj">
       <Project>{cd19dc5d-b660-02ac-3533-05551bf84ace}</Project>
       <Name>LiteNetLib</Name>
