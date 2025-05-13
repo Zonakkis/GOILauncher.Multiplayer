@@ -3,7 +3,7 @@ name: Build and Push Docker Image To Docker Hub
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build-and-push:
