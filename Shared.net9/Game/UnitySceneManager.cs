@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using GOILauncher.Multiplayer.Shared.Constants;
 using GOILauncher.Multiplayer.Shared.Interfaces;
 using UnityEngine;
@@ -37,27 +36,26 @@ namespace GOILauncher.Multiplayer.Shared.Game
             var isInGamePrevious = IsInGame;
             IsInGame = scene.name == GameConstants.GameSceneName;
             if (IsInGame)
-                StartCoroutine(!isInGamePrevious ? OnGameSceneEntered() : OnGameRestarted());
+                if (!isInGamePrevious)
+                    OnGameSceneEntered();
+                else
+                    OnGameRestarted();
             else if (isInGamePrevious)
-                StartCoroutine(OnGameSceneLeft());
+                OnGameSceneLeft();
         }
 
-        private IEnumerator OnGameSceneEntered()
+        private void OnGameSceneEntered()
         {
-            yield return null;
-            yield return null;
             GameSceneEntered?.Invoke(this, EventArgs.Empty);
         }
 
-        private IEnumerator OnGameSceneLeft()
+        private void OnGameSceneLeft()
         {
-            yield return null;
             GameSceneLeft?.Invoke(this, EventArgs.Empty);
         }
 
-        private IEnumerator OnGameRestarted()
+        private void OnGameRestarted()
         {
-            yield return null;
             GameRestarted?.Invoke(this, EventArgs.Empty);
         }
     }

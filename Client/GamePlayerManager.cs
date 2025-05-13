@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Interfaces;
 using GOILauncher.Multiplayer.Shared.Constants;
+using GOILauncher.Multiplayer.Shared.Extensions;
 using GOILauncher.Multiplayer.Shared.Game;
 using GOILauncher.Multiplayer.Shared.Interfaces;
 using UnityEngine;
@@ -151,10 +153,11 @@ namespace GOILauncher.Multiplayer.Client
         private void CreatePlayerPrefab()
         {
             //开启交互碰撞箱的方法：player,tip,sides的layer设为Terrain
+            Time.timeScale = 0;
             var player = GameObject.Find("Player");
             PlayerPrefab = Instantiate(player);
             PlayerPrefab.name = "PlayerPrefab";
-            PlayerPrefab.GetComponent<PlayerControl>().enabled = false;
+            Destroy(PlayerPrefab.GetComponent<PlayerControl>());
             Destroy(PlayerPrefab.GetComponent<MipmapBias>());
             Destroy(PlayerPrefab.GetComponent<Saviour>());
             Destroy(PlayerPrefab.GetComponent<Screener>());
@@ -162,11 +165,6 @@ namespace GOILauncher.Multiplayer.Client
             Destroy(PlayerPrefab.GetComponentInChildren<HammerCollisions>());
             Destroy(PlayerPrefab.GetComponentInChildren<PlayerSounds>());
             Destroy(PlayerPrefab.transform.Find("PotCollider/Sensor").gameObject);
-            var poseControl = PlayerPrefab.transform.Find("dude/mixamorig:Hips").GetComponent<PoseControl>();
-            poseControl.anim.Update(6f);
-            poseControl.potAnim.Update(6f); 
-            poseControl.anim.Update(6f);
-            poseControl.potAnim.Update(6f);
             foreach (var camera in PlayerPrefab.GetComponentsInChildren<Camera>())
                 Destroy(camera);
             foreach (var rigidBody2D in PlayerPrefab.GetComponentsInChildren<Rigidbody2D>())
