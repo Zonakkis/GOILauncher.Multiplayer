@@ -1,4 +1,6 @@
-﻿namespace GOILauncher.Multiplayer.Shared.Utilities
+﻿using System.Threading;
+
+namespace GOILauncher.Multiplayer.Shared.Utilities
 {
     public class IdGenerator
     {
@@ -9,7 +11,7 @@
         }
         public int Generate()
         {
-            return _currentId++;
+            return Interlocked.Increment(ref _currentId) - 1;
         }
     }
 }
