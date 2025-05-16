@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'Dockerfile'
+      - 'Shared.net9/**'
+      - 'Server.net9/**'
+      - 'ConsoleGameServer/**'
 
 jobs:
   build-and-push:
