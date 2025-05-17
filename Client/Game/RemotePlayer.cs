@@ -10,9 +10,14 @@ namespace GOILauncher.Multiplayer.Client.Game
         public int Id { get; set; }
         public string Name { get; set; }
         public RuntimePlatform Platform { get; set; }
+        public Transform LocalPlayer { get; set; }
 
         private float _timer;
-        private Camera _camera = Camera.main;
+        private readonly Camera _camera = Camera.main;
+        private Vector2 _topLeft;
+        private Vector2 _bottomRight;
+        private bool _isInCamera;
+        private readonly GUIStyle _labelStyle = new GUIStyle(GUI.skin.label);
 
         public void LateUpdate()
         {
@@ -30,37 +35,41 @@ namespace GOILauncher.Multiplayer.Client.Game
                 }
             }
             var cameraPosition = _camera.transform.position;
-            var halfHeight = _camera.orthographicSize + 2.5f;
-            var halfWidth = _camera.aspect * halfHeight + 2;
-            var isInCamera = Player.position.IsInRectangle(
-                cameraPosition.x - halfWidth, cameraPosition.y + halfHeight,
-                cameraPosition.x + halfWidth, cameraPosition.y - halfHeight);
-            SetRenderersEnabled(isInCamera);
+            var halfHeight = _camera.orthographicSize;
+            var halfWidth = _camera.aspect * halfHeight;
+            _topLeft = new Vector2(cameraPosition.x - halfWidth, cameraPosition.y + halfHeight);
+            _bottomRight = new Vector2(cameraPosition.x + halfWidth, cameraPosition.y - halfHeight);
+            _isInCamera = Player.position.IsInRectangle(
+                _topLeft.x - GameConstants.PlayerWidth, _topLeft.y + GameConstants.PlayerHeight,
+                _bottomRight.x + GameConstants.PlayerWidth, _bottomRight.y - GameConstants.PlayerWidth);
+            SetRenderersEnabled(_isInCamera);
         }
         public void OnGUI()
         {
-            Vector2 screenPosition = Camera.current.WorldToScreenPoint(transform.position + transform.up * 1.5f);
-            screenPosition.y = Screen.height - screenPosition.y;
-            var nameContent = new GUIContent($"[{Id}][{Platform.ToReadableString()}]{Name}");
-            var textSize = GUI.skin.label.CalcSize(nameContent);
-            if (screenPosition.x < 0 || screenPosition.y < 0 || screenPosition.x >= Screen.width || screenPosition.y >= Screen.height)
-            {
-                var cameraPosition = Camera.main.transform.position;
-                cameraPosition.z = 0;
-                nameContent.text += $" ({Vector3.Distance(cameraPosition, transform.position):0.0}m)";
-                textSize = GUI.skin.label.CalcSize(nameContent);
-                screenPosition.x = Mathf.Clamp(screenPosition.x, textSize.x / 2, Screen.width - textSize.x / 2);
-                screenPosition.y = Mathf.Clamp(screenPosition.y, textSize.y / 2, Screen.height - textSize.y / 2);
-            }
-            var textRect = new Rect(screenPosition.x - (textSize.x / 2f), screenPosition.y - (textSize.y / 2f), textSize.x, textSize.y);
-            var shadowRect = new Rect(textRect);
+            _labelStyle.fontSize = (int)Mathf.Clamp(GameConstants.DefaultFontSize * 
+                (GameConstants.DefaultCameraOrthographicSize / _camera.orthographicSize), 10f, 60f);
+            var label = new GUIContent(
+                _isInCamera ? $"[{Id}][{Platform.ToReadableString()}]{Name}" :
+                $"[{Id}][{Platform.ToReadableString()}]{Name}" +
+                $"（{Vector3.Distance(Player.position, LocalPlayer.position):0.0}m）");
+            var labelSize = _labelStyle.CalcSize(label);
+            Vector2 labelScreenPosition = _camera.WorldToScreenPoint(Player.position + Player.up * 1.5f);
+            labelScreenPosition.y = Screen.height - labelScreenPosition.y;
+            var halfWidth = labelSize.x / 2f;
+            var halfHeight = labelSize.y / 2f;
+            labelScreenPosition.x = Mathf.Clamp(
+                labelScreenPosition.x, halfWidth, Screen.width - halfWidth);
+            labelScreenPosition.y = Mathf.Clamp(
+                labelScreenPosition.y, halfHeight, Screen.height - halfHeight);
+            var labelRect = new Rect(
+                labelScreenPosition.x - halfWidth, labelScreenPosition.y - halfHeight,
+                labelSize.x, labelSize.y);
+            var shadowRect = labelRect;
             shadowRect.position += Vector2.one;
-            var oldColor = GUI.color;
-            GUI.color = Color.black;
-            GUI.Label(shadowRect, nameContent);
-            GUI.color = Color.white;
-            GUI.Label(textRect, nameContent);
-            GUI.color = oldColor;
+            _labelStyle.normal.textColor = Color.black;
+            GUI.Label(shadowRect, label, _labelStyle);
+            _labelStyle.normal.textColor = Color.white;
+            GUI.Label(labelRect, label, _labelStyle);
         }
 
         private void ApplyMove(float t)

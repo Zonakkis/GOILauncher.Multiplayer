@@ -183,6 +183,7 @@ namespace GOILauncher.Multiplayer.Client.Game
             remotePlayer.Id = player.Id;
             remotePlayer.Name = player.Name;
             remotePlayer.Platform = player.Platform;
+            remotePlayer.LocalPlayer = LocalPlayer.Player.Player;
             remotePlayer.ApplyMove(player.InitMove);
             player.Player = remotePlayer;
             Debug.Log($"生成远程玩家：[{player.Id}][{player.Platform}]{player.Name}");
