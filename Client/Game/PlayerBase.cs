@@ -1,7 +1,8 @@
-﻿using GOILauncher.Multiplayer.Shared.Interfaces;
+﻿using GOILauncher.Multiplayer.Shared.Game;
+using GOILauncher.Multiplayer.Shared.Interfaces;
 using UnityEngine;
 
-namespace GOILauncher.Multiplayer.Shared.Game
+namespace GOILauncher.Multiplayer.Client.Game
 {
     public abstract class PlayerBase : MonoBehaviour, IPlayer
     {

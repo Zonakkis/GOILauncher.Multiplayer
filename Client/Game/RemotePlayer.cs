@@ -1,8 +1,9 @@
 ﻿using GOILauncher.Multiplayer.Shared.Constants;
 using GOILauncher.Multiplayer.Shared.Extensions;
+using GOILauncher.Multiplayer.Shared.Game;
 using UnityEngine;
 
-namespace GOILauncher.Multiplayer.Shared.Game
+namespace GOILauncher.Multiplayer.Client.Game
 {
     public class RemotePlayer : PlayerBase
     {
@@ -11,21 +12,30 @@ namespace GOILauncher.Multiplayer.Shared.Game
         public RuntimePlatform Platform { get; set; }
 
         private float _timer;
+        private Camera _camera = Camera.main;
 
         public void LateUpdate()
         {
-            if (NextMove == null)
-                return;
-            _timer += Time.deltaTime;
-            if (_timer <= GameConstants.FrameTime)
-                ApplyMove(_timer / GameConstants.FrameTime);
-            else
+            if (NextMove != null)
             {
-                _timer -= GameConstants.FrameTime;
-                ApplyMove(NextMove);
-                Move = NextMove;
-                NextMove = null;
+                _timer += Time.deltaTime;
+                if (_timer <= GameConstants.FrameTime)
+                    ApplyMove(_timer / GameConstants.FrameTime);
+                else
+                {
+                    _timer -= GameConstants.FrameTime;
+                    ApplyMove(NextMove);
+                    Move = NextMove;
+                    NextMove = null;
+                }
             }
+            var cameraPosition = _camera.transform.position;
+            var halfHeight = _camera.orthographicSize + 2.5f;
+            var halfWidth = _camera.aspect * halfHeight + 2;
+            var isInCamera = Player.position.IsInRectangle(
+                cameraPosition.x - halfWidth, cameraPosition.y + halfHeight,
+                cameraPosition.x + halfWidth, cameraPosition.y - halfHeight);
+            SetRenderersEnabled(isInCamera);
         }
         public void OnGUI()
         {
@@ -61,9 +71,6 @@ namespace GOILauncher.Multiplayer.Shared.Game
             Handle.rotation = Quaternion.Slerp(Move.HandleRotation, NextMove.HandleRotation, t);
             Slider.position = Vector3.Lerp(Move.SliderPosition, NextMove.SliderPosition, t);
             Slider.rotation = Quaternion.Slerp(Move.SliderRotation, NextMove.SliderRotation, t);
-            var cameraPosition = Camera.main.transform.position;
-            cameraPosition.z = 0;
-            SetRenderersEnabled(!((Player.position - cameraPosition).sqrMagnitude >= 225f));
         }
 
         public override void SetNextMove(Move move)

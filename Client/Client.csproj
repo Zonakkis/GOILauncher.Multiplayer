@@ -51,6 +51,10 @@
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\Shared\Lib\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.IMGUIModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Shared\Lib\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine.Physics2DModule">
       <HintPath>..\Shared\Lib\UnityEngine.Physics2DModule.dll</HintPath>
     </Reference>
@@ -64,7 +68,11 @@
     <Compile Include="Events\PlayerMovedEventArgs.cs" />
     <Compile Include="Events\ServerConnectedEventArgs.cs" />
     <Compile Include="Events\ServerDisconnectedEventArgs.cs" />
-    <Compile Include="GamePlayerManager.cs" />
+    <Compile Include="Game\GamePlayerManager.cs" />
+    <Compile Include="Game\LocalPlayer.cs" />
+    <Compile Include="Game\PlayerBase.cs" />
+    <Compile Include="Game\RemotePlayer.cs" />
+    <Compile Include="Game\UnitySceneManager.cs" />
     <Compile Include="Interfaces\IGamePlayerManager.cs" />
     <Compile Include="Interfaces\IClientEventListener.cs" />
     <Compile Include="Interfaces\IClientEventProcessor.cs" />
@@ -86,5 +94,6 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
