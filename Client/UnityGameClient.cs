@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Client.Events;
+using GOILauncher.Multiplayer.Client.Game;
 using GOILauncher.Multiplayer.Client.Interfaces;
 using GOILauncher.Multiplayer.Shared.Constants;
 using GOILauncher.Multiplayer.Shared.Extensions;

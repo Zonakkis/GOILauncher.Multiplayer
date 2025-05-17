@@ -4,7 +4,7 @@ using GOILauncher.Multiplayer.Shared.Interfaces;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace GOILauncher.Multiplayer.Shared.Game
+namespace GOILauncher.Multiplayer.Client.Game
 {
     public class UnitySceneManager : MonoBehaviour, IUnitySceneManager
     {

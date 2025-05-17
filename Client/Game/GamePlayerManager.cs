@@ -1,16 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Interfaces;
 using GOILauncher.Multiplayer.Shared.Constants;
-using GOILauncher.Multiplayer.Shared.Extensions;
-using GOILauncher.Multiplayer.Shared.Game;
 using GOILauncher.Multiplayer.Shared.Interfaces;
 using UnityEngine;
 
-namespace GOILauncher.Multiplayer.Client
+namespace GOILauncher.Multiplayer.Client.Game
 {
     public class GamePlayerManager : MonoBehaviour, IGamePlayerManager
     {
