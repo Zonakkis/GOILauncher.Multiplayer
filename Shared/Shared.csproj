@@ -31,6 +31,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Assembly-CSharp, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Lib\Assembly-CSharp.dll</HintPath>
+    </Reference>
     <Reference Include="NLog, Version=5.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <HintPath>..\packages\NLog.5.4.0\lib\net35\NLog.dll</HintPath>
     </Reference>
@@ -53,6 +57,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Lib\UnityEngine.IMGUIModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.Physics2DModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Configuration\NLogConfiguration.cs" />
@@ -67,9 +72,8 @@
     <Compile Include="Extensions\NetDataWriterExtensions.cs" />
     <Compile Include="Extensions\NetPeerExtensions.cs" />
     <Compile Include="Extensions\RuntimePlatformExtensions.cs" />
+    <Compile Include="Utilities\Physical2DUtility.cs" />
     <Compile Include="Extensions\Vector3Extentions.cs" />
-    <Compile Include="Interfaces\IPlayer.cs" />
-    <Compile Include="Interfaces\IUnitySceneManager.cs" />
     <Compile Include="Game\Move.cs" />
     <Compile Include="Net\INet.cs" />
     <Compile Include="Net\INetClient.cs" />

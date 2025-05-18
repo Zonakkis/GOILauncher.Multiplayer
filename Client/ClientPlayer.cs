@@ -1,5 +1,5 @@
-﻿using GOILauncher.Multiplayer.Shared.Game;
-using GOILauncher.Multiplayer.Shared.Interfaces;
+﻿using GOILauncher.Multiplayer.Client.Interfaces;
+using GOILauncher.Multiplayer.Shared.Game;
 using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Client
@@ -10,7 +10,7 @@ namespace GOILauncher.Multiplayer.Client
         public string Name { get; set; }
         public RuntimePlatform Platform { get; set; }
         public bool IsInGame { get; set; }
-        public IPlayer Player { get; set; }
-        public Move InitMove { get; set; }
+        public IGamePlayer GamePlayer { get; set; }
+        public Move Move { get; set; }
     }
 }

@@ -1,15 +1,18 @@
 ﻿using GOILauncher.Multiplayer.Shared.Game;
 using UnityEngine;
 
-namespace GOILauncher.Multiplayer.Shared.Interfaces
+namespace GOILauncher.Multiplayer.Client.Interfaces
 {
-    public interface IPlayer
+    public interface IGamePlayer
     {
         Transform Player { get; }
+
+        Transform Handle { get; }
 
         Move Move { get; }
 
         Move NextMove { get; }
+
         bool IsRenderersEnabled { get; }
 
         Move GetMove();

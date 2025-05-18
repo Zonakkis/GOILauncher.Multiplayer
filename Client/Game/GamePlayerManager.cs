@@ -71,7 +71,7 @@ namespace GOILauncher.Multiplayer.Client.Game
                 PlayerMoved?.Invoke(this, new PlayerMovedEventArgs
                 {
                     Player = LocalPlayer,
-                    Move = LocalPlayer.Player.GetMove()
+                    Move = LocalPlayer.GamePlayer.GetMove()
                 });
             }
         }
@@ -123,7 +123,7 @@ namespace GOILauncher.Multiplayer.Client.Game
         private void OnPlayerMoved(object sender, PlayerMovedEventArgs e)
         {
             if (_unitySceneManager.IsInGame && _inGamePlayers.TryGetValue(e.Player.Id, out var player))
-                player.Player?.SetNextMove(e.Move);
+                player.GamePlayer?.SetNextMove(e.Move);
         }
 
 
@@ -154,9 +154,9 @@ namespace GOILauncher.Multiplayer.Client.Game
             var player = GameObject.Find("Player");
             PlayerPrefab = Instantiate(player);
             PlayerPrefab.name = "PlayerPrefab";
+            PlayerPrefab.GetComponent<Saviour>().enabled = false;
             Destroy(PlayerPrefab.GetComponent<PlayerControl>());
             Destroy(PlayerPrefab.GetComponent<MipmapBias>());
-            Destroy(PlayerPrefab.GetComponent<Saviour>());
             Destroy(PlayerPrefab.GetComponent<Screener>());
             Destroy(PlayerPrefab.GetComponentInChildren<PotSounds>());
             Destroy(PlayerPrefab.GetComponentInChildren<HammerCollisions>());
@@ -169,13 +169,14 @@ namespace GOILauncher.Multiplayer.Client.Game
             foreach (var collider in PlayerPrefab.GetComponentsInChildren<Collider2D>())
                 Destroy(collider);
             PlayerPrefab.SetActive(false);
-            LocalPlayer.Player = player.AddComponent<LocalPlayer>();
+            LocalPlayer.GamePlayer = player.AddComponent<LocalPlayer>();
         }
 
         private IEnumerator CreateRemotePlayer(ClientPlayer player)
         {
             if (player == null)
                 yield break;
+            yield return null;
             var remotePlayerGameObject = Instantiate(PlayerPrefab);
             remotePlayerGameObject.SetActive(true);
             remotePlayerGameObject.name = $"[{player.Id}][{player.Platform}]{player.Name}";
@@ -183,18 +184,18 @@ namespace GOILauncher.Multiplayer.Client.Game
             remotePlayer.Id = player.Id;
             remotePlayer.Name = player.Name;
             remotePlayer.Platform = player.Platform;
-            remotePlayer.LocalPlayer = LocalPlayer.Player.Player;
-            remotePlayer.ApplyMove(player.InitMove);
-            player.Player = remotePlayer;
+            remotePlayer.LocalPlayer = LocalPlayer.GamePlayer.Player;
+            remotePlayer.ApplyMove(player.Move);
+            player.GamePlayer = remotePlayer;
             Debug.Log($"生成远程玩家：[{player.Id}][{player.Platform}]{player.Name}");
         }
 
         private IEnumerator RemoveRemotePlayer(ClientPlayer player)
         {
-            if (player?.Player != null)
+            if (player?.GamePlayer != null)
             {
-                Destroy(player.Player.Player.gameObject);
-                player.Player = null;
+                Destroy(player.GamePlayer.Player.gameObject);
+                player.GamePlayer = null;
             }
             yield break;
         }
