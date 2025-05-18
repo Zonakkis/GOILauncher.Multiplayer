@@ -104,6 +104,20 @@ namespace GOILauncher.Multiplayer.Client
             _client.Send(chatMessagePacket, DeliveryMethod.ReliableOrdered);
         }
 
+        public bool TeleportTo(int playerId)
+        {
+            if(Players.TryGetValue(playerId, out var player))
+            {
+                var localPlayer = _localPlayer.GamePlayer as LocalPlayer;
+                var remotePlayer = player.GamePlayer;
+                if (localPlayer == null)
+                    return false;
+                localPlayer.Teleport(remotePlayer);
+                return true;
+            }
+            return false;
+        }
+
 
         public void OnNetworkReceived(NetPeer server, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
@@ -157,7 +171,7 @@ namespace GOILauncher.Multiplayer.Client
                 PlayerName = _localPlayer.Name,
                 Platform = _localPlayer.Platform,
                 IsInGame = _unitySceneManager.IsInGame,
-                InitMove = _unitySceneManager.IsInGame ? _localPlayer.Player.GetMove() : new Move()
+                InitMove = _unitySceneManager.IsInGame ? _localPlayer.GamePlayer.GetMove() : new Move()
             };
             _client.Send(playerConnectedPacket, DeliveryMethod.ReliableOrdered);
             ServerConnected?.Invoke(this, new ServerConnectedEventArgs
@@ -193,7 +207,7 @@ namespace GOILauncher.Multiplayer.Client
                 Name = packet.PlayerName,
                 Platform = packet.Platform,
                 IsInGame = packet.IsInGame,
-                InitMove = packet.InitMove
+                Move = packet.InitMove
             };
             Players.Add(playerId, player);
             PlayerConnected?.Invoke(this, new PlayerConnectedEventArgs
@@ -219,7 +233,7 @@ namespace GOILauncher.Multiplayer.Client
             var playerId = packet.PlayerId;
             var player = Players[playerId];
             player.IsInGame = true;
-            player.InitMove = packet.InitMove;
+            player.Move = packet.InitMove;
             PlayerEntered?.Invoke(this, new PlayerEnteredEventArgs
             {
                 Player = player
@@ -244,6 +258,7 @@ namespace GOILauncher.Multiplayer.Client
         {
             var playerId = playerMovePacket.PlayerId;
             var player = Players[playerId];
+            player.Move = playerMovePacket.Move;
             PlayerMoved?.Invoke(this, new PlayerMovedEventArgs
             {
                 Player = player,
@@ -281,7 +296,7 @@ namespace GOILauncher.Multiplayer.Client
             var playerEnteredPacket = new PlayerEnteredPacket
             {
                 PlayerId = _localPlayer.Id,
-                InitMove = _localPlayer.Player.GetMove()
+                InitMove = _localPlayer.GamePlayer.GetMove()
             };
             _client.Send(playerEnteredPacket, DeliveryMethod.ReliableOrdered);
         }

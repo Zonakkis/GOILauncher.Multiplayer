@@ -1,10 +1,10 @@
-﻿using GOILauncher.Multiplayer.Shared.Game;
-using GOILauncher.Multiplayer.Shared.Interfaces;
+﻿using GOILauncher.Multiplayer.Client.Interfaces;
+using GOILauncher.Multiplayer.Shared.Game;
 using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Client.Game
 {
-    public abstract class PlayerBase : MonoBehaviour, IPlayer
+    public abstract class PlayerBase : MonoBehaviour, IGamePlayer
     {
         public Transform Player { get; private set; }
         public Transform Handle { get; private set; }

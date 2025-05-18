@@ -10,5 +10,6 @@ namespace GOILauncher.Multiplayer.Client.Interfaces
         void Reset();
         void Stop();
         void SendChatMessage(string message);
+        bool TeleportTo(int playerId);
     }
 }
