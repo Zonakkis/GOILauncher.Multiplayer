@@ -17,7 +17,7 @@ namespace GOILauncher.Multiplayer.Client.Game
         private Vector2 _topLeft;
         private Vector2 _bottomRight;
         private bool _isInCamera;
-        private  GUIStyle _labelStyle;
+        private GUIStyle _labelStyle;
 
         public void LateUpdate()
         {
@@ -48,8 +48,10 @@ namespace GOILauncher.Multiplayer.Client.Game
         {
             if (_labelStyle == null)
                 _labelStyle = new GUIStyle(GUI.skin.label);
-            _labelStyle.fontSize = (int)Mathf.Clamp(GameConstants.DefaultFontSize * 
-                (GameConstants.DefaultCameraOrthographicSize / _camera.orthographicSize), 10f, 60f);
+            _labelStyle.fontSize = (int)Mathf.Clamp(GameConstants.DefaultFontSize
+                * (Screen.width / GameConstants.DefaultScreenWidth)
+                * (Screen.dpi / GameConstants.DefaultScreenDpi )
+                * (GameConstants.DefaultCameraOrthographicSize / _camera.orthographicSize), 10f, 25f);
             var label = new GUIContent(
                 _isInCamera ? $"[{Id}][{Platform.ToReadableString()}]{Name}" :
                 $"[{Id}][{Platform.ToReadableString()}]{Name}" +
