@@ -154,13 +154,13 @@ namespace GOILauncher.Multiplayer.Client.Game
             var player = GameObject.Find("Player");
             PlayerPrefab = Instantiate(player);
             PlayerPrefab.name = "PlayerPrefab";
-            PlayerPrefab.GetComponent<Saviour>().enabled = false;
-            Destroy(PlayerPrefab.GetComponent<PlayerControl>());
-            Destroy(PlayerPrefab.GetComponent<MipmapBias>());
+            Destroy(PlayerPrefab.GetComponent<Saviour>());
             Destroy(PlayerPrefab.GetComponent<Screener>());
+            Destroy(PlayerPrefab.GetComponent<MipmapBias>());
+            Destroy(PlayerPrefab.GetComponent<PlayerControl>());
             Destroy(PlayerPrefab.GetComponentInChildren<PotSounds>());
-            Destroy(PlayerPrefab.GetComponentInChildren<HammerCollisions>());
             Destroy(PlayerPrefab.GetComponentInChildren<PlayerSounds>());
+            Destroy(PlayerPrefab.GetComponentInChildren<HammerCollisions>());
             Destroy(PlayerPrefab.transform.Find("PotCollider/Sensor").gameObject);
             foreach (var camera in PlayerPrefab.GetComponentsInChildren<Camera>())
                 Destroy(camera);
