@@ -209,8 +209,9 @@ namespace GOILauncher.Multiplayer.Server
             if (Players.TryGetValue(playerId, out var player))
             {
                 player.Move = packet.Move;
-                foreach (var serverPlayer in Players.Values
-                             .Where(serverPlayer => player.IsInGame && !Equals(serverPlayer, player)))
+                foreach (var serverPlayer in from serverPlayer in Players.Values
+                                             where serverPlayer.IsInGame && serverPlayer.Id != player.Id
+                                             select serverPlayer)
                 {
                     serverPlayer.Peer.Send(packet, DeliveryMethod.Unreliable);
                 }
