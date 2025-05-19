@@ -106,7 +106,7 @@ namespace GOILauncher.Multiplayer.Client
 
         public bool TeleportTo(int playerId)
         {
-            if(Players.TryGetValue(playerId, out var player))
+            if (Players.TryGetValue(playerId, out var player))
             {
                 var localPlayer = _localPlayer.GamePlayer as LocalPlayer;
                 var remotePlayer = player.GamePlayer;
@@ -231,53 +231,61 @@ namespace GOILauncher.Multiplayer.Client
         private void OnPlayerEntered(NetPeer _, PlayerEnteredPacket packet)
         {
             var playerId = packet.PlayerId;
-            var player = Players[playerId];
-            player.IsInGame = true;
-            player.Move = packet.InitMove;
-            PlayerEntered?.Invoke(this, new PlayerEnteredEventArgs
+            if (Players.TryGetValue(playerId, out var player))
             {
-                Player = player
-            });
-            Debug.Log($"[{player.Name}]进入游戏。");
+                player.IsInGame = true;
+                player.Move = packet.InitMove;
+                PlayerEntered?.Invoke(this, new PlayerEnteredEventArgs
+                {
+                    Player = player
+                });
+                Debug.Log($"[{player.Name}]进入游戏。");
+            }
         }
 
 
         private void OnPlayerLeft(NetPeer _, PlayerLeftPacket playerLeftPacket)
         {
             var playerId = playerLeftPacket.PlayerId;
-            var player = Players[playerId];
-            player.IsInGame = false;
-            PlayerLeft?.Invoke(this, new PlayerLeftEventArgs
+            if (Players.TryGetValue(playerId, out var player))
             {
-                Player = player
-            });
-            Debug.Log($"[{player.Name}]离开游戏。");
+                player.IsInGame = false;
+                PlayerLeft?.Invoke(this, new PlayerLeftEventArgs
+                {
+                    Player = player
+                });
+                Debug.Log($"[{player.Name}]离开游戏。");
+            }
         }
 
         private void OnPlayerMoved(NetPeer _, PlayerMovePacket playerMovePacket)
         {
             var playerId = playerMovePacket.PlayerId;
-            var player = Players[playerId];
-            player.Move = playerMovePacket.Move;
-            PlayerMoved?.Invoke(this, new PlayerMovedEventArgs
+            if (Players.TryGetValue(playerId, out var player))
             {
-                Player = player,
-                Move = playerMovePacket.Move
-            });
+                player.Move = playerMovePacket.Move;
+                PlayerMoved?.Invoke(this, new PlayerMovedEventArgs
+                {
+                    Player = player,
+                    Move = playerMovePacket.Move
+                });
+            }
         }
 
 
         public void OnChatMessageReceived(NetPeer peer, ChatMessagePacket packet)
         {
             var playerId = packet.PlayerId;
-            var player = Players[playerId];
-            var message = packet.Message;
-            ChatMessageReceived?.Invoke(this, new ChatMessageReceivedEventArgs
+            if (Players.TryGetValue(playerId, out var player))
             {
-                Player = player,
-                Message = message
-            });
-            Debug.Log($"[{playerId}][{player.Name}]: {message}");
+                var message = packet.Message;
+                ChatMessageReceived?.Invoke(this, new ChatMessageReceivedEventArgs
+                {
+                    Player = player,
+                    Message = message
+                });
+                Debug.Log($"[{playerId}][{player.Name}]: {message}");
+            }
         }
 
         private void OnPlayerMoved(object sender, PlayerMovedEventArgs e)
