@@ -28,7 +28,7 @@ namespace GOILauncher.Multiplayer.Shared.Net
         {
             EnableStatistics = true;
             DisconnectTimeout = ConnectionConstants.Timeout;
-            UpdateTime = ConnectionConstants.UpdateTime;
+            UpdateTime = ConnectionConstants.ServerUpdateTime;
         }
 
         private NetServer(EventBasedNetListener listener, PacketLayerBase extraPacketLayer = null)
