@@ -101,7 +101,10 @@ jobs:
       run: dotnet restore ./GOILauncher.Multiplayer.sln
       
     - name: Build project
-      run: dotnet build ./GOILauncher.Multiplayer.sln --configuration Release --no-restore
+      run: |
+          dotnet build ./Shared.net9/Shared.net9.csproj -c Release --no-restore
+          dotnet build ./Server.net9/Server.net9.csproj -c Release --no-restore
+          dotnet build ./ConsoleGameServer/ConsoleGameServer.csproj -c Release --no-restore
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
