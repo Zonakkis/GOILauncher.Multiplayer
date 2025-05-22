@@ -181,7 +181,7 @@ namespace GOILauncher.Multiplayer.Client.Game
             yield return null;
             var remotePlayerGameObject = _playerPool.Get();
             remotePlayerGameObject.name = $"[{player.Id}][{player.Platform}]{player.Name}";
-            var remotePlayer = remotePlayerGameObject.AddComponent<RemotePlayer>();
+            var remotePlayer = remotePlayerGameObject.GetComponent<RemotePlayer>();
             remotePlayer.Id = player.Id;
             remotePlayer.Name = player.Name;
             remotePlayer.Platform = player.Platform;
