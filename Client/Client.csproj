@@ -87,6 +87,7 @@
     <Compile Include="Interfaces\IGameClient.cs" />
     <Compile Include="Interfaces\IGamePlayer.cs" />
     <Compile Include="Interfaces\IUnitySceneManager.cs" />
+    <Compile Include="Pools\PlayerPool.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ClientPlayer.cs" />
     <Compile Include="UnityGameClient.cs" />
