@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Interfaces;
+using GOILauncher.Multiplayer.Client.Pools;
 using GOILauncher.Multiplayer.Shared.Constants;
 using GOILauncher.Multiplayer.Shared.Interfaces;
 using UnityEngine;
@@ -33,7 +34,7 @@ namespace GOILauncher.Multiplayer.Client.Game
 
         private readonly Dictionary<int, ClientPlayer> _inGamePlayers = new Dictionary<int, ClientPlayer>();
         private ClientPlayer LocalPlayer { get; set; }
-        private GameObject PlayerPrefab;
+        private PlayerPool _playerPool;
         private float _timer;
         public GamePlayerManager()
         {
@@ -152,23 +153,24 @@ namespace GOILauncher.Multiplayer.Client.Game
             //开启交互碰撞箱的方法：player,tip,sides的layer设为Terrain
             Time.timeScale = 0;
             var player = GameObject.Find("Player");
-            PlayerPrefab = Instantiate(player);
-            PlayerPrefab.name = "PlayerPrefab";
-            Destroy(PlayerPrefab.GetComponent<Saviour>());
-            Destroy(PlayerPrefab.GetComponent<Screener>());
-            Destroy(PlayerPrefab.GetComponent<MipmapBias>());
-            Destroy(PlayerPrefab.GetComponent<PlayerControl>());
-            Destroy(PlayerPrefab.GetComponentInChildren<PotSounds>());
-            Destroy(PlayerPrefab.GetComponentInChildren<PlayerSounds>());
-            Destroy(PlayerPrefab.GetComponentInChildren<HammerCollisions>());
-            Destroy(PlayerPrefab.transform.Find("PotCollider/Sensor").gameObject);
-            foreach (var camera in PlayerPrefab.GetComponentsInChildren<Camera>())
+            var playerPrefab = Instantiate(player);
+            playerPrefab.name = "PlayerPrefab";
+            Destroy(playerPrefab.GetComponent<Saviour>());
+            Destroy(playerPrefab.GetComponent<Screener>());
+            Destroy(playerPrefab.GetComponent<MipmapBias>());
+            Destroy(playerPrefab.GetComponent<PlayerControl>());
+            Destroy(playerPrefab.GetComponentInChildren<PotSounds>());
+            Destroy(playerPrefab.GetComponentInChildren<PlayerSounds>());
+            Destroy(playerPrefab.GetComponentInChildren<HammerCollisions>());
+            Destroy(playerPrefab.transform.Find("PotCollider/Sensor").gameObject);
+            foreach (var camera in playerPrefab.GetComponentsInChildren<Camera>())
                 Destroy(camera);
-            foreach (var rigidBody2D in PlayerPrefab.GetComponentsInChildren<Rigidbody2D>())
+            foreach (var rigidBody2D in playerPrefab.GetComponentsInChildren<Rigidbody2D>())
                 rigidBody2D.isKinematic = true;
-            foreach (var collider in PlayerPrefab.GetComponentsInChildren<Collider2D>())
+            foreach (var collider in playerPrefab.GetComponentsInChildren<Collider2D>())
                 Destroy(collider);
-            PlayerPrefab.SetActive(false);
+            playerPrefab.SetActive(false);
+            _playerPool = new PlayerPool(playerPrefab);
             LocalPlayer.GamePlayer = player.AddComponent<LocalPlayer>();
         }
 
@@ -177,8 +179,7 @@ namespace GOILauncher.Multiplayer.Client.Game
             if (player == null)
                 yield break;
             yield return null;
-            var remotePlayerGameObject = Instantiate(PlayerPrefab);
-            remotePlayerGameObject.SetActive(true);
+            var remotePlayerGameObject = _playerPool.Get();
             remotePlayerGameObject.name = $"[{player.Id}][{player.Platform}]{player.Name}";
             var remotePlayer = remotePlayerGameObject.AddComponent<RemotePlayer>();
             remotePlayer.Id = player.Id;
@@ -194,7 +195,7 @@ namespace GOILauncher.Multiplayer.Client.Game
         {
             if (player?.GamePlayer != null)
             {
-                Destroy(player.GamePlayer.Player.gameObject);
+                _playerPool.Release(player.GamePlayer.Player.gameObject);
                 player.GamePlayer = null;
             }
             yield break;
