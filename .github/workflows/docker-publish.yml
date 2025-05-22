@@ -9,7 +9,10 @@ on:
       - 'Shared.net9/**'
       - 'Server.net9/**'
       - 'ConsoleGameServer/**'
-
+      
+permissions:
+  contents: read
+  
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
