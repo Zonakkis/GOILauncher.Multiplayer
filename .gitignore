@@ -1,0 +1,141 @@
+##################################################
+# OS
+##################################################
+.DS_Store
+Thumbs.db
+desktop.ini
+
+##################################################
+# Build results
+##################################################
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+out/
+artifacts/
+
+##################################################
+# User-specific files
+##################################################
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+##################################################
+# Visual Studio
+##################################################
+.vs/
+Generated\ Files/
+_TestResults/
+TestResults/
+
+##################################################
+# Rider / ReSharper
+##################################################
+.idea/
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+##################################################
+# VS Code
+##################################################
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+##################################################
+# NuGet
+##################################################
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+!**/[Pp]ackages/repositories.config
+# 如果你使用 packages.config 并希望提交 packages，可删除上一行
+.nuget/packages/
+# NuGet v3 cache (optional, usually global user profile)
+# *.nuget.props
+# *.nuget.targets
+
+##################################################
+# .NET / ASP.NET
+##################################################
+project.lock.json
+project.fragment.lock.json
+artifacts/
+wwwroot/lib/
+ScaffoldingReadMe.txt
+
+##################################################
+# Publish
+##################################################
+PublishProfiles/
+*.publishsettings
+
+##################################################
+# Logs and diagnostics
+##################################################
+*.log
+*.tlog
+*.tmp
+*.temp
+*.cache
+*.pid
+*.seed
+*.pid.lock
+
+##################################################
+# Coverage / test outputs
+##################################################
+coverage/
+coverage.*
+*.coverage
+*.coveragexml
+TestResult.xml
+test-results/
+
+##################################################
+# Dotnet tools
+##################################################
+dotnet-tools.json
+
+##################################################
+# Azure / local secrets
+##################################################
+appsettings.Development.json
+secrets.json
+
+##################################################
+# Backup & generated
+##################################################
+*.bak
+*.swp
+*.orig
+*.g.cs
+*.g.i.cs
+
+##################################################
+# Optional: Unity (按需开启)
+# 如果这个仓库会包含 Unity 工程，建议保留以下规则
+##################################################
+# [Ll]ibrary/
+# [Tt]emp/
+# [Oo]bj/
+# [Bb]uild/
+# [Bb]uilds/
+# [Ll]ogs/
+# UserSettings/
+# MemoryCaptures/
+# *.unitypackage
