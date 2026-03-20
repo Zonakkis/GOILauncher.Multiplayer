@@ -1,13 +1,13 @@
 ﻿using Autofac;
 using GOILauncher.Multiplayer.Core.Data;
-using GOILauncher.Multiplayer.Core.Handlers;
+using GOILauncher.Multiplayer.Core.Data.Handlers;
 using GOILauncher.Multiplayer.Core.Log;
 
 namespace GOILauncher.Multiplayer.Core.Extensions
 {
     public static class AutofacExtensions
     {
-        public static void RegisterNLog(this ContainerBuilder builder)
+        public static void RegisterMultiplayerCore(this ContainerBuilder builder)
         {
             NLogConfiguration.Configure();
             builder.RegisterGeneric(typeof(NLogLogger<>))
@@ -19,6 +19,12 @@ namespace GOILauncher.Multiplayer.Core.Extensions
             builder.RegisterType<PacketDispatcher>()
                 .As<IPacketDispatcher>()
                 .SingleInstance();
+            builder.RegisterPacketSerializers();
+        }
+
+        private static void RegisterPacketSerializers(this ContainerBuilder builder)
+        {
+
         }
     }
 }

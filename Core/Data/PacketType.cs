@@ -1,5 +1,4 @@
-
-namespace GOILauncher.Multiplayer.Core.Packets
+namespace GOILauncher.Multiplayer.Core.Data
 {
     public enum PacketType : byte
     {

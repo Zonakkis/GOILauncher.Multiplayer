@@ -50,15 +50,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\ArraySegmentReader.cs" />
-    <Compile Include="Extensions\CoreManager.cs" />
-    <Compile Include="Handlers\IPacketDispatcher.cs" />
-    <Compile Include="Handlers\IPacketHandler.cs" />
-    <Compile Include="Handlers\PacketDispatcher.cs" />
+    <Compile Include="Data\Handlers\IPacketDispatcher.cs" />
+    <Compile Include="Data\Handlers\IPacketHandler.cs" />
+    <Compile Include="Data\Handlers\PacketDispatcher.cs" />
+    <Compile Include="Data\Serialization\IPacketSerializer.cs" />
+    <Compile Include="Extensions\AutofacExtensions.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\NLogConfiguration.cs" />
     <Compile Include="Log\NLogLogger.cs" />
     <Compile Include="Data\Packets\IPacket.cs" />
-    <Compile Include="Data\Packets\PacketType.cs" />
+    <Compile Include="Data\PacketType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

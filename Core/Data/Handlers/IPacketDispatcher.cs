@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace GOILauncher.Multiplayer.Core.Handlers
+namespace GOILauncher.Multiplayer.Core.Data.Handlers
 {
     public interface IPacketDispatcher
     {
