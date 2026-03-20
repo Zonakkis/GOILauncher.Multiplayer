@@ -6,8 +6,6 @@ namespace GOILauncher.Multiplayer.Network.Converters
 {
     internal class LiteNetLibSendModeConverter : IConverter<SendMode, DeliveryMethod>
     {
-        public Type Type => typeof(SendMode);
-
         DeliveryMethod IConverter<SendMode, DeliveryMethod>.Convert(SendMode source)
         {
             DeliveryMethod deliveryMethod;

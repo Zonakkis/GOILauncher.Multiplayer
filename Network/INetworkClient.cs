@@ -9,7 +9,7 @@ namespace GOILauncher.Multiplayer.Network
 
         event Action Connected;
         event Action Disconnected;
-        event Action<byte[]> DataReceived;
+        event Action<ArraySegment<byte>> DataReceived;
 
         void Connect(string host, int port);
         void Disconnect();

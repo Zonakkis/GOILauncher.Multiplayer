@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{908CF820-B1AB-40A3-A504-96DFC6BC3B40}</ProjectGuid>
+    <ProjectGuid>{FE614C55-A3F2-4315-82E1-A3A293CA89D1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GOILauncher.Multiplayer.Core</RootNamespace>
-    <AssemblyName>GOILauncher.Multiplayer.Core</AssemblyName>
+    <RootNamespace>GOILauncher.Multiplayer.Client</RootNamespace>
+    <AssemblyName>GOILauncher.Multiplayer.Client</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -31,17 +31,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Autofac, Version=2.6.3.862, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
-      <HintPath>..\packages\Autofac.2.6.3.862\lib\NET35\Autofac.dll</HintPath>
-    </Reference>
-    <Reference Include="Autofac.Configuration, Version=2.6.3.862, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
-      <HintPath>..\packages\Autofac.2.6.3.862\lib\NET35\Autofac.Configuration.dll</HintPath>
-    </Reference>
-    <Reference Include="NLog, Version=6.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\packages\NLog.6.1.1\lib\net35\NLog.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -49,21 +39,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Data\ArraySegmentReader.cs" />
-    <Compile Include="Extensions\CoreManager.cs" />
-    <Compile Include="Handlers\IPacketDispatcher.cs" />
-    <Compile Include="Handlers\IPacketHandler.cs" />
-    <Compile Include="Handlers\PacketDispatcher.cs" />
-    <Compile Include="Log\ILogger.cs" />
-    <Compile Include="Log\NLogConfiguration.cs" />
-    <Compile Include="Log\NLogLogger.cs" />
-    <Compile Include="Data\Packets\IPacket.cs" />
-    <Compile Include="Data\Packets\PacketType.cs" />
+    <Compile Include="GameClient.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <ProjectReference Include="..\Core\Core.csproj">
+      <Project>{908cf820-b1ab-40a3-a504-96dfc6bc3b40}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Network\Network.csproj">
+      <Project>{e89dff2b-af21-4a37-94e6-bab5bf1c56d1}</Project>
+      <Name>Network</Name>
+    </ProjectReference>
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

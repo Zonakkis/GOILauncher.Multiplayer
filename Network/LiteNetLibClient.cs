@@ -11,7 +11,7 @@ namespace GOILauncher.Multiplayer.Network
         public bool IsConnected { get; private set; }
         public event Action Connected;
         public event Action Disconnected;
-        public event Action<byte[]> DataReceived;
+        public event Action<ArraySegment<byte>> DataReceived;
 
         private readonly NetManager _netManager;
         private readonly EventBasedNetListener _listener;
@@ -53,7 +53,7 @@ namespace GOILauncher.Multiplayer.Network
 
         public void Send(byte[] data, SendMode mode)
         {
-            if(_server == null) return;
+            if (_server == null) return;
 
             var deliveryMethod = _converter.Convert<SendMode, DeliveryMethod>(mode);
             _server.Send(data, deliveryMethod);
@@ -75,7 +75,8 @@ namespace GOILauncher.Multiplayer.Network
         private void OnNetworkReceived(
             NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            DataReceived?.Invoke(reader.GetRemainingBytes());
+            DataReceived?.Invoke(new ArraySegment<byte>(
+                    reader.RawData, reader.UserDataOffset, reader.UserDataSize));
             reader.Recycle();
         }
     }

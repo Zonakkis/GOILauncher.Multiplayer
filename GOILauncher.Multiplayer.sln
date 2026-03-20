@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Network", "Network\Network.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiteNetLib", "LiteNetLib\LiteNetLib.csproj", "{CD19DC5D-B660-02AC-3533-05551BF84ACE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "Client\Client.csproj", "{FE614C55-A3F2-4315-82E1-A3A293CA89D1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,6 +37,10 @@ Global
 		{CD19DC5D-B660-02AC-3533-05551BF84ACE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CD19DC5D-B660-02AC-3533-05551BF84ACE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CD19DC5D-B660-02AC-3533-05551BF84ACE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FE614C55-A3F2-4315-82E1-A3A293CA89D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FE614C55-A3F2-4315-82E1-A3A293CA89D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FE614C55-A3F2-4315-82E1-A3A293CA89D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FE614C55-A3F2-4315-82E1-A3A293CA89D1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
