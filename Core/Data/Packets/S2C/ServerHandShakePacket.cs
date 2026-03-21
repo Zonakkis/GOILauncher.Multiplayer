@@ -2,9 +2,8 @@ using LiteNetLib.Utils;
 
 namespace GOILauncher.Multiplayer.Core.Data.Packets.S2C
 {
-    public struct ServerHandShakePacket : IPacket, INetSerializable
+    public struct ServerHandShakePacket : INetSerializable
     {
-        public PacketType Type => PacketType.ServerHandShake;
         public int PlayerId { get; set; }
 
         public void Serialize(NetDataWriter writer)

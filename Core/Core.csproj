@@ -62,8 +62,6 @@
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\NLogConfiguration.cs" />
     <Compile Include="Log\NLogLogger.cs" />
-    <Compile Include="Data\Packets\IPacket.cs" />
-    <Compile Include="Data\PacketType.cs" />
     <Compile Include="Network\INetworkClient.cs" />
     <Compile Include="Network\INetworkServer.cs" />
     <Compile Include="Network\NetworkClient.cs" />

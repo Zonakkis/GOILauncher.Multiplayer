@@ -1,5 +1,4 @@
 ﻿using System;
-using GOILauncher.Multiplayer.Core.Data.Packets;
 using LiteNetLib;
 using LiteNetLib.Utils;
 
@@ -15,13 +14,13 @@ namespace GOILauncher.Multiplayer.Core.Data
         }
 
         public void RegisterStruct<TPacket>(Action<TPacket, NetPeer> onReceive)
-             where TPacket : struct, IPacket, INetSerializable
+             where TPacket : struct, INetSerializable
         {
             _processor.SubscribeNetSerializable(onReceive);
         }
 
         public void RegisterClass<TPacket>(Action<TPacket, NetPeer> onReceive)
-             where TPacket : class, IPacket, new()
+             where TPacket : class, new()
         {
             _processor.SubscribeReusable(onReceive);
         }
