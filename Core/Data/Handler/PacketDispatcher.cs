@@ -19,11 +19,11 @@ namespace GOILauncher.Multiplayer.Core.Data.Handlers
             _logger = logger;
         }
 
-        private void RegisterSerializer<TPacket>(
-            IPacketSerializer<TPacket> serializer, IPacketHandler<TPacket> handler)
+        public void RegisterSerializer<TPacket>(
+            PacketType type, IPacketSerializer<TPacket> serializer, IPacketHandler<TPacket> handler)
             where TPacket : IPacket
         {
-            _routes[serializer.Type] = (data) =>
+            _routes[type] = (data) =>
             {
                 var packet = serializer.Deserialize(data);
                 handler.Handle(packet);

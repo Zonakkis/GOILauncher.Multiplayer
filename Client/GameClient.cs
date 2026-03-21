@@ -1,5 +1,5 @@
 ﻿using System;
-using GOILauncher.Multiplayer.Core.Handlers;
+using GOILauncher.Multiplayer.Core.Data.Handlers;
 using GOILauncher.Multiplayer.Network;
 
 namespace GOILauncher.Multiplayer.Client
