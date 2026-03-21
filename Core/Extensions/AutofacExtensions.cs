@@ -1,10 +1,10 @@
 ﻿using Autofac;
 using GOILauncher.Multiplayer.Core.Data;
-using GOILauncher.Multiplayer.Core.Data.Handlers;
-using GOILauncher.Multiplayer.Core.Data.Packets.S2C;
-using GOILauncher.Multiplayer.Core.Data.Serialization;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
+using GOILauncher.Multiplayer.Network;
+using LiteNetLib;
+using LiteNetLib.Utils;
 
 namespace GOILauncher.Multiplayer.Core.Extensions
 {
@@ -21,20 +21,29 @@ namespace GOILauncher.Multiplayer.Core.Extensions
                 .As<IEventBus>()
                 .SingleInstance();
 
-            builder.RegisterType<ArraySegmentReader>()
-                .AsSelf()
-                .InstancePerDependency();
+            builder.RegisterNetwork();
             builder.RegisterType<PacketDispatcher>()
                 .As<IPacketDispatcher>()
                 .SingleInstance();
-            builder.RegisterPacketSerializers();
         }
 
-        private static void RegisterPacketSerializers(this ContainerBuilder builder)
+        private static void RegisterNetwork(this ContainerBuilder builder)
         {
-            builder.RegisterType<ServerHandShakePacketSerializer>()
-                .As<IPacketSerializer<ServerHandShakePacket>>()
-                .InstancePerDependency();
+            builder.RegisterType<EventBasedNetListener>()
+                .AsSelf()
+                .SingleInstance();
+            builder.Register(c => new NetManager(c.Resolve<EventBasedNetListener>()))
+                .AsSelf()
+                .SingleInstance();
+            builder.RegisterType<NetPacketProcessor>()
+                .AsSelf()
+                .SingleInstance();
+            builder.RegisterType<NetworkServer>()
+                .As<INetworkServer>()
+                .SingleInstance();
+            builder.RegisterType<NetworkClient>()
+                .As<INetworkClient>()
+                .SingleInstance();
         }
     }
 }

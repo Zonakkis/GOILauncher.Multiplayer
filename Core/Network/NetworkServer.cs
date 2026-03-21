@@ -1,32 +1,32 @@
-﻿using GOILauncher.Multiplayer.Core.Log;
-using GOILauncher.Multiplayer.Network.Converters;
-using GOILauncher.Multiplayer.Network.Enums;
+﻿using GOILauncher.Multiplayer.Core.Data;
+using GOILauncher.Multiplayer.Core.Event;
+using GOILauncher.Multiplayer.Core.Log;
 using LiteNetLib;
+using LiteNetLib.Utils;
 using System;
 
 namespace GOILauncher.Multiplayer.Network
 {
-    public class LiteNetLibServer : INetworkServer
+    public class NetworkServer : INetworkServer
     {
         private readonly NetManager _netManager;
         private readonly EventBasedNetListener _listener;
-        private readonly ILogger<LiteNetLibServer> _logger;
-        private readonly INetworkConverter _converter;
+        private readonly IPacketDispatcher _dispatcher;
+        private readonly IEventBus _eventBus;
+        private readonly ILogger<NetworkServer> _logger;
 
-        public event Action<int> Connected;
-        public event Action<int> Disconnected;
-        public event Action<byte[]> DataReceived;
-
-        public LiteNetLibServer(
+        public NetworkServer(
             NetManager netManager,
             EventBasedNetListener listener,
-            ILogger<LiteNetLibServer> logger,
-            INetworkConverter converter)
+            IPacketDispatcher dispatcher,
+            IEventBus eventBus,
+            ILogger<NetworkServer> logger)
         {
             _netManager = netManager;
             _listener = listener;
+            _dispatcher = dispatcher;
+            _eventBus = eventBus;
             _logger = logger;
-            _converter = converter;
             _listener.PeerConnectedEvent += OnClientConnected;
             _listener.PeerDisconnectedEvent += OnClientDisconnected;
             _listener.NetworkReceiveEvent += OnNetworkReceived;
@@ -49,31 +49,31 @@ namespace GOILauncher.Multiplayer.Network
             _netManager.PollEvents();
         }
 
-        public void Send(int clientId, byte[] data, SendMode mode)
+        public void Send(int clientId, byte[] data, DeliveryMethod method)
         {
             var peer = _netManager.GetPeerById(clientId);
             if(peer == null) return;
 
-            var deliveryMethod = _converter.Convert<SendMode, DeliveryMethod>(mode);
-            peer.Send(data, deliveryMethod);
+            peer.Send(data, method);
         }
 
         private void OnClientConnected(NetPeer peer)
         {
             _logger.Info($"Client connected: {peer.EndPoint} (ID: {peer.Id})");
-            Connected?.Invoke(peer.Id);
+            _eventBus.Publish(new ClientConnectedEvent(peer.Id));
         }
 
-        private void OnClientDisconnected(NetPeer peer, DisconnectInfo disconnectinfo)
+        private void OnClientDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
         {
-            _logger.Info($"Client disconnected: {peer.EndPoint} (ID: {peer.Id}), Reason: {disconnectinfo.Reason}");
-            Disconnected?.Invoke(peer.Id);
+            _logger.Info($"Client disconnected: {peer.EndPoint} (ID: {peer.Id}), Reason: {disconnectInfo.Reason}");
+            _eventBus.Publish(new ClientDisconnectedEvent(
+                peer.Id, string.Format("({0}){1}", disconnectInfo.SocketErrorCode, disconnectInfo.Reason)));
         }
 
         private void OnNetworkReceived(
             NetPeer peer, NetPacketReader reader, DeliveryMethod deliveryMethod)
         {
-            DataReceived?.Invoke(reader.GetRemainingBytes());
+            _dispatcher.Dispatch(peer, reader);
             reader.Recycle();
         }
     }

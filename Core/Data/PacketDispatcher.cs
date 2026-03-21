@@ -1,0 +1,34 @@
+﻿using System;
+using GOILauncher.Multiplayer.Core.Data.Packets;
+using LiteNetLib;
+using LiteNetLib.Utils;
+
+namespace GOILauncher.Multiplayer.Core.Data
+{
+    public class PacketDispatcher : IPacketDispatcher
+    {
+        private readonly NetPacketProcessor _processor;
+
+        public PacketDispatcher(NetPacketProcessor processor)
+        {
+            _processor = processor;
+        }
+
+        public void RegisterStruct<TPacket>(Action<TPacket, NetPeer> onReceive)
+             where TPacket : struct, IPacket, INetSerializable
+        {
+            _processor.SubscribeNetSerializable(onReceive);
+        }
+
+        public void RegisterClass<TPacket>(Action<TPacket, NetPeer> onReceive)
+             where TPacket : class, IPacket, new()
+        {
+            _processor.SubscribeReusable(onReceive);
+        }
+
+        public void Dispatch(NetPeer peer, NetDataReader reader)
+        {
+            _processor.ReadAllPackets(reader, peer);
+        }
+    }
+}

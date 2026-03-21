@@ -49,22 +49,25 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Data\ArraySegmentReader.cs" />
-    <Compile Include="Data\Handler\IPacketDispatcher.cs" />
-    <Compile Include="Data\Handler\IPacketHandler.cs" />
-    <Compile Include="Data\Handler\PacketDispatcher.cs" />
+    <Compile Include="Data\IPacketDispatcher.cs" />
+    <Compile Include="Data\PacketDispatcher.cs" />
     <Compile Include="Data\Packets\S2C\ServerHandShakePacket.cs" />
-    <Compile Include="Data\Serialization\BasePacketSerializer.cs" />
-    <Compile Include="Data\Serialization\IPacketSerializer.cs" />
-    <Compile Include="Data\Serialization\ServerHandShakePacketSerializer.cs" />
+    <Compile Include="Event\ClientConnectedEvent.cs" />
+    <Compile Include="Event\ClientDisconnectedEvent.cs" />
     <Compile Include="Event\EventBus.cs" />
     <Compile Include="Event\IEventBus.cs" />
+    <Compile Include="Event\ServerConnectedEvent.cs" />
+    <Compile Include="Event\ServerDisconnectedEvent.cs" />
     <Compile Include="Extensions\AutofacExtensions.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\NLogConfiguration.cs" />
     <Compile Include="Log\NLogLogger.cs" />
     <Compile Include="Data\Packets\IPacket.cs" />
     <Compile Include="Data\PacketType.cs" />
+    <Compile Include="Network\INetworkClient.cs" />
+    <Compile Include="Network\INetworkServer.cs" />
+    <Compile Include="Network\NetworkClient.cs" />
+    <Compile Include="Network\NetworkServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -72,6 +75,12 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Data\Packets\C2S\" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj">
+      <Project>{cd19dc5d-b660-02ac-3533-05551bf84ace}</Project>
+      <Name>LiteNetLib</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
