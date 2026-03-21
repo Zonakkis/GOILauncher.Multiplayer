@@ -11,7 +11,7 @@ namespace GOILauncher.Multiplayer.Client.Extensions
             builder.RegisterMultiplayerCore();
 
             builder.RegisterType<ClientService>()
-                .AsSelf()
+                .As<IClientService>()
                 .SingleInstance();
         }
     }

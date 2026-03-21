@@ -7,8 +7,8 @@
     <ProjectGuid>{9D509ADD-EC76-4072-99C7-907624C222CF}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GOILauncher.Multiplayer.Service</RootNamespace>
-    <AssemblyName>GOILauncher.Multiplayer.Service</AssemblyName>
+    <RootNamespace>GOILauncher.Multiplayer.Server</RootNamespace>
+    <AssemblyName>GOILauncher.Multiplayer.Server</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -45,9 +45,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Events\ServerHandshakeEvent.cs" />
+    <Compile Include="Events\ChatMessageEvent.cs" />
+    <Compile Include="Events\ClientHandshakeEvent.cs" />
     <Compile Include="Extensions\AutofacExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ServerPlayer.cs" />
+    <Compile Include="Services\IServerService.cs" />
     <Compile Include="Services\ServerService.cs" />
   </ItemGroup>
   <ItemGroup>

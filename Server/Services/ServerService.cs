@@ -1,16 +1,21 @@
-﻿using GOILauncher.Multiplayer.Core.Data;
-using GOILauncher.Multiplayer.Core.Data.Packets.C2S;
+﻿using System;
+using System.Collections.Generic;
+using GOILauncher.Multiplayer.Core.Data;
+using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Network;
 using GOILauncher.Multiplayer.Server.Events;
 using LiteNetLib;
+using LiteNetLib.Utils;
 
 namespace GOILauncher.Multiplayer.Server.Services
 {
-    public class ServerService
+    public class ServerService : IServerService
     {
         private readonly INetworkServer _networkServer;
         private readonly IEventBus _eventBus;
+        private readonly Dictionary<int, ServerPlayer> _players
+            = new Dictionary<int, ServerPlayer>();
 
         public ServerService(INetworkServer networkServer,
             IPacketDispatcher dispatcher,
@@ -18,7 +23,8 @@ namespace GOILauncher.Multiplayer.Server.Services
         {
             _networkServer = networkServer;
             _eventBus = eventBus;
-            dispatcher.RegisterStruct<ClientHandShakePacket>(OnServerHandshake);
+            dispatcher.RegisterStruct<C2SClientHandShakePacket>(OnClientHandshake);
+            dispatcher.RegisterStruct<C2SChatMessagePacket>(OnChatMessage);
         }
 
         public void Start(int port)
@@ -26,9 +32,34 @@ namespace GOILauncher.Multiplayer.Server.Services
             _networkServer.Start(port);
         }
 
-        public void OnServerHandshake(ClientHandShakePacket packet, NetPeer peer)
+        public void Broadcast(INetSerializable packet, Func<ServerPlayer, bool> predicate = null)
         {
+            foreach (var player in _players.Values)
+            {
+                if (predicate == null || predicate(player))
+                {
+                    _networkServer.Send(player.Id, packet, DeliveryMethod.ReliableUnordered);
+                }
+            }
+        }
+
+        private void OnClientHandshake(C2SClientHandShakePacket packet, NetPeer peer)
+        {
+            _players[peer.Id] = new ServerPlayer { Peer = peer };
             _eventBus.Publish(new ClientHandshakeEvent(packet.PlayerName));
         }
+
+        private void OnChatMessage(C2SChatMessagePacket packet, NetPeer peer)
+        {
+            var playerId = peer.Id;
+            var chatPacket = new S2CChatMessagePacket
+            {
+                PlayerId = playerId,
+                Message = packet.Message
+            };
+            Broadcast(chatPacket);
+            _eventBus.Publish(new ChatMessageEvent(playerId, packet.Message));
+        }
+
     }
 }

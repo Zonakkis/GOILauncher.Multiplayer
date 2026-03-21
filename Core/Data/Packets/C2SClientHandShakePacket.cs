@@ -1,8 +1,8 @@
 using LiteNetLib.Utils;
 
-namespace GOILauncher.Multiplayer.Core.Data.Packets.C2S
+namespace GOILauncher.Multiplayer.Core.Data.Packets
 {
-    public struct ClientHandShakePacket : INetSerializable
+    public struct C2SClientHandShakePacket : INetSerializable
     {
         public string PlayerName { get; set; }
 

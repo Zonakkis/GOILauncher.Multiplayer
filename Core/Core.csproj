@@ -51,8 +51,10 @@
   <ItemGroup>
     <Compile Include="Data\IPacketDispatcher.cs" />
     <Compile Include="Data\PacketDispatcher.cs" />
-    <Compile Include="Data\Packets\C2S\ClientHandShakePacket.cs" />
-    <Compile Include="Data\Packets\S2C\ServerHandShakePacket.cs" />
+    <Compile Include="Data\Packets\S2CChatMessagePacket.cs" />
+    <Compile Include="Data\Packets\C2SChatMessagePacket.cs" />
+    <Compile Include="Data\Packets\C2SClientHandShakePacket.cs" />
+    <Compile Include="Data\Packets\S2CServerHandShakePacket.cs" />
     <Compile Include="Event\ClientConnectedEvent.cs" />
     <Compile Include="Event\ClientDisconnectedEvent.cs" />
     <Compile Include="Event\EventBus.cs" />
