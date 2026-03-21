@@ -11,6 +11,7 @@ namespace GOILauncher.Multiplayer.Network
     {
         private readonly NetManager _netManager;
         private readonly EventBasedNetListener _listener;
+        private readonly NetPacketProcessor _processor;
         private readonly IPacketDispatcher _dispatcher;
         private readonly IEventBus _eventBus;
         private readonly ILogger<NetworkServer> _logger;
@@ -18,12 +19,14 @@ namespace GOILauncher.Multiplayer.Network
         public NetworkServer(
             NetManager netManager,
             EventBasedNetListener listener,
+            NetPacketProcessor processor,
             IPacketDispatcher dispatcher,
             IEventBus eventBus,
             ILogger<NetworkServer> logger)
         {
             _netManager = netManager;
             _listener = listener;
+            _processor = processor;
             _dispatcher = dispatcher;
             _eventBus = eventBus;
             _logger = logger;
@@ -49,12 +52,22 @@ namespace GOILauncher.Multiplayer.Network
             _netManager.PollEvents();
         }
 
-        public void Send(int clientId, byte[] data, DeliveryMethod method)
+        public void Send<T>(int clientId, T packet, DeliveryMethod method) where T : class, new()
         {
             var peer = _netManager.GetPeerById(clientId);
-            if(peer == null) return;
+            if (peer == null) return;
 
-            peer.Send(data, method);
+            var bytes = _processor.Write(packet);
+            peer.Send(bytes, method);
+        }
+
+        public void Send(int clientId, INetSerializable packet, DeliveryMethod method)
+        {
+            var peer = _netManager.GetPeerById(clientId);
+            if (peer == null) return;
+
+            var bytes = _processor.WriteNetSerializable(packet);
+            peer.Send(bytes, method);
         }
 
         private void OnClientConnected(NetPeer peer)

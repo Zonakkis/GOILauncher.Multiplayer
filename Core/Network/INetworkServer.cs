@@ -1,4 +1,5 @@
 ﻿using LiteNetLib;
+using LiteNetLib.Utils;
 
 namespace GOILauncher.Multiplayer.Network
 {
@@ -7,6 +8,7 @@ namespace GOILauncher.Multiplayer.Network
         void Start(int port);
         void Stop();
         void Poll();
-        void Send(int clientId, byte[] data, DeliveryMethod method);
+        void Send<T>(int clientId, T packet, DeliveryMethod method) where T : class, new();
+        void Send(int clientId, INetSerializable packet, DeliveryMethod method);
     }
 }

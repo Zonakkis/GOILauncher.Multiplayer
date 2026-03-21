@@ -2,6 +2,7 @@
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using LiteNetLib;
+using LiteNetLib.Utils;
 
 namespace GOILauncher.Multiplayer.Network
 {
@@ -10,6 +11,7 @@ namespace GOILauncher.Multiplayer.Network
         public bool IsConnected { get; private set; }
         private readonly NetManager _netManager;
         private readonly EventBasedNetListener _listener;
+        private readonly NetPacketProcessor _processor;
         private readonly IPacketDispatcher _dispatcher;
         private readonly IEventBus _eventBus;
         private readonly ILogger<NetworkClient> _logger;
@@ -18,12 +20,14 @@ namespace GOILauncher.Multiplayer.Network
         public NetworkClient(
             NetManager netManager,
             EventBasedNetListener listener,
+            NetPacketProcessor processor,
             IPacketDispatcher dispatcher,
             IEventBus eventBus,
             ILogger<NetworkClient> logger)
         {
             _netManager = netManager;
             _listener = listener;
+            _processor = processor;
             _dispatcher = dispatcher;
             _eventBus = eventBus;
             _logger = logger;
@@ -49,11 +53,20 @@ namespace GOILauncher.Multiplayer.Network
             _netManager.PollEvents();
         }
 
-        public void Send(byte[] data, DeliveryMethod method)
+        public void Send<T>(T packet, DeliveryMethod method) where T : class, new()
         {
             if (_server == null) return;
 
-            _server.Send(data, method);
+            var bytes = _processor.Write(packet);
+            _server.Send(bytes, method);
+        }
+
+        public void Send(INetSerializable packet, DeliveryMethod method)
+        {
+            if (_server == null) return;
+
+            var bytes = _processor.WriteNetSerializable(packet);
+            _server.Send(bytes, method);
         }
 
 
