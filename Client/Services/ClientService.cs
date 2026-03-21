@@ -5,14 +5,14 @@ using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Network;
 using LiteNetLib;
 
-namespace GOILauncher.Multiplayer.Client.Managers
+namespace GOILauncher.Multiplayer.Client.Services
 {
-    public class ClientManager
+    public class ClientService
     {
         private readonly INetworkClient _networkClient;
         private readonly IEventBus _eventBus;
 
-        public ClientManager(INetworkClient networkClient, 
+        public ClientService(INetworkClient networkClient, 
         IPacketDispatcher dispatcher,
          IEventBus eventBus)
         {

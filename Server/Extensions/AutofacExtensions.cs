@@ -1,16 +1,16 @@
 ﻿using Autofac;
-using GOILauncher.Multiplayer.Client.Services;
 using GOILauncher.Multiplayer.Core.Extensions;
+using GOILauncher.Multiplayer.Server.Services;
 
-namespace GOILauncher.Multiplayer.Client.Extensions
+namespace GOILauncher.Multiplayer.Server.Extensions
 {
     public static class AutofacExtensions
     {
-        public static void RegisterMultiplayerClient(this ContainerBuilder builder)
+        public static void RegisterMultiplayerServer(this ContainerBuilder builder)
         {
             builder.RegisterMultiplayerCore();
 
-            builder.RegisterType<ClientService>()
+            builder.RegisterType<ServerService>()
                 .AsSelf()
                 .SingleInstance();
         }

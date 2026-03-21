@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="Data\IPacketDispatcher.cs" />
     <Compile Include="Data\PacketDispatcher.cs" />
+    <Compile Include="Data\Packets\C2S\ClientHandShakePacket.cs" />
     <Compile Include="Data\Packets\S2C\ServerHandShakePacket.cs" />
     <Compile Include="Event\ClientConnectedEvent.cs" />
     <Compile Include="Event\ClientDisconnectedEvent.cs" />
@@ -71,9 +72,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Data\Packets\C2S\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj">
       <Project>{cd19dc5d-b660-02ac-3533-05551bf84ace}</Project>
