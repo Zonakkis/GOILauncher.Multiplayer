@@ -6,13 +6,13 @@ namespace GOILauncher.Multiplayer.Client.Extensions
 {
     public static class AutofacExtensions
     {
-        public static void RegisterMultiplayerClient(this ContainerBuilder builder)
+        public static ContainerBuilder WithClient(this ContainerBuilder builder)
         {
-            builder.RegisterMultiplayerCore().WithClient();
-
-            builder.RegisterType<ClientService>()
+            builder.RegisterClientCore()
+                .RegisterType<ClientService>()
                 .As<IClientService>()
                 .SingleInstance();
+            return builder;
         }
     }
 }

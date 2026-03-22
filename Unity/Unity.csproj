@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{140E14EC-EC2D-454E-9277-6BB75CA5E9C6}</ProjectGuid>
+    <ProjectGuid>{125C7A1A-0023-4E64-A620-E808AE58D966}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GOILauncher.Multiplayer.Client</RootNamespace>
-    <AssemblyName>GOILauncher.Multiplayer.Client</AssemblyName>
+    <RootNamespace>GOILauncher.Multiplayer.Unity</RootNamespace>
+    <AssemblyName>GOILauncher.Multiplayer.Unity</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -53,9 +53,7 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="UnityClient.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
+    <Compile Include="UnityCore.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Client\Client.csproj">
@@ -63,9 +61,16 @@
       <Name>Client</Name>
     </ProjectReference>
     <ProjectReference Include="..\Core\Core.csproj">
-      <Project>{908CF820-B1AB-40A3-A504-96DFC6BC3B40}</Project>
+      <Project>{908cf820-b1ab-40a3-a504-96dfc6bc3b40}</Project>
       <Name>Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Server\Server.csproj">
+      <Project>{9d509add-ec76-4072-99c7-907624c222cf}</Project>
+      <Name>Server</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

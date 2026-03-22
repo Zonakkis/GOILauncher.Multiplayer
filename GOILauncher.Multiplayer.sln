@@ -17,7 +17,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleServer", "ConsoleServer\ConsoleServer.csproj", "{858EE83C-5E77-42AF-9E0F-A29983265D7E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityClient", "UnityClient\UnityClient.csproj", "{140E14EC-EC2D-454E-9277-6BB75CA5E9C6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Unity", "Unity\Unity.csproj", "{125C7A1A-0023-4E64-A620-E808AE58D966}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,10 +49,10 @@ Global
 		{858EE83C-5E77-42AF-9E0F-A29983265D7E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{858EE83C-5E77-42AF-9E0F-A29983265D7E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{858EE83C-5E77-42AF-9E0F-A29983265D7E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{140E14EC-EC2D-454E-9277-6BB75CA5E9C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{140E14EC-EC2D-454E-9277-6BB75CA5E9C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{140E14EC-EC2D-454E-9277-6BB75CA5E9C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{140E14EC-EC2D-454E-9277-6BB75CA5E9C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{125C7A1A-0023-4E64-A620-E808AE58D966}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{125C7A1A-0023-4E64-A620-E808AE58D966}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{125C7A1A-0023-4E64-A620-E808AE58D966}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{125C7A1A-0023-4E64-A620-E808AE58D966}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

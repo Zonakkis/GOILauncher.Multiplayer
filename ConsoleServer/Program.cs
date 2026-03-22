@@ -43,7 +43,7 @@ namespace ConsoleServer
         {
             var builder = new ContainerBuilder();
 
-            builder.RegisterMultiplayerServer();
+            builder.WithServer();
 
             return builder.Build();
         }

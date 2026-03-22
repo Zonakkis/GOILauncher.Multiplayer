@@ -31,7 +31,7 @@ namespace GOILauncher.Multiplayer.Core.Extensions
             return builder;
         }
 
-        public static ContainerBuilder WithClient(this ContainerBuilder builder)
+        public static ContainerBuilder RegisterClientCore(this ContainerBuilder builder)
         {
             builder.RegisterType<NetworkClientListener>()
                 .AsSelf()
@@ -49,7 +49,7 @@ namespace GOILauncher.Multiplayer.Core.Extensions
             return builder;
         }
 
-        public static ContainerBuilder WithServer(this ContainerBuilder builder)
+        public static ContainerBuilder RegisterServerCore(this ContainerBuilder builder)
         {
             builder.RegisterType<NetworkServerListener>()
                 .AsSelf()
