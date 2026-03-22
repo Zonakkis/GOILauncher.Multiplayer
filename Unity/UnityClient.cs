@@ -7,6 +7,11 @@ namespace GOILauncher.Multiplayer.Client
     {
         public IClientService ClientService { get; set; }
 
+        private void Update()
+        {
+            ClientService.Poll();
+        }
+
         public void Connect(string host, int port)
         {
             ClientService.Connect(host, port);

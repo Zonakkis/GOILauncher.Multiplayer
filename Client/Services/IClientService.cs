@@ -7,5 +7,7 @@ namespace GOILauncher.Multiplayer.Client.Services
         int LocalPlayerId { get; }
         void Connect(string host, int port);
         void Disconnect();
+        void Poll();
+        void SendChatMessage(string message);
     }
 }

@@ -32,9 +32,21 @@ namespace GOILauncher.Multiplayer.Client.Services
         {
             _networkClient.Connect(host, port);
         }
+
         public void Disconnect()
         {
             _networkClient.Disconnect();
+        }
+
+        public void Poll()
+        {
+            _networkClient.Poll();
+        }
+
+        public void SendChatMessage(string message)
+        {
+            var packet = new C2SChatMessagePacket { Message = message };
+            _networkClient.Send(packet, DeliveryMethod.ReliableUnordered);
         }
 
         private void OnServerHandshake(S2CServerHandShakePacket packet, NetPeer peer)
