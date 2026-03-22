@@ -8,9 +8,12 @@ namespace GOILauncher.Multiplayer.Client.Extensions
     {
         public static ContainerBuilder WithClient(this ContainerBuilder builder)
         {
-            builder.RegisterClientCore()
-                .RegisterType<ClientService>()
+            builder.RegisterClientCore();
+            builder.RegisterType<ClientService>()
                 .As<IClientService>()
+                .SingleInstance();
+            builder.RegisterType<PlayerService>()
+                .As<IPlayerService>()
                 .SingleInstance();
             return builder;
         }

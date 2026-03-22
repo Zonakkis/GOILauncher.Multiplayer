@@ -8,10 +8,10 @@ using System.Collections.Generic;
 
 namespace GOILauncher.Multiplayer.Client.Services
 {
-    public class PlayerService
+    public class PlayerService : IPlayerService
     {
         private readonly IEventBus _eventBus;
-        private Dictionary<int, ClientPlayer> Players { get; } 
+        public Dictionary<int, ClientPlayer> Players { get; }
             = new Dictionary<int, ClientPlayer>();
         public PlayerService(IPacketDispatcher dispatcher,
             IEventBus eventBus,
@@ -29,7 +29,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             var playerId = packet.PlayerId;
             var playerName = packet.PlayerName;
             var platform = packet.Platform;
-            Players[playerId] = new ClientPlayer 
+            Players[playerId] = new ClientPlayer
             { Id = playerId, Name = playerName, Platform = platform };
             _eventBus.Publish(
                 new PlayerJoinedEvent(playerId, playerName, platform));
