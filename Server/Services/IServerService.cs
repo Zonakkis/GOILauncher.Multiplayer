@@ -3,7 +3,7 @@ using System;
 
 namespace GOILauncher.Multiplayer.Server.Services
 {
-    public interface IServerService
+    public interface IServerService : IDisposable
     {
         void Start(int port);
         void Stop();

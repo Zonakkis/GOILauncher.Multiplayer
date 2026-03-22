@@ -27,6 +27,11 @@ namespace GOILauncher.Multiplayer.Server.Services
             dispatcher.RegisterStruct<C2SChatMessagePacket>(OnChatMessage);
         }
 
+        public void Dispose()
+        {
+            Stop();
+        }
+
         public void Start(int port)
         {
             _networkServer.Start(port);

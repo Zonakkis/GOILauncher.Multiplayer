@@ -23,9 +23,18 @@ namespace GOILauncher.Multiplayer.Client.Services
             dispatcher.RegisterStruct<S2CChatMessagePacket>(OnChatMessage);
         }
 
+        public void Dispose()
+        {
+            Disconnect();
+        }
+
         public void Connect(string host, int port)
         {
             _networkClient.Connect(host, port);
+        }
+        public void Disconnect()
+        {
+            _networkClient.Disconnect();
         }
 
         private void OnServerHandshake(S2CServerHandShakePacket packet, NetPeer peer)

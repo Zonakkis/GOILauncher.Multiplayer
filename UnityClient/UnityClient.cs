@@ -8,7 +8,6 @@ namespace GOILauncher.Multiplayer.Client
     public class UnityClient : MonoBehaviour
     {
         private IContainer _container;
-        private ILifetimeScope _scope;
         private IClientService _clientService;
         private void Awake()
         {
@@ -26,15 +25,13 @@ namespace GOILauncher.Multiplayer.Client
 
         public void Connect(string host, int port)
         {
-            _scope = _container.BeginLifetimeScope();
-            _clientService = _scope.Resolve<IClientService>();
+            _clientService = _container.Resolve<IClientService>();
             _clientService.Connect(host, port);
         }
 
-        public void Stop()
+        public void Disconnect()
         {
-            _scope?.Dispose();
-            _scope = null;
+            _clientService.Disconnect();
         }
     }
 }
