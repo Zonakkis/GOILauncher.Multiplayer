@@ -51,17 +51,24 @@ namespace GOILauncher.Multiplayer.Server.Services
         {
             foreach (var player in _players.Values)
             {
-                if (predicate == null || predicate(player))
-                {
-                    _networkServer.Send(player.Id, packet, DeliveryMethod.ReliableUnordered);
-                }
+                if (predicate != null && !predicate(player)) continue;
+                _networkServer.Send(player.Id, packet, DeliveryMethod.ReliableUnordered);
             }
         }
 
         private void OnClientHandshake(C2SClientHandShakePacket packet, NetPeer peer)
         {
-            _players[peer.Id] = new ServerPlayer { Peer = peer };
-            _eventBus.Publish(new ClientHandshakeEvent(packet.PlayerName));
+            var playerId = peer.Id;
+            var playerName = packet.PlayerName;
+            var platform = packet.Platform;
+            _players[playerId] = new ServerPlayer 
+            { Peer = peer, Name = playerName, Platform = platform };
+            var playerJoinedPacket = new S2CPlayerJoinedPacket 
+            { PlayerId = playerId, PlayerName = playerName, Platform = platform };
+            // Notify existing players about the new player
+            Broadcast(playerJoinedPacket, p => p.Id != playerId);
+            _eventBus.Publish(
+                new ClientHandshakeEvent(playerName, platform));
         }
 
         private void OnChatMessage(C2SChatMessagePacket packet, NetPeer peer)

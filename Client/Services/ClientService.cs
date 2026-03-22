@@ -1,4 +1,5 @@
 ﻿using GOILauncher.Multiplayer.Client.Events;
+using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
@@ -9,7 +10,7 @@ namespace GOILauncher.Multiplayer.Client.Services
 {
     public class ClientService : IClientService
     {
-        public int LocalPlayerId { get; private set; }
+        public ClientPlayer LocalPlayer { get; } = new ClientPlayer();
         private readonly INetworkClient _networkClient;
         private readonly IEventBus _eventBus;
 
@@ -51,8 +52,9 @@ namespace GOILauncher.Multiplayer.Client.Services
 
         private void OnServerHandshake(S2CServerHandShakePacket packet, NetPeer peer)
         {
-            LocalPlayerId = packet.PlayerId;
-            _eventBus.Publish(new ServerHandshakeEvent(packet.PlayerId));
+            var playerId = packet.PlayerId;
+            LocalPlayer.Id = playerId;
+            _eventBus.Publish(new ServerHandshakeEvent(playerId));
         }
 
         private void OnChatMessage(S2CChatMessagePacket packet, NetPeer peer)

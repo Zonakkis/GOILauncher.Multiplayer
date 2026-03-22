@@ -46,11 +46,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Events\ChatMessageEvent.cs" />
+    <Compile Include="Events\PlayerJoinedEvent.cs" />
     <Compile Include="Events\ServerHandshakeEvent.cs" />
     <Compile Include="Extensions\AutofacExtensions.cs" />
+    <Compile Include="Models\ClientPlayer.cs" />
     <Compile Include="Services\ClientService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\IClientService.cs" />
+    <Compile Include="Services\PlayerService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj">

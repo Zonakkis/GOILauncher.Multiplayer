@@ -1,5 +1,5 @@
-﻿using LiteNetLib;
-using System;
+﻿using GOILauncher.Multiplayer.Core.Data.Models;
+using LiteNetLib;
 
 
 namespace GOILauncher.Multiplayer.Server
@@ -8,6 +8,8 @@ namespace GOILauncher.Multiplayer.Server
     {
         public NetPeer Peer { get; set; }
         public int Id => Peer.Id;
+        public string Name { get; set; }
+        public Platform Platform { get; set; }
         public bool IsInGame { get; set; }
     }
 }

@@ -50,10 +50,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\IPacketDispatcher.cs" />
+    <Compile Include="Data\Models\Platform.cs" />
+    <Compile Include="Data\Models\PlayerState.cs" />
+    <Compile Include="Data\Models\UnityQuaternion.cs" />
+    <Compile Include="Data\Models\UnityVector3.cs" />
     <Compile Include="Data\PacketDispatcher.cs" />
     <Compile Include="Data\Packets\S2CChatMessagePacket.cs" />
     <Compile Include="Data\Packets\C2SChatMessagePacket.cs" />
     <Compile Include="Data\Packets\C2SClientHandShakePacket.cs" />
+    <Compile Include="Data\Packets\S2CPlayerJoinedPacket.cs" />
     <Compile Include="Data\Packets\S2CServerHandShakePacket.cs" />
     <Compile Include="Event\ClientConnectedEvent.cs" />
     <Compile Include="Event\ClientDisconnectedEvent.cs" />
@@ -62,6 +67,8 @@
     <Compile Include="Event\ServerConnectedEvent.cs" />
     <Compile Include="Event\ServerDisconnectedEvent.cs" />
     <Compile Include="Extensions\AutofacExtensions.cs" />
+    <Compile Include="Extensions\NetDataReaderExtensions.cs" />
+    <Compile Include="Extensions\NetDataWriterExtensions.cs" />
     <Compile Include="Log\ILogger.cs" />
     <Compile Include="Log\NLogConfiguration.cs" />
     <Compile Include="Log\NLogLogger.cs" />
