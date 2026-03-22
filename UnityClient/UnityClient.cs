@@ -16,6 +16,7 @@ namespace GOILauncher.Multiplayer.Client
             builder.RegisterMultiplayerClient();
 
             _container = builder.Build();
+            _clientService = _container.Resolve<IClientService>();
         }
 
         private void OnDestroy()
@@ -25,7 +26,6 @@ namespace GOILauncher.Multiplayer.Client
 
         public void Connect(string host, int port)
         {
-            _clientService = _container.Resolve<IClientService>();
             _clientService.Connect(host, port);
         }
 
