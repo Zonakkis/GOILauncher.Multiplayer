@@ -32,6 +32,16 @@ namespace GOILauncher.Multiplayer.Server.Services
             _networkServer.Start(port);
         }
 
+        public void Stop()
+        {
+            _networkServer.Stop();
+        }
+
+        public void Poll()
+        {
+            _networkServer.Poll();
+        }
+
         public void Broadcast(INetSerializable packet, Func<ServerPlayer, bool> predicate = null)
         {
             foreach (var player in _players.Values)
