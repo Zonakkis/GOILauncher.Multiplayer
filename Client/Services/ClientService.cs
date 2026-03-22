@@ -25,7 +25,7 @@ namespace GOILauncher.Multiplayer.Client.Services
 
         public void Dispose()
         {
-            Disconnect();
+            _networkClient.Dispose();
         }
 
         public void Connect(string host, int port)

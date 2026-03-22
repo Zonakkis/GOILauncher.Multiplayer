@@ -8,7 +8,7 @@ namespace GOILauncher.Multiplayer.Client.Extensions
     {
         public static void RegisterMultiplayerClient(this ContainerBuilder builder)
         {
-            builder.RegisterMultiplayerCore();
+            builder.RegisterMultiplayerCore().WithClient();
 
             builder.RegisterType<ClientService>()
                 .As<IClientService>()

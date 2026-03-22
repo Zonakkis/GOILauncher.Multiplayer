@@ -68,6 +68,8 @@
     <Compile Include="Network\INetworkClient.cs" />
     <Compile Include="Network\INetworkServer.cs" />
     <Compile Include="Network\NetworkClient.cs" />
+    <Compile Include="Network\NetworkServerListener.cs" />
+    <Compile Include="Network\NetworkClientListener.cs" />
     <Compile Include="Network\NetworkServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

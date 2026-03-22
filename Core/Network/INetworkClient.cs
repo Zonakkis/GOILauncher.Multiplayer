@@ -4,7 +4,7 @@ using System;
 
 namespace GOILauncher.Multiplayer.Network
 {
-    public interface INetworkClient
+    public interface INetworkClient : IDisposable
     {
         bool IsConnected { get; }
         void Connect(string host, int port);

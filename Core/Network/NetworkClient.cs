@@ -1,5 +1,4 @@
-﻿using GOILauncher.Multiplayer.Core.Data;
-using GOILauncher.Multiplayer.Core.Event;
+﻿using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using LiteNetLib;
 using LiteNetLib.Utils;
@@ -10,42 +9,40 @@ namespace GOILauncher.Multiplayer.Network
     {
         public bool IsConnected { get; private set; }
         private readonly NetManager _netManager;
-        private readonly EventBasedNetListener _listener;
         private readonly NetPacketProcessor _processor;
-        private readonly IPacketDispatcher _dispatcher;
-        private readonly IEventBus _eventBus;
         private readonly ILogger<NetworkClient> _logger;
         private NetPeer _server;
 
         public NetworkClient(
             NetManager netManager,
-            EventBasedNetListener listener,
             NetPacketProcessor processor,
-            IPacketDispatcher dispatcher,
             IEventBus eventBus,
             ILogger<NetworkClient> logger)
         {
             _netManager = netManager;
-            _listener = listener;
             _processor = processor;
-            _dispatcher = dispatcher;
-            _eventBus = eventBus;
+            eventBus.Subscribe<ServerDisconnectedEvent>((_) => _server = null);
             _logger = logger;
-            _listener.PeerConnectedEvent += OnServerConnected;
-            _listener.PeerDisconnectedEvent += OnServerDisconnected;
-            _listener.NetworkReceiveEvent += OnNetworkReceived;
+            _netManager.Start();
+        }
+
+        public void Dispose()
+        {
+            _netManager.Stop();
         }
 
         public void Connect(string host, int port)
         {
-            _netManager.Start();
-            _netManager.Connect(host, port, "GOILauncher");
             _logger.Info($"Connecting to {host}:{port}...");
+            _server = _netManager.Connect(host, port, "GOILauncher");
         }
 
         public void Disconnect()
         {
-            _netManager.Stop();
+            if (_server == null) return;
+
+            _logger.Info("Disconnecting from server...");
+            _server.Disconnect();
         }
 
         public void Poll()
@@ -67,29 +64,6 @@ namespace GOILauncher.Multiplayer.Network
 
             var bytes = _processor.WriteNetSerializable(packet);
             _server.Send(bytes, method);
-        }
-
-
-        private void OnServerConnected(NetPeer peer)
-        {
-            _logger.Info("Connected to server.");
-            _server = peer;
-            _eventBus.Publish(new ServerConnectedEvent());
-        }
-
-        private void OnServerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)
-        {
-            _logger.Info("Disconnected from server.");
-            _server = null;
-            _eventBus.Publish(new ServerDisconnectedEvent(
-                string.Format("({0}){1}", disconnectInfo.SocketErrorCode, disconnectInfo.Reason)));
-        }
-
-        private void OnNetworkReceived(
-            NetPeer peer, NetPacketReader reader, DeliveryMethod method)
-        {
-            _dispatcher.Dispatch(peer, reader);
-            reader.Recycle();
         }
     }
 }

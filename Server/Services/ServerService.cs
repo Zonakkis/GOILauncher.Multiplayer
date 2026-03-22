@@ -29,7 +29,7 @@ namespace GOILauncher.Multiplayer.Server.Services
 
         public void Dispose()
         {
-            Stop();
+            _networkServer.Dispose();
         }
 
         public void Start(int port)

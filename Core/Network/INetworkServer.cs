@@ -1,9 +1,10 @@
 ﻿using LiteNetLib;
 using LiteNetLib.Utils;
+using System;
 
 namespace GOILauncher.Multiplayer.Network
 {
-    public interface INetworkServer
+    public interface INetworkServer : IDisposable
     {
         void Start(int port);
         void Stop();
