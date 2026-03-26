@@ -1,5 +1,4 @@
 ﻿using GOILauncher.Multiplayer.Client.Events;
-using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
@@ -10,13 +9,12 @@ namespace GOILauncher.Multiplayer.Client.Services
 {
     public class ClientService : IClientService
     {
-        public ClientPlayer LocalPlayer { get; } = new ClientPlayer();
         private readonly INetworkClient _networkClient;
         private readonly IEventBus _eventBus;
 
         public ClientService(INetworkClient networkClient,
-        IPacketDispatcher dispatcher,
-         IEventBus eventBus)
+            IPacketDispatcher dispatcher,
+            IEventBus eventBus)
         {
             _networkClient = networkClient;
             _eventBus = eventBus;
@@ -50,14 +48,13 @@ namespace GOILauncher.Multiplayer.Client.Services
             _networkClient.Send(packet, DeliveryMethod.ReliableUnordered);
         }
 
-        private void OnServerHandshake(S2CServerHandShakePacket packet, NetPeer peer)
+        private void OnServerHandshake(S2CServerHandShakePacket packet, NetPeer _)
         {
             var playerId = packet.PlayerId;
-            LocalPlayer.Id = playerId;
             _eventBus.Publish(new ServerHandshakeEvent(playerId));
         }
 
-        private void OnChatMessage(S2CChatMessagePacket packet, NetPeer peer)
+        private void OnChatMessage(S2CChatMessagePacket packet, NetPeer _)
         {
             _eventBus.Publish(new ChatMessageEvent(packet.PlayerId, packet.Message));
         }

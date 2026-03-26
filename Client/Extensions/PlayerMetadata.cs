@@ -1,12 +1,10 @@
 ﻿using GOILauncher.Multiplayer.Core.Data.Models;
 
-namespace GOILauncher.Multiplayer.Client.Models
+namespace GOILauncher.Multiplayer.Client.Extensions
 {
-    public class ClientPlayer
+    public class PlayerMetadata
     {
-        public int Id { get; set; }
         public string Name { get; set; }
         public Platform Platform { get; set; }
-
     }
 }

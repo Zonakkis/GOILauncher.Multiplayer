@@ -49,6 +49,7 @@
     <Compile Include="Events\PlayerJoinedEvent.cs" />
     <Compile Include="Events\ServerHandshakeEvent.cs" />
     <Compile Include="Extensions\AutofacExtensions.cs" />
+    <Compile Include="Extensions\PlayerMetadata.cs" />
     <Compile Include="Models\ClientPlayer.cs" />
     <Compile Include="Services\ClientService.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
