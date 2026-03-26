@@ -4,6 +4,7 @@
     {
         PC,
         iOS,
-        Android
+        Android,
+        Unknown
     }
 }

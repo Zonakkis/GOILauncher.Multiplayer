@@ -1,5 +1,7 @@
 ﻿using GOILauncher.Multiplayer.Client.Extensions;
 using GOILauncher.Multiplayer.Client.Services;
+using GOILauncher.Multiplayer.Core.Data.Models;
+using GOILauncher.Multiplayer.Unity.Extensions;
 using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Client
@@ -14,8 +16,14 @@ namespace GOILauncher.Multiplayer.Client
             ClientService?.Poll();
         }
 
-        public void Connect(string host, int port, PlayerMetadata playerMetadata)
+        public void Connect(string host, int port, string playerName)
         {
+            var playerMetadata = new PlayerMetadata
+            {
+                Name = playerName,
+                Platform = Application.platform.ToPlatform()
+            };
+
             PlayerService.UpdateLocalPlayerMetadata(playerMetadata);
             ClientService.Connect(host, port);
         }
