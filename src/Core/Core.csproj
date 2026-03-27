@@ -58,6 +58,7 @@
     <Compile Include="Data\Packets\S2CChatMessagePacket.cs" />
     <Compile Include="Data\Packets\C2SChatMessagePacket.cs" />
     <Compile Include="Data\Packets\C2SClientHandShakePacket.cs" />
+    <Compile Include="Data\Packets\S2CPlayerLeftPacket.cs" />
     <Compile Include="Data\Packets\S2CPlayerJoinedPacket.cs" />
     <Compile Include="Data\Packets\S2CServerHandShakePacket.cs" />
     <Compile Include="Event\ClientConnectedEvent.cs" />
