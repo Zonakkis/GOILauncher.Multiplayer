@@ -71,7 +71,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             {
                 Players.Remove(playerId);
                 _eventBus.Publish(new PlayerLeftEvent(playerId, player.Name, player.Platform));
-                _logger.Info("[{}][{}]{} left.", player.Name, playerId, player.Platform);
+                _logger.Info($"{player.Format()} left.");
             }
             else
             {
