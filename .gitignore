@@ -139,3 +139,10 @@ secrets.json
 # UserSettings/
 # MemoryCaptures/
 # *.unitypackage
+
+##################################################
+# Node / VitePress (Docs)
+##################################################
+node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
