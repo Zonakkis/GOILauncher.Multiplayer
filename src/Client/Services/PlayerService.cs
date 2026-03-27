@@ -4,6 +4,7 @@ using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
+using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Network;
 using LiteNetLib;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace GOILauncher.Multiplayer.Client.Services
     {
         private readonly INetworkClient _networkClient;
         private readonly IEventBus _eventBus;
+        private readonly ILogger<PlayerService> _logger;
 
         // TODO: 修改LocalPlayer逻辑
         public ClientPlayer LocalPlayer { get; } = new ClientPlayer();
@@ -22,11 +24,14 @@ namespace GOILauncher.Multiplayer.Client.Services
 
         public PlayerService(INetworkClient networkClient,
             IPacketDispatcher dispatcher,
-            IEventBus eventBus)
+            IEventBus eventBus,
+            ILogger<PlayerService> logger)
         {
             _networkClient = networkClient;
             _eventBus = eventBus;
+            _logger = logger;
             dispatcher.RegisterStruct<S2CPlayerJoinedPacket>(OnPlayerJoined);
+            dispatcher.RegisterStruct<S2CPlayerLeftPacket>(OnPlayerLeft);
             // Set local player when handshake is successful
             eventBus.Subscribe<ServerHandshakeEvent>(OnServerHandshake);
         }
@@ -44,6 +49,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             var packet = new C2SClientHandShakePacket
             { PlayerName = LocalPlayer.Name, Platform = LocalPlayer.Platform };
             _networkClient.Send(packet, DeliveryMethod.ReliableOrdered);
+            _logger.Info("Connected to server with PlayerId: {PlayerId}", e.PlayerId);
         }
 
         private void OnPlayerJoined(S2CPlayerJoinedPacket packet, NetPeer _)
@@ -55,6 +61,24 @@ namespace GOILauncher.Multiplayer.Client.Services
             { Id = playerId, Name = playerName, Platform = platform };
             _eventBus.Publish(
                 new PlayerJoinedEvent(playerId, playerName, platform));
+            _logger.Info("[{}][{}]{} joined.", playerName, playerId, platform);
         }
+
+        private void OnPlayerLeft(S2CPlayerLeftPacket packet, NetPeer _)
+        {
+            var playerId = packet.PlayerId;
+            if (Players.TryGetValue(playerId, out var player))
+            {
+                Players.Remove(playerId);
+                _eventBus.Publish(new PlayerLeftEvent(playerId, player.Name, player.Platform));
+                _logger.Info("[{}][{}]{} left.", player.Name, playerId, player.Platform);
+            }
+            else
+            {
+                _logger.Warn("Received PlayerLeftPacket for unknown playerId: {PlayerId}", playerId);
+            }
+
+        }
+
     }
 }

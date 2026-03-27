@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Events\ChatMessageEvent.cs" />
+    <Compile Include="Events\PlayerLeftEvent.cs" />
     <Compile Include="Events\PlayerJoinedEvent.cs" />
     <Compile Include="Events\ServerHandshakeEvent.cs" />
     <Compile Include="Extensions\AutofacExtensions.cs" />
