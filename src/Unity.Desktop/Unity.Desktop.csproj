@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net35</TargetFramework>
+    <TargetFramework>net40</TargetFramework>
     <AssemblyName>GOILauncher.Multiplayer</AssemblyName>
     <Product>GOILauncher.Multiplayer</Product>
     <Version>1.0.0</Version>
@@ -29,6 +29,33 @@
   <ItemGroup>
     <Reference Include="netstandard">
       <HintPath>..\UnityLibraries\Windows\netstandard.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ComponentModel.Composition">
+      <HintPath>..\UnityLibraries\Windows\System.ComponentModel.Composition.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Diagnostics.StackTrace">
+      <HintPath>..\UnityLibraries\Windows\System.Diagnostics.StackTrace.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Globalization.Extensions">
+      <HintPath>..\UnityLibraries\Windows\System.Globalization.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.Compression">
+      <HintPath>..\UnityLibraries\Windows\System.IO.Compression.dll</HintPath>
+    </Reference>
+    <Reference Include="System.IO.Compression.FileSystem">
+      <HintPath>..\UnityLibraries\Windows\System.IO.Compression.FileSystem.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http">
+      <HintPath>..\UnityLibraries\Windows\System.Net.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics">
+      <HintPath>..\UnityLibraries\Windows\System.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization.Xml">
+      <HintPath>..\UnityLibraries\Windows\System.Runtime.Serialization.Xml.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.XPath.XDocument">
+      <HintPath>..\UnityLibraries\Windows\System.Xml.XPath.XDocument.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\UnityLibraries\Windows\UnityEngine.dll</HintPath>
