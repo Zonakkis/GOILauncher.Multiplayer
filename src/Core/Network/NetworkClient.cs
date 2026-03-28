@@ -7,7 +7,7 @@ namespace GOILauncher.Multiplayer.Network
 {
     public class NetworkClient : INetworkClient
     {
-        public bool IsConnected { get; private set; }
+        public bool IsConnected => _server != null;
         private readonly NetManager _netManager;
         private readonly NetPacketProcessor _processor;
         private readonly ILogger<NetworkClient> _logger;
@@ -39,7 +39,7 @@ namespace GOILauncher.Multiplayer.Network
 
         public void Disconnect()
         {
-            if (_server == null) return;
+            if (!IsConnected) return;
 
             _logger.Info("Disconnecting from server...");
             _server.Disconnect();
@@ -52,7 +52,7 @@ namespace GOILauncher.Multiplayer.Network
 
         public void Send<T>(T packet, DeliveryMethod method) where T : class, new()
         {
-            if (_server == null) return;
+            if (!IsConnected) return;
 
             var bytes = _processor.Write(packet);
             _server.Send(bytes, method);
@@ -60,7 +60,7 @@ namespace GOILauncher.Multiplayer.Network
 
         public void Send(INetSerializable packet, DeliveryMethod method)
         {
-            if (_server == null) return;
+            if (!IsConnected) return;
 
             var bytes = _processor.WriteNetSerializable(packet);
             _server.Send(bytes, method);

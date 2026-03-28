@@ -1,6 +1,5 @@
 ﻿using GOILauncher.Multiplayer.Client.Extensions;
 using GOILauncher.Multiplayer.Client.Services;
-using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Unity.Extensions;
 using UnityEngine;
 
@@ -8,6 +7,7 @@ namespace GOILauncher.Multiplayer.Client
 {
     public class UnityClient : MonoBehaviour
     {
+        public bool IsConnected => ClientService.IsConnected;
         public IClientService ClientService { get; set; }
         public IPlayerService PlayerService { get; set; }
 
@@ -30,7 +30,7 @@ namespace GOILauncher.Multiplayer.Client
 
         public void Disconnect()
         {
-            ClientService?.Disconnect();
+            ClientService.Disconnect();
         }
     }
 }

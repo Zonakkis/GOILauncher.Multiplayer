@@ -11,6 +11,7 @@ namespace GOILauncher.Multiplayer.Client.Services
     {
         private readonly INetworkClient _networkClient;
         private readonly IEventBus _eventBus;
+        public bool IsConnected => _networkClient.IsConnected;
 
         public ClientService(INetworkClient networkClient,
             IPacketDispatcher dispatcher,
