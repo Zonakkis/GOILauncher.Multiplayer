@@ -42,6 +42,7 @@ public class Plugin : BaseUnityPlugin
         DontDestroyOnLoad(_canvasObj);
         var canvas = _canvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceCamera;
+        canvas.worldCamera = Camera.main;
         // Set the sorting order to ensure it appears above other UI elements
         canvas.sortingOrder = 0721;
 
@@ -62,17 +63,21 @@ public class Plugin : BaseUnityPlugin
 
         // copy the RectTransform properties
         var rectTransform = panelObj.AddComponent<RectTransform>();
-        rectTransform.anchorMin = Vector2.zero;
-        rectTransform.anchorMax = Vector2.one;
-        rectTransform.anchoredPosition = Vector2.zero;
-        rectTransform.offsetMin = Vector2.zero;
-        rectTransform.offsetMax = Vector2.zero;
+        rectTransform.anchorMin = new Vector2(0.08f, 0f);
+        rectTransform.anchorMax = new Vector2(0.92f, 1f);
+        rectTransform.anchoredPosition = new Vector2(-0.5f, 0f);
+        rectTransform.anchoredPosition3D = new Vector3(-0.5f, 0f, 0f);
+        rectTransform.sizeDelta = new Vector2(-5f, 0f);
+        rectTransform.offsetMin = new Vector2(12f, 14f);
+        rectTransform.offsetMax = new Vector2(-13f, -8f);
         rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        rectTransform.sizeDelta = Vector2.zero;
 
         // copy the Image properties
         var image = panelObj.AddComponent<Image>();
-        image.sprite = SpriteLoader.LoadFromFile("Panel.png");
+        image.sprite = SpriteLoader.LoadFromFile("Panel.png",
+            new Rect(11.0129f, 13.0761f, 193.9742f, 178.847f),
+            new Vector2(107.5f, 100.5f),
+            new Vector4(23, 59, 79, 52));
         image.color = new Color(0, 0, 0, 0.703f);
         image.type = Image.Type.Sliced;
         image.raycastTarget = false;
