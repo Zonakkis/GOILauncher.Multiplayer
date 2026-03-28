@@ -27,17 +27,26 @@
   </ItemGroup>
   
   <ItemGroup>
+    <Reference Include="netstandard">
+      <HintPath>..\UnityLibraries\Windows\netstandard.dll</HintPath>
+    </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\UnityLibraries\UnityEngine.dll</HintPath>
+      <HintPath>..\UnityLibraries\Windows\UnityEngine.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\UnityLibraries\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\UnityLibraries\Windows\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>..\UnityLibraries\Windows\UnityEngine.ImageConversionModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\UnityLibraries\UnityEngine.InputLegacyModule.dll</HintPath>
+      <HintPath>..\UnityLibraries\Windows\UnityEngine.InputLegacyModule.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.UI">
-      <HintPath>..\UnityLibraries\UnityEngine.UI.dll</HintPath>
+      <HintPath>..\UnityLibraries\Windows\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>..\UnityLibraries\Windows\UnityEngine.UIModule.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>
