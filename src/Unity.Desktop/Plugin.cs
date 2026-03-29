@@ -1,4 +1,5 @@
-﻿using BepInEx;
+﻿using System;
+using BepInEx;
 using BepInEx.Logging;
 using GOILauncher.Multiplayer.Utils;
 using TMPro;
@@ -20,14 +21,15 @@ public class Plugin : BaseUnityPlugin
         // Plugin startup logic
         Logger = base.Logger;
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
-        CreateUI();
+
+        Invoke(nameof(CreateUI), 1f);
     }
 
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.F1))
         {
-            _canvasObj.SetActive(!_canvasObj.activeSelf);
+            _canvasObj?.SetActive(!_canvasObj.activeSelf);
         }
     }
 
@@ -44,6 +46,7 @@ public class Plugin : BaseUnityPlugin
     {
         foreach (var font in Resources.FindObjectsOfTypeAll<TMP_FontAsset>())
         {
+            Logger.LogInfo("Found font: " + font.name);
             if (font.name == "SourceHanBold")
             {
                 _font = font;
@@ -101,21 +104,53 @@ public class Plugin : BaseUnityPlugin
         image.raycastTarget = false;
     }
 
-    private void CreateButton(string text)
+    private void CreateButton(string text, Action callback = null)
     {
+        // Create a new Button GameObject as a child of the Panel
         var buttonObj = new GameObject("Button");
         buttonObj.transform.SetParent(_panelObj.transform, false);
 
+        // copy the Image properties
         var image = buttonObj.AddComponent<Image>();
         image.sprite = SpriteLoader.LoadFromFile("Button.png",
             default,
             new Vector2(148, 92),
             new Vector4(92, 92, 92, 92));
+        image.pixelsPerUnitMultiplier = 2;
         image.type = Image.Type.Sliced;
 
+        // copy the Button properties
         var button = buttonObj.AddComponent<Button>();
+        button.colors = new ColorBlock
+        {
+            normalColor = Color.white,
+            highlightedColor = new Color(0.9608f, 0.9608f, 0.9608f),
+            pressedColor = new Color(0.7843f, 0.7843f, 0.7843f),
+            selectedColor = new Color(0.9608f, 0.9608f, 0.9608f),
+            disabledColor = new Color(0.7843f, 0.7843f, 0.7843f, 0.502f),
+            colorMultiplier = 1,
+            fadeDuration = 0.1f
+        };
+        var spriteSelected = SpriteLoader.LoadFromFile("ButtonSelected.png",
+            default,
+            new Vector2(148, 92),
+            new Vector4(92, 92, 92, 92));
+        button.transition = Selectable.Transition.SpriteSwap;
+        button.spriteState = new SpriteState
+        {
+            highlightedSprite = spriteSelected,
+            pressedSprite = spriteSelected,
+            disabledSprite = spriteSelected
+        };
         button.targetGraphic = image;
+        button.onClick.AddListener(() => callback?.Invoke());
 
+        // copy the ContentSizeFitter properties
+        var sizeFitter = buttonObj.AddComponent<ContentSizeFitter>();
+        sizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        sizeFitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        // copy the HorizontalLayoutGroup properties
         var horizontal = buttonObj.AddComponent<HorizontalLayoutGroup>();
         horizontal.childAlignment = TextAnchor.MiddleCenter;
         horizontal.childControlWidth = true;
@@ -124,13 +159,10 @@ public class Plugin : BaseUnityPlugin
         horizontal.childForceExpandHeight = false;
         horizontal.padding = new RectOffset(30, 30, 15, 0);
 
-        var sizeFitter = buttonObj.AddComponent<ContentSizeFitter>();
-        sizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-        sizeFitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
 
+        // copy the TextMeshProUGUI properties
         var textObj = new GameObject("Text");
         textObj.transform.SetParent(buttonObj.transform, false);
-
         var tmp = textObj.AddComponent<TextMeshProUGUI>();
         tmp.font = _font;
         tmp.text = text;
@@ -139,7 +171,8 @@ public class Plugin : BaseUnityPlugin
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.enableAutoSizing = false;
 
+        // Set the button size
         RectTransform rectTransform = buttonObj.GetComponent<RectTransform>();
-        rectTransform.sizeDelta = new Vector2(296, 92);
+        rectTransform.sizeDelta = new Vector2(0, 92);
     }
 }
