@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
 using GOILauncher.Multiplayer.Utils;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,6 +12,8 @@ public class Plugin : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger;
     private GameObject _canvasObj;
+    private GameObject _panelObj;
+    private TMP_FontAsset _font;
 
     private void Awake()
     {
@@ -30,9 +33,23 @@ public class Plugin : BaseUnityPlugin
 
     private void CreateUI()
     {
+        InitializeUI();
         CreateCanvas();
         CreatePanel();
+        CreateButton("Host");
         _canvasObj.SetActive(false);
+    }
+
+    private void InitializeUI()
+    {
+        foreach (var font in Resources.FindObjectsOfTypeAll<TMP_FontAsset>())
+        {
+            if (font.name == "SourceHanBold")
+            {
+                _font = font;
+                break;
+            }
+        }
     }
 
     private void CreateCanvas()
@@ -60,6 +77,7 @@ public class Plugin : BaseUnityPlugin
         // Create a new Panel GameObject as a child of the Canvas
         var panelObj = new GameObject("Panel");
         panelObj.transform.SetParent(_canvasObj.transform, false);
+        _panelObj = panelObj;
 
         // copy the RectTransform properties
         var rectTransform = panelObj.AddComponent<RectTransform>();
@@ -81,5 +99,47 @@ public class Plugin : BaseUnityPlugin
         image.color = new Color(0, 0, 0, 0.703f);
         image.type = Image.Type.Sliced;
         image.raycastTarget = false;
+    }
+
+    private void CreateButton(string text)
+    {
+        var buttonObj = new GameObject("Button");
+        buttonObj.transform.SetParent(_panelObj.transform, false);
+
+        var image = buttonObj.AddComponent<Image>();
+        image.sprite = SpriteLoader.LoadFromFile("Button.png",
+            default,
+            new Vector2(148, 92),
+            new Vector4(92, 92, 92, 92));
+        image.type = Image.Type.Sliced;
+
+        var button = buttonObj.AddComponent<Button>();
+        button.targetGraphic = image;
+
+        var horizontal = buttonObj.AddComponent<HorizontalLayoutGroup>();
+        horizontal.childAlignment = TextAnchor.MiddleCenter;
+        horizontal.childControlWidth = true;
+        horizontal.childControlHeight = false;
+        horizontal.childForceExpandWidth = true;
+        horizontal.childForceExpandHeight = false;
+        horizontal.padding = new RectOffset(30, 30, 15, 0);
+
+        var sizeFitter = buttonObj.AddComponent<ContentSizeFitter>();
+        sizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        sizeFitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        var textObj = new GameObject("Text");
+        textObj.transform.SetParent(buttonObj.transform, false);
+
+        var tmp = textObj.AddComponent<TextMeshProUGUI>();
+        tmp.font = _font;
+        tmp.text = text;
+        tmp.fontSize = 48;
+        tmp.color = Color.white;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.enableAutoSizing = false;
+
+        RectTransform rectTransform = buttonObj.GetComponent<RectTransform>();
+        rectTransform.sizeDelta = new Vector2(296, 92);
     }
 }

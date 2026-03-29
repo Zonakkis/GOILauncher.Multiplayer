@@ -29,51 +29,123 @@
   <ItemGroup>
     <Reference Include="netstandard">
       <HintPath>..\UnityLibraries\Windows\netstandard.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.ComponentModel.Composition">
       <HintPath>..\UnityLibraries\Windows\System.ComponentModel.Composition.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Diagnostics.StackTrace">
       <HintPath>..\UnityLibraries\Windows\System.Diagnostics.StackTrace.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Globalization.Extensions">
       <HintPath>..\UnityLibraries\Windows\System.Globalization.Extensions.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.IO.Compression">
       <HintPath>..\UnityLibraries\Windows\System.IO.Compression.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.IO.Compression.FileSystem">
       <HintPath>..\UnityLibraries\Windows\System.IO.Compression.FileSystem.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Net.Http">
       <HintPath>..\UnityLibraries\Windows\System.Net.Http.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Numerics">
       <HintPath>..\UnityLibraries\Windows\System.Numerics.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Runtime.Serialization.Xml">
       <HintPath>..\UnityLibraries\Windows\System.Runtime.Serialization.Xml.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System.Xml.XPath.XDocument">
       <HintPath>..\UnityLibraries\Windows\System.Xml.XPath.XDocument.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>..\UnityLibraries\Windows\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\UnityLibraries\Windows\UnityEngine.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\UnityLibraries\Windows\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
       <HintPath>..\UnityLibraries\Windows\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">
       <HintPath>..\UnityLibraries\Windows\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>..\UnityLibraries\Windows\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>..\UnityLibraries\Windows\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UIModule">
       <HintPath>..\UnityLibraries\Windows\UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Update="mscorlib">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Update="System">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Update="System.Core">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Update="System.Data">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Update="System.Drawing">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Update="System.Runtime.Serialization">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Update="System.Xml">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Update="System.Xml.Linq">
+      <Private>False</Private>
     </Reference>
   </ItemGroup>
 </Project>
