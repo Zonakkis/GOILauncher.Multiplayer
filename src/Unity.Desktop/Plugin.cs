@@ -14,7 +14,8 @@ public class Plugin : BaseUnityPlugin
     internal static new ManualLogSource Logger;
     private GameObject _canvasObj;
     private GameObject _panelObj;
-    private TMP_FontAsset _font;
+    private TMP_FontAsset _sourceHanNormal;
+    private TMP_FontAsset _sourceHanBold;
 
     private void Awake()
     {
@@ -36,9 +37,10 @@ public class Plugin : BaseUnityPlugin
     private void CreateUI()
     {
         InitializeUI();
-        CreateCanvas();
-        CreatePanel();
-        CreateButton("Host");
+        _canvasObj = CreateCanvas();
+        var panelObj = CreatePanel();
+        CreateButton(panelObj.transform, "Host");
+        CreateText(panelObj.transform, "Multiplayer");
         _canvasObj.SetActive(false);
     }
 
@@ -47,15 +49,15 @@ public class Plugin : BaseUnityPlugin
         foreach (var font in Resources.FindObjectsOfTypeAll<TMP_FontAsset>())
         {
             Logger.LogInfo("Found font: " + font.name);
+            if (font.name == "SourceHanNormal")
+                _sourceHanNormal = font;
             if (font.name == "SourceHanBold")
-            {
-                _font = font;
-                break;
-            }
+                _sourceHanBold = font;
+
         }
     }
 
-    private void CreateCanvas()
+    private GameObject CreateCanvas()
     {
         // Create a new Canvas GameObject
         _canvasObj = new GameObject("MultiplayerCanvas");
@@ -73,14 +75,14 @@ public class Plugin : BaseUnityPlugin
         var scaler = _canvasObj.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
+        return _canvasObj;
     }
 
-    private void CreatePanel()
+    private GameObject CreatePanel()
     {
         // Create a new Panel GameObject as a child of the Canvas
         var panelObj = new GameObject("Panel");
         panelObj.transform.SetParent(_canvasObj.transform, false);
-        _panelObj = panelObj;
 
         // copy the RectTransform properties
         var rectTransform = panelObj.AddComponent<RectTransform>();
@@ -102,13 +104,14 @@ public class Plugin : BaseUnityPlugin
         image.color = new Color(0, 0, 0, 0.703f);
         image.type = Image.Type.Sliced;
         image.raycastTarget = false;
+        return panelObj;
     }
 
-    private void CreateButton(string text, Action callback = null)
+    private GameObject CreateButton(Transform parent, string text, Action callback = null)
     {
-        // Create a new Button GameObject as a child of the Panel
+        // Create a new Button GameObject
         var buttonObj = new GameObject("Button");
-        buttonObj.transform.SetParent(_panelObj.transform, false);
+        buttonObj.transform.SetParent(parent, false);
 
         // copy the Image properties
         var image = buttonObj.AddComponent<Image>();
@@ -164,7 +167,7 @@ public class Plugin : BaseUnityPlugin
         var textObj = new GameObject("Text");
         textObj.transform.SetParent(buttonObj.transform, false);
         var tmp = textObj.AddComponent<TextMeshProUGUI>();
-        tmp.font = _font;
+        tmp.font = _sourceHanBold;
         tmp.text = text;
         tmp.fontSize = 48;
         tmp.color = Color.white;
@@ -174,5 +177,34 @@ public class Plugin : BaseUnityPlugin
         // Set the button size
         RectTransform rectTransform = buttonObj.GetComponent<RectTransform>();
         rectTransform.sizeDelta = new Vector2(0, 92);
+        return buttonObj;
+    }
+
+    private GameObject CreateText(Transform parent, string text)
+    {
+        // Create a new Text GameObject
+        var textObj = new GameObject("Text");
+        textObj.transform.SetParent(parent, false);
+
+        // copy the TextMeshProUGUI properties
+        var tmp = textObj.AddComponent<TextMeshProUGUI>();
+        tmp.font = _sourceHanNormal;
+        tmp.text = text;
+        tmp.fontSize = 48;
+        tmp.color = Color.white;
+        tmp.alignment = TextAlignmentOptions.Right;
+        tmp.enableAutoSizing = false;
+        tmp.horizontalMapping = TextureMappingOptions.Character;
+        tmp.enableWordWrapping = false;
+
+        // Auto size the text width
+        var contentSizeFitter = textObj.AddComponent<ContentSizeFitter>();
+        contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        // Set the text size
+        RectTransform rectTransform = textObj.GetComponent<RectTransform>();
+        rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, 47);
+        return textObj;
     }
 }
