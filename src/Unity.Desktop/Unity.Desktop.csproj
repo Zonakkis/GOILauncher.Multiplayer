@@ -99,6 +99,10 @@
       <HintPath>..\UnityLibraries\Windows\UnityEngine.UIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="ZFBrowser">
+      <HintPath>..\UnityLibraries\Windows\ZFBrowser.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   
   <ItemGroup>
