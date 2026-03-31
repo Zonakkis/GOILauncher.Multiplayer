@@ -1,94 +1,65 @@
-import { useState } from 'react'
-import { BookOpen, Users, Code, MessageSquare, Globe, Cloud } from 'lucide-react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState } from 'react';
+import MainMenu from './components/MainMenu';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
-
+// 预留的组件占位，后续我们分别实现它们
+function ChatBox() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <BookOpen className="icon" aria-hidden="true" />
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <Users className="icon" aria-hidden="true" />
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <Code className="button-icon" aria-hidden="true" />
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <MessageSquare className="button-icon" aria-hidden="true" />
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <Globe className="button-icon" aria-hidden="true" />
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <Cloud className="button-icon" aria-hidden="true" />
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    <div className="chat-placeholder" style={{ padding: 20, color: 'white' }}>
+      Chat Box UI Loaded
+    </div>
+  );
 }
 
-export default App
+function PlayerList() {
+  return (
+    <div className="players-placeholder" style={{ padding: 20, color: 'white' }}>
+      Player List UI Loaded
+    </div>
+  );
+}
+
+// 为Typescript扩充全局 Window 对象
+declare global {
+  interface Window {
+    unityConnect?: (ip: string, playerName: string) => void;
+  }
+}
+
+function App() {
+  const [uiMode, setUiMode] = useState<string>('main');
+
+  useEffect(() => {
+    // 从 URL 参数中读取需要显示的模块模式
+    // 比如：file:///path/to/index.html?ui=chat
+    const params = new URLSearchParams(window.location.search);
+    const mode = params.get('ui');
+    
+    // 如果没有参数，也允许通过 hash 来读取 (以便支持 index.html#chat)
+    const hash = window.location.hash.replace('#', '');
+    
+    if (mode) {
+      setUiMode(mode);
+    } else if (hash) {
+      setUiMode(hash);
+    }
+  }, []);
+
+  // 根据启动参数，在不同的 Browser 实例中渲染完全独立的功能区
+  if (uiMode === 'chat') {
+    return <ChatBox />;
+  }
+
+  if (uiMode === 'players' || uiMode === 'playerlist') {
+    return <PlayerList />;
+  }
+
+  // 默认返回主菜单
+  return (
+    <div className="overlay-container panel-interactive">
+      <MainMenu />
+    </div>
+  );
+}
+
+export default App;
