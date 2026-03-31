@@ -1,13 +1,11 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
-using BepInEx;
+﻿using BepInEx;
 using BepInEx.Logging;
-using GOILauncher.Multiplayer.Utils;
-using TMPro;
+using GOILauncher.Multiplayer.UI;
+using GOILauncher.Multiplayer.UI.Components;
 using UnityEngine;
-using UnityEngine.UI;
-using ZenFulcrum.EmbeddedBrowser;
+using UniverseLib;
+using UniverseLib.Config;
+using UniverseLib.UI;
 
 namespace GOILauncher.Multiplayer;
 
@@ -15,56 +13,59 @@ namespace GOILauncher.Multiplayer;
 public class Plugin : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger;
-    private UIManager _uiManager;
-    private GameObject _canvasObj;
-    private GameObject _panelObj;
-    private Browser _browser;
-    private RawImage _browserImage;
+
+    public static UIBase UIBase { get; private set; }
+    public static MultiplayerUI MultiplayerUI { get; private set; }
+    public static ChatHudUI ChatHudUI { get; private set; }
+    public static PlayerListOverlayUI PlayerListOverlayUI { get; private set; }
+
+    public static IMultiplayerUiComponents UiComponents { get; private set; }
 
     private void Awake()
     {
         // Plugin startup logic
         Logger = base.Logger;
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
-        Invoke(nameof(CreateUI), 1f);
+
+        Universe.Init(1f, OnInitialized, OnLog, new UniverseLibConfig
+        {
+            Force_Unlock_Mouse = true,
+            Disable_EventSystem_Override = false
+        });
+    }
+
+    private void OnInitialized()
+    {
+        UIBase = UniversalUI.RegisterUI(MyPluginInfo.PLUGIN_GUID, null);
+
+        UiComponents = new DefaultMultiplayerUiComponents();
+
+        MultiplayerUI = new MultiplayerUI(UIBase, UiComponents.RoomList);
+        ChatHudUI = new ChatHudUI(UIBase, UiComponents.Chat);
+        PlayerListOverlayUI = new PlayerListOverlayUI(UIBase, UiComponents.PlayerList);
+
+        MultiplayerUI.SetActive(true);
+        ChatHudUI.SetActive(true);
+        PlayerListOverlayUI.SetActive(false);
+    }
+
+    private void OnLog(string message, LogType type)
+    {
+        Logger.LogInfo(message);
     }
 
     private void Update()
     {
-        if (_canvasObj != null && Input.GetKeyDown(KeyCode.F1))
-        {
-            if (!_canvasObj.activeSelf)
-                Input.imeCompositionMode = IMECompositionMode.On;
-            _canvasObj.SetActive(!_canvasObj.activeSelf);
-        }
-        // if (_browser != null && _browserImage != null)
-        // {
-        //     _browserImage.texture = _browser.Texture;
-        // }
-    }
+        if (MultiplayerUI != null && Input.GetKeyDown(KeyCode.F1))
+            MultiplayerUI.Enabled = !MultiplayerUI.Enabled;
 
-    private void CreateUI()
-    {
-        var uiManagerObj = new GameObject(nameof(UIManager));
-        DontDestroyOnLoad(uiManagerObj);
-        _uiManager = uiManagerObj.AddComponent<UIManager>();
-        _canvasObj = _uiManager.CreateCanvas();
-        _panelObj = _uiManager.CreatePanel(_canvasObj.transform);
-        _uiManager.CreateInputField(_panelObj.transform, "Username");
-        // var browserObj = new GameObject(nameof(Browser));
-        // DontDestroyOnLoad(browserObj);
-        // browserObj.transform.SetParent(_panelObj.transform, false);
-        // browserObj.AddComponent<PointerUIGUI>();
-        // _browser = browserObj.GetComponent<Browser>();
-        // _browserImage = browserObj.GetComponent<RawImage>();
-        // var rectTransform = _browserImage.rectTransform;
-        // rectTransform.anchorMin = Vector2.zero;
-        // rectTransform.anchorMax = Vector2.one;
-        // rectTransform.offsetMin = Vector2.zero;
-        // rectTransform.offsetMax = Vector2.zero;
-        // rectTransform.sizeDelta = Vector2.zero;
-        // var folder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        // var path = Path.Combine(folder, "index.html");
-        // _browser.LoadURL($"file://{path}", true);
+        if (PlayerListOverlayUI != null)
+        {
+            if (Input.GetKeyDown(KeyCode.Tab))
+                PlayerListOverlayUI.SetActive(true);
+            else if (Input.GetKeyUp(KeyCode.Tab))
+                PlayerListOverlayUI.SetActive(false);
+
+        }
     }
 }
