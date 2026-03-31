@@ -31,9 +31,11 @@ public class Plugin : BaseUnityPlugin
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.F1))
+        if (_canvasObj != null && Input.GetKeyDown(KeyCode.F1))
         {
-            _canvasObj?.SetActive(!_canvasObj.activeSelf);
+            if (!_canvasObj.activeSelf)
+                Input.imeCompositionMode = IMECompositionMode.On;
+            _canvasObj.SetActive(!_canvasObj.activeSelf);
         }
         // if (_browser != null && _browserImage != null)
         // {
@@ -48,21 +50,21 @@ public class Plugin : BaseUnityPlugin
         _uiManager = uiManagerObj.AddComponent<UIManager>();
         _canvasObj = _uiManager.CreateCanvas();
         _panelObj = _uiManager.CreatePanel(_canvasObj.transform);
-
-        var browserObj = new GameObject(nameof(Browser));
-        DontDestroyOnLoad(browserObj);
-        browserObj.transform.SetParent(_panelObj.transform, false);
-        browserObj.AddComponent<PointerUIGUI>();
-        _browser = browserObj.GetComponent<Browser>();
-        _browserImage = browserObj.GetComponent<RawImage>();
-        var rectTransform = _browserImage.rectTransform;
-        rectTransform.anchorMin = Vector2.zero;
-        rectTransform.anchorMax = Vector2.one;
-        rectTransform.offsetMin = Vector2.zero;
-        rectTransform.offsetMax = Vector2.zero;
-        rectTransform.sizeDelta = Vector2.zero;
-        var folder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        var path = Path.Combine(folder, "index.html");
-        _browser.LoadURL($"file://{path}", true);
+        _uiManager.CreateInputField(_panelObj.transform, "Username");
+        // var browserObj = new GameObject(nameof(Browser));
+        // DontDestroyOnLoad(browserObj);
+        // browserObj.transform.SetParent(_panelObj.transform, false);
+        // browserObj.AddComponent<PointerUIGUI>();
+        // _browser = browserObj.GetComponent<Browser>();
+        // _browserImage = browserObj.GetComponent<RawImage>();
+        // var rectTransform = _browserImage.rectTransform;
+        // rectTransform.anchorMin = Vector2.zero;
+        // rectTransform.anchorMax = Vector2.one;
+        // rectTransform.offsetMin = Vector2.zero;
+        // rectTransform.offsetMax = Vector2.zero;
+        // rectTransform.sizeDelta = Vector2.zero;
+        // var folder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        // var path = Path.Combine(folder, "index.html");
+        // _browser.LoadURL($"file://{path}", true);
     }
 }

@@ -173,5 +173,99 @@ namespace GOILauncher.Multiplayer
             rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, 47);
             return textObj;
         }
+
+        public GameObject CreateInputField(Transform parent, string placeholder = "")
+        {
+            // Create a new InputField GameObject
+            var inputFieldObj = new GameObject("InputField");
+            inputFieldObj.transform.SetParent(parent, false);
+
+            // copy the Image properties
+            var image = inputFieldObj.AddComponent<Image>();
+            image.sprite = SpriteLoader.LoadFromFile("InputField.png",
+                new Rect(0, 0, 32, 32),
+                new Vector2(16, 16),
+                new Vector4(10, 10, 10, 10));
+            image.pixelsPerUnitMultiplier = 2;
+            image.type = Image.Type.Sliced;
+            image.color = Color.white;
+
+            // copy the InputField properties
+            var inputField = inputFieldObj.AddComponent<TMP_InputField>();
+            inputField.targetGraphic = image;
+
+            // create the Text Area
+            var textAreaObj = new GameObject("TextArea");
+            textAreaObj.transform.SetParent(inputFieldObj.transform, false);
+            var textAreaRect = textAreaObj.AddComponent<RectTransform>();
+
+            textAreaRect.anchorMin = Vector2.zero;
+            textAreaRect.anchorMax = Vector2.one;
+            textAreaRect.offsetMin = new Vector2(10, 6);
+            textAreaRect.offsetMax = new Vector2(-10, -6);
+            
+            textAreaObj.AddComponent<RectMask2D>();
+
+            // create the Placeholder
+            var placeholderObj = new GameObject("Placeholder");
+            placeholderObj.transform.SetParent(textAreaObj.transform, false);
+            var placeholderRect = placeholderObj.AddComponent<RectTransform>();
+            placeholderRect.anchorMin = Vector2.zero;
+            placeholderRect.anchorMax = Vector2.one;
+            placeholderRect.offsetMin = Vector2.zero;
+            placeholderRect.offsetMax = Vector2.zero;
+
+            var placeholderText = placeholderObj.AddComponent<TextMeshProUGUI>();
+            placeholderText.font = _sourceHanNormal;
+            placeholderText.text = placeholder;
+            placeholderText.fontSize = 48;
+            placeholderText.color = new Color(0.1961f, 0.1961f, 0.1961f, 1f);
+            placeholderText.alignment = TextAlignmentOptions.Left;
+            placeholderText.enableWordWrapping = false;
+            placeholderText.extraPadding = true;
+
+            // create the Text
+            var textObj = new GameObject("Text");
+            textObj.transform.SetParent(textAreaObj.transform, false);
+            var textRect = textObj.AddComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.offsetMin = Vector2.zero;
+            textRect.offsetMax = Vector2.zero;
+
+            var text = textObj.AddComponent<TextMeshProUGUI>();
+            text.font = _sourceHanNormal;
+            text.text = "";
+            text.fontSize = 48;
+            text.color = new Color(0.1961f, 0.1961f, 0.1961f, 1f);
+            text.alignment = TextAlignmentOptions.Left;
+            text.enableWordWrapping = false;
+            text.extraPadding = true;
+
+            inputField.textViewport = textAreaRect;
+            inputField.placeholder = placeholderText;
+            inputField.textComponent = text;
+            inputField.fontAsset = _sourceHanNormal;
+
+            inputField.caretColor = new Color(0.1961f, 0.1961f, 0.1961f, 1f);
+            inputField.caretWidth = 1;
+            inputField.selectionColor = new Color(0.6588f, 0.8078f, 1f, 0.7529f);
+            inputField.colors = new ColorBlock
+            {
+                normalColor = Color.white,
+                highlightedColor = new Color(0.9608f, 0.9608f, 0.9608f),
+                pressedColor = new Color(0.7843f, 0.7843f, 0.7843f),
+                selectedColor = new Color(0.9608f, 0.9608f, 0.9608f),
+                disabledColor = new Color(0.7843f, 0.7843f, 0.7843f, 0.502f),
+                colorMultiplier = 1,
+                fadeDuration = 0.1f
+            };
+
+            var inputFieldRectTransform = inputFieldObj.GetComponent<RectTransform>();
+            inputFieldRectTransform.sizeDelta = new Vector2(431.8f, 58.2f);
+
+
+            return inputFieldObj;
+        }
     }
 }
