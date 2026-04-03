@@ -22,7 +22,7 @@ namespace GOILauncher.Multiplayer.UI
 
         public override int MinWidth => 600;
 
-        public override int MinHeight => 400;
+        public override int MinHeight => 800;
 
         public override Vector2 DefaultAnchorMin => new Vector2(0.3f, 0.3f);
         public override Vector2 DefaultAnchorMax => new Vector2(0.7f, 0.7f);
@@ -32,12 +32,19 @@ namespace GOILauncher.Multiplayer.UI
         private ButtonRef clientButton;
         private ButtonRef serverButton;
         private ClientPageView clientPage;
-        private IPageView serverPage;
+        private ServerPageView serverPage;
         private IRoomListUiComponent roomListComponent;
+        private IServerControlUiComponent serverControlComponent;
 
         public MultiplayerUI(UIBase owner, IRoomListUiComponent roomListComponent) : this(owner)
         {
             BindRoomListComponent(roomListComponent);
+        }
+
+        public MultiplayerUI(UIBase owner, IRoomListUiComponent roomListComponent, IServerControlUiComponent serverControlComponent) : this(owner)
+        {
+            BindRoomListComponent(roomListComponent);
+            BindServerControlComponent(serverControlComponent);
         }
 
         public void BindRoomListComponent(IRoomListUiComponent roomListComponent)
@@ -46,6 +53,14 @@ namespace GOILauncher.Multiplayer.UI
 
             if (clientPage != null)
                 clientPage.Bind(roomListComponent);
+        }
+
+        public void BindServerControlComponent(IServerControlUiComponent serverControlComponent)
+        {
+            this.serverControlComponent = serverControlComponent;
+
+            if (serverPage != null)
+                serverPage.Bind(serverControlComponent);
         }
 
         private ColorBlock _normalButtonColors = new ColorBlock
@@ -95,6 +110,9 @@ namespace GOILauncher.Multiplayer.UI
                 clientPage.Bind(roomListComponent);
 
             serverPage = new ServerPageView(pagesContainer);
+
+            if (serverControlComponent != null)
+                serverPage.Bind(serverControlComponent);
 
             // 默认选中客户端
             ShowPage(ClientPageName);

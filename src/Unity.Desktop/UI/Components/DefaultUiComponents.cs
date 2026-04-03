@@ -9,6 +9,7 @@ namespace GOILauncher.Multiplayer.UI.Components
             RoomList = new DefaultRoomListUiComponent();
             Chat = new DefaultChatUiComponent();
             PlayerList = new DefaultPlayerListUiComponent();
+            ServerControl = new DefaultServerControlUiComponent();
         }
 
         public IRoomListUiComponent RoomList { get; private set; }
@@ -16,6 +17,8 @@ namespace GOILauncher.Multiplayer.UI.Components
         public IChatUiComponent Chat { get; private set; }
 
         public IPlayerListUiComponent PlayerList { get; private set; }
+
+        public IServerControlUiComponent ServerControl { get; private set; }
     }
 
     public sealed class DefaultRoomListUiComponent : IRoomListUiComponent
@@ -105,6 +108,27 @@ namespace GOILauncher.Multiplayer.UI.Components
         public IEnumerable<PlayerListItemViewData> GetPlayers()
         {
             return players;
+        }
+    }
+
+    public sealed class DefaultServerControlUiComponent : IServerControlUiComponent
+    {
+        private int listenPort = 9027;
+
+        public int GetListenPort()
+        {
+            return listenPort;
+        }
+
+        public void StartServer(int port)
+        {
+            listenPort = port <= 0 ? 9027 : port;
+            Plugin.Logger.LogInfo("Server start requested on port: " + listenPort);
+        }
+
+        public void StopServer()
+        {
+            Plugin.Logger.LogInfo("Server stop requested.");
         }
     }
 }

@@ -70,6 +70,15 @@ namespace GOILauncher.Multiplayer.UI.Components
         IEnumerable<PlayerListItemViewData> GetPlayers();
     }
 
+    public interface IServerControlUiComponent
+    {
+        int GetListenPort();
+
+        void StartServer(int port);
+
+        void StopServer();
+    }
+
     public interface IMultiplayerUiComponents
     {
         IRoomListUiComponent RoomList { get; }
@@ -77,5 +86,7 @@ namespace GOILauncher.Multiplayer.UI.Components
         IChatUiComponent Chat { get; }
 
         IPlayerListUiComponent PlayerList { get; }
+
+        IServerControlUiComponent ServerControl { get; }
     }
 }

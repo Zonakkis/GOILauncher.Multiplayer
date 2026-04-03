@@ -40,7 +40,7 @@ public class Plugin : BaseUnityPlugin
 
         UiComponents = new DefaultMultiplayerUiComponents();
 
-        MultiplayerUI = new MultiplayerUI(UIBase, UiComponents.RoomList);
+        MultiplayerUI = new MultiplayerUI(UIBase, UiComponents.RoomList, UiComponents.ServerControl);
         ChatHudUI = new ChatHudUI(UIBase, UiComponents.Chat);
         PlayerListOverlayUI = new PlayerListOverlayUI(UIBase, UiComponents.PlayerList);
 
