@@ -65,20 +65,8 @@ namespace GOILauncher.Multiplayer.UI.Pages
             GameObject spacer = UIFactory.CreateUIObject("ServerBottomSpacer", serverPage);
             UIFactory.SetLayoutElement(spacer, minHeight: 0, flexibleHeight: 9999, flexibleWidth: 9999);
 
-            GameObject controlSection = UIFactory.CreateVerticalGroup(
-                serverPage,
-                "ServerControlSection",
-                false,
-                false,
-                true,
-                true,
-                4,
-                new Vector4(8, 6, 8, 6),
-                new Color(0.14f, 0.14f, 0.14f, 1f));
-            UIFactory.SetLayoutElement(controlSection, minHeight: 80, flexibleHeight: 0, flexibleWidth: 9999);
-
             GameObject portRow = UIFactory.CreateHorizontalGroup(
-                controlSection,
+                serverPage,
                 "ServerPortRow",
                 false,
                 false,
@@ -96,7 +84,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(portInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
             GameObject actionRow = UIFactory.CreateHorizontalGroup(
-                controlSection,
+                serverPage,
                 "ServerActionRow",
                 false,
                 false,

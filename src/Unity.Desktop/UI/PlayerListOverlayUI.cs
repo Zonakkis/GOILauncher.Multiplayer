@@ -26,11 +26,6 @@ namespace GOILauncher.Multiplayer.UI
         {
         }
 
-        public PlayerListOverlayUI(UIBase owner, IPlayerListUiComponent playerListComponent) : this(owner)
-        {
-            BindPlayerListComponent(playerListComponent);
-        }
-
         public override string Name => "GOILauncher.PlayerList";
 
         public override int MinWidth => 240;
@@ -42,12 +37,6 @@ namespace GOILauncher.Multiplayer.UI
         public override Vector2 DefaultAnchorMax => new Vector2(0.98f, 0.68f);
 
         public override bool CanDragAndResize => false;
-
-        public void BindPlayerListComponent(IPlayerListUiComponent playerListComponent)
-        {
-            this.playerListComponent = playerListComponent;
-            RefreshPlayers();
-        }
 
         public void RefreshPlayers()
         {

@@ -1,7 +1,8 @@
-﻿using BepInEx;
+﻿using Autofac;
+using BepInEx;
 using BepInEx.Logging;
 using GOILauncher.Multiplayer.UI;
-using GOILauncher.Multiplayer.UI.Components;
+using GOILauncher.Multiplayer.Unity;
 using UnityEngine;
 using UniverseLib;
 using UniverseLib.Config;
@@ -15,17 +16,14 @@ public class Plugin : BaseUnityPlugin
     internal static new ManualLogSource Logger;
 
     public static UIBase UIBase { get; private set; }
-    public static MultiplayerUI MultiplayerUI { get; private set; }
-    public static ChatHudUI ChatHudUI { get; private set; }
-    public static PlayerListOverlayUI PlayerListOverlayUI { get; private set; }
-
-    public static IMultiplayerUiComponents UiComponents { get; private set; }
+    private static MultiplayerUI _multiplayerUI;
+    private static ChatHudUI _chatHudUI;
+    private static PlayerListOverlayUI _playerListOverlayUI;
 
     private void Awake()
     {
         // Plugin startup logic
         Logger = base.Logger;
-        Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
 
         Universe.Init(1f, OnInitialized, OnLog, new UniverseLibConfig
         {
@@ -36,17 +34,27 @@ public class Plugin : BaseUnityPlugin
 
     private void OnInitialized()
     {
-        UIBase = UniversalUI.RegisterUI(MyPluginInfo.PLUGIN_GUID, null);
+        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loading...");
+        var container = MultiplayerUnityCore.Initialize(builder =>
+        {
+            builder
+            .Register(_ => UniversalUI.RegisterUI(MyPluginInfo.PLUGIN_GUID, null))
+            .SingleInstance();
+            builder.RegisterType<MultiplayerUI>()
+            .AsSelf()
+            .SingleInstance();
+            builder.RegisterType<ChatHudUI>()
+            .AsSelf()
+            .SingleInstance();
+            builder.RegisterType<PlayerListOverlayUI>()
+            .AsSelf()
+            .SingleInstance();
+        });
 
-        UiComponents = new DefaultMultiplayerUiComponents();
-
-        MultiplayerUI = new MultiplayerUI(UIBase, UiComponents.RoomList, UiComponents.ServerControl);
-        ChatHudUI = new ChatHudUI(UIBase, UiComponents.Chat);
-        PlayerListOverlayUI = new PlayerListOverlayUI(UIBase, UiComponents.PlayerList);
-
-        MultiplayerUI.SetActive(true);
-        ChatHudUI.SetActive(true);
-        PlayerListOverlayUI.SetActive(false);
+        _multiplayerUI = container.Resolve<MultiplayerUI>();
+        _chatHudUI = container.Resolve<ChatHudUI>();
+        _playerListOverlayUI = container.Resolve<PlayerListOverlayUI>();
+        Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loaded!");
     }
 
     private void OnLog(string message, LogType type)
@@ -56,16 +64,13 @@ public class Plugin : BaseUnityPlugin
 
     private void Update()
     {
-        if (MultiplayerUI != null && Input.GetKeyDown(KeyCode.F1))
-            MultiplayerUI.Enabled = !MultiplayerUI.Enabled;
+        if (Input.GetKeyDown(KeyCode.F1))
+            _multiplayerUI.Enabled = !_multiplayerUI.Enabled;
 
-        if (PlayerListOverlayUI != null)
-        {
-            if (Input.GetKeyDown(KeyCode.Tab))
-                PlayerListOverlayUI.SetActive(true);
-            else if (Input.GetKeyUp(KeyCode.Tab))
-                PlayerListOverlayUI.SetActive(false);
+        if (Input.GetKeyDown(KeyCode.Tab))
+            _playerListOverlayUI.SetActive(true);
+        else if (Input.GetKeyUp(KeyCode.Tab))
+            _playerListOverlayUI.SetActive(false);
 
-        }
     }
 }

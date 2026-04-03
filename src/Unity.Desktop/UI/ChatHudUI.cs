@@ -26,10 +26,10 @@ namespace GOILauncher.Multiplayer.UI
         {
         }
 
-        public ChatHudUI(UIBase owner, IChatUiComponent chatComponent) : this(owner)
-        {
-            BindChatComponent(chatComponent);
-        }
+        // public ChatHudUI(UIBase owner, IChatUiComponent chatComponent) : this(owner)
+        // {
+        //     BindChatComponent(chatComponent);
+        // }
 
         public override string Name => "GOILauncher.Chat";
 

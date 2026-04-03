@@ -112,20 +112,8 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(roomListScroll, minHeight: 180, flexibleHeight: 9999, flexibleWidth: 9999);
             UIFactory.SetLayoutGroup<VerticalLayoutGroup>(roomListContent, false, false, true, true, 4, 4, 4, 4, 4, TextAnchor.UpperLeft);
 
-            GameObject connectionSection = UIFactory.CreateVerticalGroup(
-                clientPage,
-                "ConnectionSection",
-                false,
-                false,
-                true,
-                true,
-                4,
-                new Vector4(8, 6, 8, 6),
-                new Color(0.14f, 0.14f, 0.14f, 1f));
-            UIFactory.SetLayoutElement(connectionSection, minHeight: 108, flexibleHeight: 0, flexibleWidth: 9999);
-
             GameObject nameRow = UIFactory.CreateHorizontalGroup(
-                connectionSection,
+                clientPage,
                 "NameRow",
                 false,
                 false,
@@ -143,7 +131,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(playerNameInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
             GameObject ipRow = UIFactory.CreateHorizontalGroup(
-                connectionSection,
+                clientPage,
                 "ServerIpRow",
                 false,
                 false,
@@ -161,7 +149,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(serverIpInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
             GameObject connectRow = UIFactory.CreateHorizontalGroup(
-                connectionSection,
+                clientPage,
                 "ConnectRow",
                 false,
                 false,

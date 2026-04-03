@@ -1,5 +1,4 @@
 using System;
-using GOILauncher.Multiplayer.UI.Components;
 using GOILauncher.Multiplayer.UI.Pages;
 using UniverseLib.UI;
 using UnityEngine;
@@ -13,11 +12,6 @@ namespace GOILauncher.Multiplayer.UI
     {
         private const string ClientPageName = "Client";
         private const string ServerPageName = "Server";
-
-        public MultiplayerUI(UIBase owner) : base(owner)
-        {
-        }
-
         public override string Name => "GOILauncher.Multiplayer";
 
         public override int MinWidth => 600;
@@ -33,35 +27,7 @@ namespace GOILauncher.Multiplayer.UI
         private ButtonRef serverButton;
         private ClientPageView clientPage;
         private ServerPageView serverPage;
-        private IRoomListUiComponent roomListComponent;
-        private IServerControlUiComponent serverControlComponent;
 
-        public MultiplayerUI(UIBase owner, IRoomListUiComponent roomListComponent) : this(owner)
-        {
-            BindRoomListComponent(roomListComponent);
-        }
-
-        public MultiplayerUI(UIBase owner, IRoomListUiComponent roomListComponent, IServerControlUiComponent serverControlComponent) : this(owner)
-        {
-            BindRoomListComponent(roomListComponent);
-            BindServerControlComponent(serverControlComponent);
-        }
-
-        public void BindRoomListComponent(IRoomListUiComponent roomListComponent)
-        {
-            this.roomListComponent = roomListComponent;
-
-            if (clientPage != null)
-                clientPage.Bind(roomListComponent);
-        }
-
-        public void BindServerControlComponent(IServerControlUiComponent serverControlComponent)
-        {
-            this.serverControlComponent = serverControlComponent;
-
-            if (serverPage != null)
-                serverPage.Bind(serverControlComponent);
-        }
 
         private ColorBlock _normalButtonColors = new ColorBlock
         {
@@ -85,6 +51,10 @@ namespace GOILauncher.Multiplayer.UI
             fadeDuration = 0
         };
 
+        public MultiplayerUI(UIBase owner) : base(owner)
+        {
+        }
+
         protected override void ConstructPanelContent()
         {
             // Buttons Row
@@ -106,13 +76,7 @@ namespace GOILauncher.Multiplayer.UI
             UIFactory.SetLayoutElement(pagesContainer, flexibleHeight: 9999, flexibleWidth: 9999);
             clientPage = new ClientPageView(pagesContainer);
 
-            if (roomListComponent != null)
-                clientPage.Bind(roomListComponent);
-
             serverPage = new ServerPageView(pagesContainer);
-
-            if (serverControlComponent != null)
-                serverPage.Bind(serverControlComponent);
 
             // 默认选中客户端
             ShowPage(ClientPageName);
