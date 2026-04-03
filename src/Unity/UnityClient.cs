@@ -5,7 +5,8 @@ using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Client
 {
-    public class UnityClient : MonoBehaviour
+
+    public class UnityClient : MonoBehaviour, IUnityClient
     {
         public bool IsConnected => ClientService.IsConnected;
         public IClientService ClientService { get; set; }

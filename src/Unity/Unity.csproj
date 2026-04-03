@@ -55,11 +55,12 @@
     <Compile Include="Events\GameQuitEvent.cs" />
     <Compile Include="Events\GameStartedEvent.cs" />
     <Compile Include="Extensions\PlatformExtensions.cs" />
+    <Compile Include="IUnityClient.cs" />
     <Compile Include="Models\GOIScene.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SceneManager.cs" />
     <Compile Include="UnityClient.cs" />
-    <Compile Include="UnityCore.cs" />
+    <Compile Include="MultiplayerUnityCore.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Client\Client.csproj">
