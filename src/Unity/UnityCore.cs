@@ -1,4 +1,5 @@
-﻿using Autofac;
+﻿using System;
+using Autofac;
 using GOILauncher.Multiplayer.Client;
 using GOILauncher.Multiplayer.Client.Extensions;
 using GOILauncher.Multiplayer.Client.Services;
@@ -6,6 +7,8 @@ using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Extensions;
 using UnityEngine;
+using Object = UnityEngine.Object;
+
 namespace GOILauncher.Multiplayer.Unity
 {
     public class UnityCore
@@ -18,16 +21,18 @@ namespace GOILauncher.Multiplayer.Unity
         private static UnityClient _unityClient;
 
 
-        public static void Initialize()
+        public static IContainer Initialize(Action<ContainerBuilder> configure = null)
         {
-            if (_isInitialized) return;
+            if (_isInitialized) return _container;
             _isInitialized = true;
 
             var builder = new ContainerBuilder();
 
+            configure?.Invoke(builder);
+
             builder.RegisterMultiplayerCore().WithServer().WithClient();
 
-            _container = builder.Build();
+            return _container = builder.Build();
         }
 
         public static SceneManager SceneManager
