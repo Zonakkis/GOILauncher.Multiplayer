@@ -17,7 +17,6 @@ namespace GOILauncher.Multiplayer.Client.Services
         private readonly IEventBus _eventBus;
         private readonly ILogger<PlayerService> _logger;
 
-        // TODO: 修改LocalPlayer逻辑
         public ClientPlayer LocalPlayer { get; } = new ClientPlayer();
         public Dictionary<int, ClientPlayer> Players { get; }
             = new Dictionary<int, ClientPlayer>();
