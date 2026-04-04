@@ -7,6 +7,7 @@ namespace GOILauncher.Multiplayer.Network
 {
     public class NetworkServer : INetworkServer
     {
+        public bool IsRunning => _netManager.IsRunning;
         private readonly NetManager _netManager;
         private readonly NetPacketProcessor _processor;
         private readonly IEventBus _eventBus;

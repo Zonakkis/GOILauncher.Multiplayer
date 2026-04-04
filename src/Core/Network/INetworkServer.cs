@@ -6,6 +6,7 @@ namespace GOILauncher.Multiplayer.Network
 {
     public interface INetworkServer : IDisposable
     {
+        bool IsRunning { get; }
         void Start(int port);
         void Stop();
         void Poll();
