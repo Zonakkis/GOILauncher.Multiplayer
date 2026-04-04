@@ -17,23 +17,25 @@ namespace GOILauncher.Multiplayer.Unity
         public static SceneManager SceneManager => _container.Resolve<SceneManager>();
 
         public static IUnityClient UnityClient => _container.Resolve<IUnityClient>();
+        public static IUnityServer UnityServer => _container.Resolve<IUnityServer>();
 
         public static IContainer Initialize(Action<ContainerBuilder> configure = null)
         {
             if (_isInitialized) return _container;
             _isInitialized = true;
-            
+
             _core = new GameObject("MultiplayerUnityCore");
             Object.DontDestroyOnLoad(_core);
 
             var builder = new ContainerBuilder();
 
-            configure?.Invoke(builder);
-
             builder
             .RegisterMultiplayerCore().WithServer().WithClient()
             .RegisterSceneManager()
-            .RegisterUnityClient(); 
+            .RegisterUnityClient()
+            .RegisterUnityServer();
+
+            configure?.Invoke(builder);
 
             return _container = builder.Build();
         }
@@ -64,6 +66,21 @@ namespace GOILauncher.Multiplayer.Unity
                 return unityClient;
             }).
             As<IUnityClient>().
+            SingleInstance();
+            return builder;
+        }
+
+        private static ContainerBuilder RegisterUnityServer(this ContainerBuilder builder)
+        {
+            builder.Register(ctx =>
+            {
+                var obj = new GameObject(nameof(UnityServer));
+                obj.transform.SetParent(_core.transform);
+                var unityServer = obj.AddComponent<UnityServer>();
+                ctx.InjectProperties(unityServer);
+                return unityServer;
+            }).
+            As<IUnityServer>().
             SingleInstance();
             return builder;
         }

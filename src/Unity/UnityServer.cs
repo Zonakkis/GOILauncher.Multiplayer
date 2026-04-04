@@ -1,12 +1,17 @@
 ﻿using GOILauncher.Multiplayer.Server.Services;
+using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Unity
 {
-    public class UnityServer
+    public class UnityServer : MonoBehaviour, IUnityServer
     {
         public bool IsRunning => ServerService.IsRunning;
         public IServerService ServerService { get; set; }
 
+        public void Start()
+        {
+            
+        }
         public void Start(int port)
         {
             ServerService.Start(port);
