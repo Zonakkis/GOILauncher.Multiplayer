@@ -49,6 +49,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CoreManager.cs" />
     <Compile Include="Data\IPacketDispatcher.cs" />
     <Compile Include="Data\Models\Platform.cs" />
     <Compile Include="Data\Models\PlayerState.cs" />
@@ -71,7 +72,6 @@
     <Compile Include="Extensions\NetDataReaderExtensions.cs" />
     <Compile Include="Extensions\NetDataWriterExtensions.cs" />
     <Compile Include="Log\ILogger.cs" />
-    <Compile Include="Log\NLogConfiguration.cs" />
     <Compile Include="Log\NLogLogger.cs" />
     <Compile Include="Network\INetworkClient.cs" />
     <Compile Include="Network\INetworkServer.cs" />

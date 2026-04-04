@@ -2,6 +2,7 @@
 using Autofac;
 using GOILauncher.Multiplayer.Client;
 using GOILauncher.Multiplayer.Client.Extensions;
+using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Extensions;
 using UnityEngine;
@@ -37,7 +38,9 @@ namespace GOILauncher.Multiplayer.Unity
 
             configure?.Invoke(builder);
 
-            return _container = builder.Build();
+            _container = builder.Build();
+            _container.Resolve<CoreManager>();
+            return _container;
         }
 
         private static ContainerBuilder RegisterSceneManager(this ContainerBuilder builder)

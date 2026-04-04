@@ -6,6 +6,7 @@ using GOILauncher.Multiplayer.Core.Network;
 using GOILauncher.Multiplayer.Network;
 using LiteNetLib;
 using LiteNetLib.Utils;
+using NLog.Targets;
 
 namespace GOILauncher.Multiplayer.Core.Extensions
 {
@@ -13,7 +14,17 @@ namespace GOILauncher.Multiplayer.Core.Extensions
     {
         public static ContainerBuilder RegisterMultiplayerCore(this ContainerBuilder builder)
         {
-            NLogConfiguration.Configure();
+            builder.RegisterType<CoreManager>()
+                .AsSelf()
+                .SingleInstance();
+
+            builder.Register(ctx => new ConsoleTarget()
+            {
+                Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${level:uppercase=true}|${logger:shortName=true}|${message}"
+            })
+                .As<Target>()
+                .SingleInstance();
+
             builder.RegisterGeneric(typeof(NLogLogger<>))
                 .As(typeof(ILogger<>))
                 .SingleInstance();
