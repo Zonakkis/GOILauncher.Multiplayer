@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Server.Extensions;
 using GOILauncher.Multiplayer.Server.Services;
 using System;
@@ -45,7 +46,11 @@ namespace ConsoleServer
 
             builder.WithServer();
 
-            return builder.Build();
+            var container = builder.Build();
+
+            container.Resolve<CoreManager>();
+
+            return container;
         }
     }
 }
