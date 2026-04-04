@@ -15,6 +15,7 @@ namespace GOILauncher.Multiplayer
 
         public BepInExTarget(ManualLogSource logger)
         {
+            Name = "BepInExTarget";
             _logger = logger;
         }
 
