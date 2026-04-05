@@ -33,13 +33,15 @@ namespace GOILauncher.Multiplayer.UI
 
         public override string Name => "GOILauncher.Chat";
 
-        public override int MinWidth => 360;
+        public override int MinWidth => 600;
 
-        public override int MinHeight => 180;
+        public override int MinHeight => 300;
 
-        public override Vector2 DefaultAnchorMin => new Vector2(0.01f, 0.01f);
+        public override Vector2 DefaultAnchorMin => new Vector2(0, 0.4f);
 
-        public override Vector2 DefaultAnchorMax => new Vector2(0.33f, 0.28f);
+        public override Vector2 DefaultAnchorMax => new Vector2(0, 0.4f);
+
+        public override Vector2 DefaultPosition => new Vector2(-Screen.currentResolution.width / 2, 0);
 
         public override bool CanDragAndResize => true;
 
@@ -56,7 +58,7 @@ namespace GOILauncher.Multiplayer.UI
 
             for (int i = messageListContent.transform.childCount - 1; i >= 0; i--)
             {
-                UnityEngine.Object.Destroy(messageListContent.transform.GetChild(i).gameObject);
+                Object.Destroy(messageListContent.transform.GetChild(i).gameObject);
             }
 
             int rowIndex = 0;

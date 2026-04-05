@@ -1,4 +1,3 @@
-using System;
 using GOILauncher.Multiplayer.UI.Components;
 using UniverseLib;
 using UniverseLib.UI;
@@ -6,10 +5,13 @@ using UniverseLib.UI.Models;
 using UniverseLib.UI.Widgets;
 using UnityEngine;
 using UnityEngine.UI;
+using GOILauncher.Multiplayer.UI.Theme;
+using GOILauncher.Multiplayer.Extensions;
+using GOILauncher.Multiplayer.Client;
 
 namespace GOILauncher.Multiplayer.UI.Pages
 {
-    internal class ClientPageView : IPageView
+    internal class ClientPage : IPage
     {
         private static readonly RoomListItemViewData[] MockRoomItems = new RoomListItemViewData[]
         {
@@ -21,17 +23,18 @@ namespace GOILauncher.Multiplayer.UI.Pages
             new RoomListItemViewData("公开大厅 #2", "0/8")
         };
 
+        public IUnityClient Client { get; set; }
+
         private GameObject roomListContent;
         private AutoSliderScrollbar roomListScrollbar;
         private IRoomListUiComponent roomListComponent;
         private InputFieldRef playerNameInput;
         private InputFieldRef serverIpInput;
 
-        public string PageName => "Client";
-
         public GameObject Root { get; private set; }
+        private readonly ITheme _theme = Plugin.Theme;
 
-        public ClientPageView(GameObject pagesContainer)
+        public ClientPage(GameObject pagesContainer)
         {
             Root = ConstructClientPage(pagesContainer);
         }
@@ -162,22 +165,12 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
             ButtonRef connectButton = UIFactory.CreateButton(connectRow, "ConnectButton", "连接");
             UIFactory.SetLayoutElement(connectButton.Component.gameObject, minWidth: 100, minHeight: 24, flexibleWidth: 9999, flexibleHeight: 0);
-            RuntimeHelper.SetColorBlock(
-                connectButton.Component,
-                new Color(0.22f, 0.38f, 0.28f),
-                new Color(0.26f, 0.44f, 0.32f),
-                new Color(0.14f, 0.24f, 0.18f),
-                new Color(0.2f, 0.2f, 0.2f));
+            connectButton.SetColor(_theme.ConfirmButtonColor);
             connectButton.OnClick += OnConnectClicked;
 
             ButtonRef disconnectButton = UIFactory.CreateButton(connectRow, "DisconnectButton", "断开");
             UIFactory.SetLayoutElement(disconnectButton.Component.gameObject, minWidth: 100, minHeight: 24, flexibleWidth: 9999, flexibleHeight: 0);
-            RuntimeHelper.SetColorBlock(
-                disconnectButton.Component,
-                new Color(0.38f, 0.22f, 0.22f),
-                new Color(0.44f, 0.26f, 0.26f),
-                new Color(0.24f, 0.14f, 0.14f),
-                new Color(0.2f, 0.2f, 0.2f));
+            disconnectButton.SetColor(_theme.CancelButtonColor);
             disconnectButton.OnClick += OnDisconnectClicked;
 
             PopulateRoomList();

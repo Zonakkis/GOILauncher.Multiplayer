@@ -7,11 +7,13 @@ namespace GOILauncher.Multiplayer.UI
 {
     public class Toast : PanelBase
     {
-        private const float DefaultDurationSeconds = 2.5f;
+        private const float DefaultDurationSeconds = 3f;
+        private const float FadeInDurationSeconds = 0.2f;
         private const float FadeDurationSeconds = 0.35f;
 
         private Text messageText;
         private CanvasGroup canvasGroup;
+        private float showAtTime;
         private float hideAtTime;
         private bool showing;
 
@@ -48,20 +50,21 @@ namespace GOILauncher.Multiplayer.UI
             Dragger.OnEndResize();
         }
 
-        public void ShowToast(string message, float durationSeconds = DefaultDurationSeconds)
+        public void Show(string message, float durationSeconds = DefaultDurationSeconds)
         {
             if (string.IsNullOrWhiteSpace(message) || messageText == null)
                 return;
 
             messageText.text = message.Trim();
-            hideAtTime = Time.unscaledTime + Mathf.Max(0.4f, durationSeconds);
+            showAtTime = Time.unscaledTime;
+            hideAtTime = showAtTime + Mathf.Max(0.4f, durationSeconds);
             showing = true;
 
             if (!Enabled)
                 SetActive(true);
 
             if (canvasGroup != null)
-                canvasGroup.alpha = 1f;
+                canvasGroup.alpha = 0f;
         }
 
         public override void Update()
@@ -69,7 +72,8 @@ namespace GOILauncher.Multiplayer.UI
             if (!showing)
                 return;
 
-            float remaining = hideAtTime - Time.unscaledTime;
+            float now = Time.unscaledTime;
+            float remaining = hideAtTime - now;
             if (remaining <= 0f)
             {
                 showing = false;
@@ -80,14 +84,15 @@ namespace GOILauncher.Multiplayer.UI
             if (canvasGroup == null)
                 return;
 
-            if (remaining <= FadeDurationSeconds)
-            {
-                canvasGroup.alpha = Mathf.Clamp01(remaining / FadeDurationSeconds);
-            }
-            else if (canvasGroup.alpha < 1f)
-            {
-                canvasGroup.alpha = 1f;
-            }
+            float alphaIn = FadeInDurationSeconds > 0f
+                ? Mathf.Clamp01((now - showAtTime) / FadeInDurationSeconds)
+                : 1f;
+
+            float alphaOut = FadeDurationSeconds > 0f
+                ? Mathf.Clamp01(remaining / FadeDurationSeconds)
+                : 1f;
+
+            canvasGroup.alpha = Mathf.Min(alphaIn, alphaOut);
         }
 
         protected override void ConstructPanelContent()

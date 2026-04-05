@@ -1,8 +1,12 @@
 using System;
+using GOILauncher.Multiplayer.Client;
+using GOILauncher.Multiplayer.Core.Log;
+using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.UI.Pages;
-using UniverseLib.UI;
+using GOILauncher.Multiplayer.Unity;
 using UnityEngine;
 using UnityEngine.UI;
+using UniverseLib.UI;
 using UniverseLib.UI.Models;
 using UniverseLib.UI.Panels;
 
@@ -12,47 +16,31 @@ namespace GOILauncher.Multiplayer.UI
     {
         private const string ClientPageName = "Client";
         private const string ServerPageName = "Server";
-        public override string Name => "GOILauncher.Multiplayer";
+        public override string Name => "连接配置";
 
         public override int MinWidth => 600;
 
         public override int MinHeight => 800;
 
-        public override Vector2 DefaultAnchorMin => new Vector2(0.3f, 0.3f);
-        public override Vector2 DefaultAnchorMax => new Vector2(0.7f, 0.7f);
+        public override Vector2 DefaultAnchorMin => new Vector2(0.5f, 0.5f);
+        public override Vector2 DefaultAnchorMax => new Vector2(0.5f, 0.5f);
+        public override Vector2 DefaultPosition => new Vector2(-300f, 400f);
 
         public override bool CanDragAndResize => true;
 
         private ButtonRef clientButton;
         private ButtonRef serverButton;
-        private ClientPageView clientPage;
-        private ServerPageView serverPage;
+        private ClientPage clientPage;
+        private ServerPage serverPage;
 
-
-        private ColorBlock _normalButtonColors = new ColorBlock
+        public MultiplayerUI(UIBase owner, IUnityServer unityServer, IUnityClient unityClient,
+            Toast toast,
+            ILogger<ServerPage> serverPageLogger) : base(owner)
         {
-            normalColor = new Color(0.25f, 0.25f, 0.25f, 1f),
-            highlightedColor = new Color(0.3f, 0.3f, 0.3f, 1.2f),
-            pressedColor = new Color(0.175f, 0.175f, 0.175f, 0.75f),
-            selectedColor = new Color(0, 0, 0, 0),
-            disabledColor = new Color(0, 0, 0, 0),
-            colorMultiplier = 1,
-            fadeDuration = 0
-        };
-
-        private ColorBlock _selectedButtonColors = new ColorBlock
-        {
-            normalColor = new Color(0.2f, 0.4f, 0.28f, 1f),
-            highlightedColor = new Color(0.24f, 0.48f, 0.336f, 1.2f),
-            pressedColor = new Color(0.175f, 0.175f, 0.175f, 0.75f),
-            selectedColor = new Color(0, 0, 0, 0),
-            disabledColor = new Color(0, 0, 0, 0),
-            colorMultiplier = 1,
-            fadeDuration = 0
-        };
-
-        public MultiplayerUI(UIBase owner) : base(owner)
-        {
+            clientPage.Client = unityClient;
+            serverPage.Toast = toast;
+            serverPage.Logger = serverPageLogger;
+            serverPage.Server = unityServer;
         }
 
         protected override void ConstructPanelContent()
@@ -74,9 +62,10 @@ namespace GOILauncher.Multiplayer.UI
             GameObject pagesContainer = UIFactory.CreateUIObject("PagesContainer", ContentRoot);
             UIFactory.SetLayoutGroup<VerticalLayoutGroup>(pagesContainer, false, false, true, true, 0);
             UIFactory.SetLayoutElement(pagesContainer, flexibleHeight: 9999, flexibleWidth: 9999);
-            clientPage = new ClientPageView(pagesContainer);
 
-            serverPage = new ServerPageView(pagesContainer);
+            clientPage = new ClientPage(pagesContainer);
+
+            serverPage = new ServerPage(pagesContainer);
 
             // 默认选中客户端
             ShowPage(ClientPageName);
@@ -87,22 +76,10 @@ namespace GOILauncher.Multiplayer.UI
             bool isClientPage = string.Equals(pageName, ClientPageName, StringComparison.Ordinal);
             bool isServerPage = string.Equals(pageName, ServerPageName, StringComparison.Ordinal);
 
-            if (isClientPage)
-            {
-                clientButton.Component.colors = _selectedButtonColors;
-                serverButton.Component.colors = _normalButtonColors;
-            }
-            else if (isServerPage)
-            {
-                serverButton.Component.colors = _selectedButtonColors;
-                clientButton.Component.colors = _normalButtonColors;
-            }
-
-            if (clientPage != null)
-                clientPage.SetActive(isClientPage);
-
-            if (serverPage != null)
-                serverPage.SetActive(isServerPage);
+            clientButton.SetTabActive(isClientPage);
+            serverButton.SetTabActive(isServerPage);
+            clientPage.SetActive(isClientPage);
+            serverPage.SetActive(isServerPage);
 
             Plugin.Logger.LogInfo($"Switched to {pageName} page.");
         }
