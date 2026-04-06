@@ -1,13 +1,18 @@
-﻿namespace GOILauncher.Multiplayer.Server.Events
+﻿using System;
+using GOILauncher.Multiplayer.Core.Utils;
+
+namespace GOILauncher.Multiplayer.Server.Events
 {
     public class ChatMessageEvent
     {
         public int PlayerId { get; }
         public string Message { get; }
-        public ChatMessageEvent(int playerId, string message)
+        public DateTime Timestamp { get; }
+        public ChatMessageEvent(int playerId, string message, long timestamp)
         {
-            PlayerId = playerId;
-            Message = message;
+             Timestamp = DateTimeUtils.FromUnixTimeSeconds(timestamp);
+             PlayerId = playerId;
+             Message = message;
         }
     }
 }

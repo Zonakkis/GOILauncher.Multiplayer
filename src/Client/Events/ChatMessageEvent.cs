@@ -1,12 +1,17 @@
-﻿namespace GOILauncher.Multiplayer.Client.Events
+﻿using System;
+using GOILauncher.Multiplayer.Client.Models;
+
+namespace GOILauncher.Multiplayer.Client.Events
 {
     public class ChatMessageEvent
     {
-        public int PlayerId { get; }
-        public string Message { get; }
-        public ChatMessageEvent(int playerId, string message)
+        public Message Message { get; }
+        public ChatMessageEvent(MessageType type, string sender, string content, DateTime dateTime)
         {
-            PlayerId = playerId;
+            Message = new Message(type, sender, content, dateTime);
+        }
+        public ChatMessageEvent(Message message)
+        {
             Message = message;
         }
     }

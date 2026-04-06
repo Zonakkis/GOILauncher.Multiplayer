@@ -20,7 +20,6 @@ namespace GOILauncher.Multiplayer.Client.Services
             _networkClient = networkClient;
             _eventBus = eventBus;
             dispatcher.RegisterStruct<S2CServerHandShakePacket>(OnServerHandshake);
-            dispatcher.RegisterStruct<S2CChatMessagePacket>(OnChatMessage);
         }
 
         public void Dispose()
@@ -43,21 +42,10 @@ namespace GOILauncher.Multiplayer.Client.Services
             _networkClient.Poll();
         }
 
-        public void SendChatMessage(string message)
-        {
-            var packet = new C2SChatMessagePacket { Message = message };
-            _networkClient.Send(packet, DeliveryMethod.ReliableUnordered);
-        }
-
         private void OnServerHandshake(S2CServerHandShakePacket packet, NetPeer _)
         {
             var playerId = packet.PlayerId;
             _eventBus.Publish(new ServerHandshakeEvent(playerId));
-        }
-
-        private void OnChatMessage(S2CChatMessagePacket packet, NetPeer _)
-        {
-            _eventBus.Publish(new ChatMessageEvent(packet.PlayerId, packet.Message));
         }
     }
 }

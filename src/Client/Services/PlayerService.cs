@@ -76,8 +76,6 @@ namespace GOILauncher.Multiplayer.Client.Services
             {
                 _logger.Warn("Received PlayerLeftPacket for unknown playerId: {PlayerId}", playerId);
             }
-
         }
-
     }
 }

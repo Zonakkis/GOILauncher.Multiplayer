@@ -8,6 +8,5 @@ namespace GOILauncher.Multiplayer.Client.Services
         void Connect(string host, int port);
         void Disconnect();
         void Poll();
-        void SendChatMessage(string message);
     }
 }

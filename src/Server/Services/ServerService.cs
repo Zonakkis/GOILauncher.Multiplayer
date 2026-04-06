@@ -93,13 +93,16 @@ namespace GOILauncher.Multiplayer.Server.Services
         private void OnChatMessage(C2SChatMessagePacket packet, NetPeer peer)
         {
             var playerId = peer.Id;
+            var content = packet.Content;
+            var timestamp = packet.Timestamp;
             var chatPacket = new S2CChatMessagePacket
             {
                 PlayerId = playerId,
-                Message = packet.Message
+                Content = content,
+                Timestamp = timestamp
             };
             Broadcast(chatPacket);
-            _eventBus.Publish(new ChatMessageEvent(playerId, packet.Message));
+            _eventBus.Publish(new ChatMessageEvent(playerId, content, timestamp));
         }
 
     }
