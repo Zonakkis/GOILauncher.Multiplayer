@@ -1,9 +1,6 @@
 using System;
-using GOILauncher.Multiplayer.Client;
-using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.UI.Pages;
-using GOILauncher.Multiplayer.Unity;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
@@ -30,20 +27,27 @@ namespace GOILauncher.Multiplayer.UI
 
         private ButtonRef clientButton;
         private ButtonRef serverButton;
-        private ClientPage clientPage;
-        private ServerPage serverPage;
+        private ClientPage _clientPage;
+        private ServerPage _serverPage;
+        private GameObject _pagesContainer;
 
-        public MultiplayerUI(UIBase owner, IUnityServer unityServer, IUnityClient unityClient,
-            Toast toast,
-            ILogger<ServerPage> serverPageLogger) : base(owner)
+        public MultiplayerUI(UIBase owner, ClientPage clientPage, ServerPage serverPage) : base(owner)
         {
-            clientPage.Client = unityClient;
-            serverPage.Toast = toast;
-            serverPage.Logger = serverPageLogger;
-            serverPage.Server = unityServer;
+            CreateContent();
+            _clientPage = clientPage;
+            _serverPage = serverPage;
+            _clientPage.CreateContent(_pagesContainer);
+            _serverPage.CreateContent(_pagesContainer);
+
+            // 默认选中客户端
+            ShowPage(ClientPageName);
         }
 
         protected override void ConstructPanelContent()
+        {
+        }
+
+        private void CreateContent()
         {
             // Buttons Row
             GameObject buttonRow = UIFactory.CreateHorizontalGroup(ContentRoot, "ButtonRow", false, false, true, true, 5, new Vector4(5, 5, 5, 5));
@@ -59,16 +63,9 @@ namespace GOILauncher.Multiplayer.UI
             serverButton.OnClick += () => { ShowPage(ServerPageName); };
 
             // Pages Container
-            GameObject pagesContainer = UIFactory.CreateUIObject("PagesContainer", ContentRoot);
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(pagesContainer, false, false, true, true, 0);
-            UIFactory.SetLayoutElement(pagesContainer, flexibleHeight: 9999, flexibleWidth: 9999);
-
-            clientPage = new ClientPage(pagesContainer);
-
-            serverPage = new ServerPage(pagesContainer);
-
-            // 默认选中客户端
-            ShowPage(ClientPageName);
+            _pagesContainer = UIFactory.CreateUIObject("PagesContainer", ContentRoot);
+            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(_pagesContainer, false, false, true, true, 0);
+            UIFactory.SetLayoutElement(_pagesContainer, flexibleHeight: 9999, flexibleWidth: 9999);
         }
 
         private void ShowPage(string pageName)
@@ -78,10 +75,8 @@ namespace GOILauncher.Multiplayer.UI
 
             clientButton.SetTabActive(isClientPage);
             serverButton.SetTabActive(isServerPage);
-            clientPage.SetActive(isClientPage);
-            serverPage.SetActive(isServerPage);
-
-            Plugin.Logger.LogInfo($"Switched to {pageName} page.");
+            _clientPage.SetActive(isClientPage);
+            _serverPage.SetActive(isServerPage);
         }
     }
 }

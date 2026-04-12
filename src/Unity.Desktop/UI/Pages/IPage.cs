@@ -7,5 +7,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         GameObject Root { get; }
 
         void SetActive(bool active);
+
+        void CreateContent(GameObject parent);
     }
 }

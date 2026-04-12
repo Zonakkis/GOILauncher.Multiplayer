@@ -2,6 +2,7 @@
 using BepInEx;
 using BepInEx.Logging;
 using GOILauncher.Multiplayer.UI;
+using GOILauncher.Multiplayer.UI.Pages;
 using GOILauncher.Multiplayer.UI.Theme;
 using GOILauncher.Multiplayer.Unity;
 using NLog;
@@ -38,39 +39,47 @@ public class Plugin : BaseUnityPlugin
     private void OnInitialized()
     {
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loading...");
-        var container = MultiplayerUnityCore.Initialize(builder =>
-        {
-            builder.Register(_ => new BepInExTarget(Logger)
-            {
-                Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${logger:shortName=true}|${message}"
-            })
-            .As<Target>()
-            .SingleInstance();
-            builder.RegisterType<DarkTheme>()
-            .As<ITheme>()
-            .SingleInstance();
-            builder
-            .Register(_ => UniversalUI.RegisterUI(MyPluginInfo.PLUGIN_GUID, null))
-            .SingleInstance();
-            builder.RegisterType<Toast>()
-            .AsSelf()
-            .SingleInstance();
-            builder.RegisterType<MultiplayerUI>()
-            .AsSelf()
-            .SingleInstance();
-            builder.RegisterType<ChatHudUI>()
-            .AsSelf()
-            .SingleInstance();
-            builder.RegisterType<PlayerListOverlayUI>()
-            .AsSelf()
-            .SingleInstance();
-        });
+        var container = MultiplayerUnityCore.Initialize(Configure);
 
         Theme = container.Resolve<ITheme>();
         _multiplayerUI = container.Resolve<MultiplayerUI>();
         _chatHudUI = container.Resolve<ChatHudUI>();
         _playerListOverlayUI = container.Resolve<PlayerListOverlayUI>();
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loaded!");
+    }
+
+    private void Configure(ContainerBuilder builder)
+    {
+        builder.Register(_ => new BepInExTarget(Logger)
+        {
+            Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${logger:shortName=true}|${message}"
+        })
+           .As<Target>()
+           .SingleInstance();
+        builder.RegisterType<DarkTheme>()
+        .As<ITheme>()
+        .SingleInstance();
+        builder
+        .Register(_ => UniversalUI.RegisterUI(MyPluginInfo.PLUGIN_GUID, null))
+        .SingleInstance();
+        builder.RegisterType<Toast>()
+        .AsSelf()
+        .SingleInstance();
+        builder.RegisterType<ClientPage>()
+        .AsSelf()
+        .SingleInstance();
+        builder.RegisterType<ServerPage>()
+        .AsSelf()
+        .SingleInstance();
+        builder.RegisterType<MultiplayerUI>()
+        .AsSelf()
+        .SingleInstance();
+        builder.RegisterType<ChatHudUI>()
+        .AsSelf()
+        .SingleInstance();
+        builder.RegisterType<PlayerListOverlayUI>()
+        .AsSelf()
+        .SingleInstance();
     }
 
     private void OnLog(string message, LogType type)

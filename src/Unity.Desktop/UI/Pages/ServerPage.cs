@@ -14,27 +14,28 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private const int DefaultPort = 9027;
         public Toast Toast { get; set; }
         public ILogger<ServerPage> Logger { get; set; }
-        public IUnityServer Server { get; set; }
+        public IUnityServer _server;
         public GameObject Root { get; private set; }
         private Text _serverStateText;
         private InputFieldRef portInput;
         private ButtonRef _startButton;
         private ButtonRef _stopButton;
 
-        public ServerPage(GameObject pagesContainer)
+        public ServerPage(IUnityServer unityServer, ILogger<ServerPage> logger, Toast toast)
         {
-            Root = ConstructServerPage(pagesContainer);
+            _server = unityServer;
+            Logger = logger;
+            Toast = toast;
         }
 
         public void SetActive(bool active)
         {
-            if (Root != null)
-                Root.SetActive(active);
+            Root?.SetActive(active);
         }
 
-        private GameObject ConstructServerPage(GameObject pagesContainer)
+        public void CreateContent(GameObject pagesContainer)
         {
-            GameObject serverPage = UIFactory.CreateVerticalGroup(
+            Root = UIFactory.CreateVerticalGroup(
                 pagesContainer,
                 "ServerPage",
                 false,
@@ -44,10 +45,10 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 6,
                 new Vector4(8, 8, 8, 8),
                 new Color(0.12f, 0.12f, 0.12f, 0.95f));
-            UIFactory.SetLayoutElement(serverPage, flexibleHeight: 9999, flexibleWidth: 9999);
+            UIFactory.SetLayoutElement(Root, flexibleHeight: 9999, flexibleWidth: 9999);
 
             GameObject topArea = UIFactory.CreateVerticalGroup(
-                serverPage,
+                Root,
                 "ServerTopArea",
                 false,
                 false,
@@ -63,7 +64,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(_serverStateText.gameObject, minHeight: 24, preferredHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
             GameObject portRow = UIFactory.CreateHorizontalGroup(
-                serverPage,
+                Root,
                 "ServerPortRow",
                 false,
                 false,
@@ -83,7 +84,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(portInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
             GameObject actionRow = UIFactory.CreateHorizontalGroup(
-                serverPage,
+                Root,
                 "ServerActionRow",
                 false,
                 false,
@@ -105,8 +106,6 @@ namespace GOILauncher.Multiplayer.UI.Pages
             _stopButton.OnClick += OnStopClicked;
 
             SetConnectionState(false);
-
-            return serverPage;
         }
 
         private void SetConnectionState(bool connected)
@@ -121,7 +120,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             try
             {
                 int port = GetListenPort();
-                Server.Start(port);
+                _server.Start(port);
                 Toast.Show($"服务端已启动，监听端口 {port}");
                 SetConnectionState(true);
             }
@@ -136,7 +135,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         {
             try
             {
-                Server.Stop();
+                _server.Stop();
                 Toast.Show("服务端已停止");
                 SetConnectionState(false);
             }

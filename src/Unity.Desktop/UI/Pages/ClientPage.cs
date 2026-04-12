@@ -11,7 +11,7 @@ using GOILauncher.Multiplayer.Client;
 
 namespace GOILauncher.Multiplayer.UI.Pages
 {
-    internal class ClientPage : IPage
+    public class ClientPage : IPage
     {
         private static readonly RoomListItemViewData[] MockRoomItems = new RoomListItemViewData[]
         {
@@ -23,7 +23,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             new RoomListItemViewData("公开大厅 #2", "0/8")
         };
 
-        public IUnityClient Client { get; set; }
+        public IUnityClient _client;
 
         private GameObject roomListContent;
         private AutoSliderScrollbar roomListScrollbar;
@@ -34,15 +34,14 @@ namespace GOILauncher.Multiplayer.UI.Pages
         public GameObject Root { get; private set; }
         private readonly ITheme _theme = Plugin.Theme;
 
-        public ClientPage(GameObject pagesContainer)
+        public ClientPage(IUnityClient unityClient)
         {
-            Root = ConstructClientPage(pagesContainer);
+            _client = unityClient;
         }
 
         public void SetActive(bool active)
         {
-            if (Root != null)
-                Root.SetActive(active);
+            Root?.SetActive(active);
         }
 
         public void Bind(IRoomListUiComponent roomListComponent)
@@ -52,9 +51,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
             SyncConnectionInputs();
         }
 
-        private GameObject ConstructClientPage(GameObject pagesContainer)
+        public void CreateContent(GameObject pagesContainer)
         {
-            GameObject clientPage = UIFactory.CreateVerticalGroup(
+            Root = UIFactory.CreateVerticalGroup(
                 pagesContainer,
                 "ClientPage",
                 false,
@@ -64,10 +63,10 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 6,
                 new Vector4(8, 8, 8, 8),
                 new Color(0.12f, 0.12f, 0.12f, 0.95f));
-            UIFactory.SetLayoutElement(clientPage, flexibleHeight: 9999, flexibleWidth: 9999);
+            UIFactory.SetLayoutElement(Root, flexibleHeight: 9999, flexibleWidth: 9999);
 
             GameObject titleRow = UIFactory.CreateHorizontalGroup(
-                clientPage,
+                Root,
                 "ClientTitleRow",
                 false,
                 false,
@@ -86,7 +85,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             refreshButton.OnClick += OnRefreshClicked;
 
             GameObject tableHeader = UIFactory.CreateHorizontalGroup(
-                clientPage,
+                Root,
                 "RoomTableHeader",
                 false,
                 false,
@@ -107,7 +106,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(actionHeader.gameObject, minWidth: 90, preferredWidth: 100, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
 
             GameObject roomListScroll = UIFactory.CreateScrollView(
-                clientPage,
+                Root,
                 "RoomListScrollView",
                 out roomListContent,
                 out roomListScrollbar,
@@ -116,7 +115,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutGroup<VerticalLayoutGroup>(roomListContent, false, false, true, true, 4, 4, 4, 4, 4, TextAnchor.UpperLeft);
 
             GameObject nameRow = UIFactory.CreateHorizontalGroup(
-                clientPage,
+                Root,
                 "NameRow",
                 false,
                 false,
@@ -134,7 +133,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(playerNameInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
             GameObject ipRow = UIFactory.CreateHorizontalGroup(
-                clientPage,
+                Root,
                 "ServerIpRow",
                 false,
                 false,
@@ -152,7 +151,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(serverIpInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
             GameObject connectRow = UIFactory.CreateHorizontalGroup(
-                clientPage,
+                Root,
                 "ConnectRow",
                 false,
                 false,
@@ -175,8 +174,6 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
             PopulateRoomList();
             SyncConnectionInputs();
-
-            return clientPage;
         }
 
         private void OnRefreshClicked()
