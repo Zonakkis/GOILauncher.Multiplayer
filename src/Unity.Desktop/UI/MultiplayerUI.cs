@@ -1,4 +1,4 @@
-using System;
+﻿using System.Collections.Generic;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.UI.Pages;
 using UnityEngine;
@@ -9,38 +9,40 @@ using UniverseLib.UI.Panels;
 
 namespace GOILauncher.Multiplayer.UI
 {
-    public class MultiplayerUI : PanelBase
+    public partial class MultiplayerUI : PanelBase
     {
-        private const string ClientPageName = "Client";
-        private const string ServerPageName = "Server";
-        public override string Name => "连接配置";
+
+        public override string Name => "\u8fde\u63a5\u914d\u7f6e";
 
         public override int MinWidth => 600;
 
         public override int MinHeight => 800;
 
         public override Vector2 DefaultAnchorMin => new Vector2(0.5f, 0.5f);
+
         public override Vector2 DefaultAnchorMax => new Vector2(0.5f, 0.5f);
+
         public override Vector2 DefaultPosition => new Vector2(-300f, 400f);
 
         public override bool CanDragAndResize => true;
 
-        private ButtonRef clientButton;
-        private ButtonRef serverButton;
-        private ClientPage _clientPage;
-        private ServerPage _serverPage;
+        private readonly List<PageEntry> _pages;
         private GameObject _pagesContainer;
 
         public MultiplayerUI(UIBase owner, ClientPage clientPage, ServerPage serverPage) : base(owner)
         {
-            CreateContent();
-            _clientPage = clientPage;
-            _serverPage = serverPage;
-            _clientPage.CreateContent(_pagesContainer);
-            _serverPage.CreateContent(_pagesContainer);
+            _pages = new List<PageEntry>
+            {
+                new PageEntry(MultiplayerPage.Client, "\u5ba2\u6237\u7aef", clientPage),
+                new PageEntry(MultiplayerPage.Server, "\u670d\u52a1\u7aef", serverPage)
+            };
 
-            // 默认选中客户端
-            ShowPage(ClientPageName);
+            CreateContent();
+
+            foreach (PageEntry page in _pages)
+                page.Page.CreateContent(_pagesContainer);
+
+            ShowPage(MultiplayerPage.Client);
         }
 
         protected override void ConstructPanelContent()
@@ -49,34 +51,32 @@ namespace GOILauncher.Multiplayer.UI
 
         private void CreateContent()
         {
-            // Buttons Row
             GameObject buttonRow = UIFactory.CreateHorizontalGroup(ContentRoot, "ButtonRow", false, false, true, true, 5, new Vector4(5, 5, 5, 5));
             UIFactory.SetLayoutElement(buttonRow, minHeight: 40, flexibleHeight: 0);
             buttonRow.AddComponent<ToggleGroup>();
 
-            clientButton = UIFactory.CreateButton(buttonRow, "ClientButton", "客户端");
-            UIFactory.SetLayoutElement(clientButton.Component.gameObject, minHeight: 30, minWidth: 100, flexibleWidth: 9999);
-            clientButton.OnClick += () => { ShowPage(ClientPageName); };
+            foreach (PageEntry page in _pages)
+            {
+                PageEntry pageEntry = page;
+                ButtonRef button = UIFactory.CreateButton(buttonRow, pageEntry.Id + "Button", pageEntry.ButtonText);
+                UIFactory.SetLayoutElement(button.Component.gameObject, minHeight: 30, minWidth: 100, flexibleWidth: 9999);
+                button.OnClick += () => ShowPage(pageEntry.Id);
+                pageEntry.Button = button;
+            }
 
-            serverButton = UIFactory.CreateButton(buttonRow, "ServerButton", "服务端");
-            UIFactory.SetLayoutElement(serverButton.Component.gameObject, minHeight: 30, minWidth: 100, flexibleWidth: 9999);
-            serverButton.OnClick += () => { ShowPage(ServerPageName); };
-
-            // Pages Container
             _pagesContainer = UIFactory.CreateUIObject("PagesContainer", ContentRoot);
             UIFactory.SetLayoutGroup<VerticalLayoutGroup>(_pagesContainer, false, false, true, true, 0);
             UIFactory.SetLayoutElement(_pagesContainer, flexibleHeight: 9999, flexibleWidth: 9999);
         }
 
-        private void ShowPage(string pageName)
+        private void ShowPage(MultiplayerPage pageId)
         {
-            bool isClientPage = string.Equals(pageName, ClientPageName, StringComparison.Ordinal);
-            bool isServerPage = string.Equals(pageName, ServerPageName, StringComparison.Ordinal);
-
-            clientButton.SetTabActive(isClientPage);
-            serverButton.SetTabActive(isServerPage);
-            _clientPage.SetActive(isClientPage);
-            _serverPage.SetActive(isServerPage);
+            foreach (PageEntry page in _pages)
+            {
+                bool active = page.Id == pageId;
+                page.Button.SetTabActive(active);
+                page.Page.SetActive(active);
+            }
         }
     }
 }
