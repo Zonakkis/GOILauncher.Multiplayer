@@ -3,6 +3,7 @@ using BepInEx;
 using BepInEx.Logging;
 using GOILauncher.Multiplayer.UI;
 using GOILauncher.Multiplayer.UI.Pages;
+using GOILauncher.Multiplayer.UI.ScrollView.Message;
 using GOILauncher.Multiplayer.UI.Theme;
 using GOILauncher.Multiplayer.Unity;
 using NLog;
@@ -75,6 +76,9 @@ public class Plugin : BaseUnityPlugin
         .AsSelf()
         .SingleInstance();
         builder.RegisterType<ChatHudUI>()
+        .AsSelf()
+        .SingleInstance();
+        builder.RegisterType<MessageHandler>()
         .AsSelf()
         .SingleInstance();
         builder.RegisterType<PlayerListOverlayUI>()

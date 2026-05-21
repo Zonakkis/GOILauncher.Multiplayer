@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using GOILauncher.Multiplayer.UI.Components;
+using GOILauncher.Multiplayer.Client.Models;
+using GOILauncher.Multiplayer.UI.ScrollView.Message;
 using UniverseLib.UI;
 using UniverseLib.UI.Models;
 using UniverseLib.UI.Panels;
-using UniverseLib.UI.Widgets;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,25 +11,47 @@ namespace GOILauncher.Multiplayer.UI
 {
     public class ChatHudUI : PanelBase
     {
-        private static readonly ChatMessageViewData[] DefaultMessages = new ChatMessageViewData[]
-        {
-            new ChatMessageViewData("系统", "聊天区域已就绪。"),
-            new ChatMessageViewData("系统", "你可以注入自己的聊天组件。")
-        };
+        private const float PassiveVisibleSeconds = 6f;
+        private const float PassiveFadeSeconds = 0.75f;
 
-        private IChatUiComponent chatComponent;
-        private GameObject messageListContent;
-        private AutoSliderScrollbar messageListScrollbar;
         private InputFieldRef messageInput;
+        private MessageHandler _messageHandler;
+        private GameObject inputRow;
+        private CanvasGroup canvasGroup;
+        private bool isActiveMode;
+        private float lastPassiveActivityTime;
 
-        public ChatHudUI(UIBase owner) : base(owner)
+        public ChatHudUI(UIBase owner, MessageHandler messageHandler) : base(owner)
         {
-        }
+            MakeImageTransparent(UIRoot);
+            MakeImageTransparent(ContentRoot);
+            canvasGroup = UIRoot.GetComponent<CanvasGroup>() ?? UIRoot.AddComponent<CanvasGroup>();
+            canvasGroup.alpha = 1f;
 
-        // public ChatHudUI(UIBase owner, IChatUiComponent chatComponent) : this(owner)
-        // {
-        //     BindChatComponent(chatComponent);
-        // }
+            _messageHandler = messageHandler;
+            _messageHandler.MessagesUpdated += OnMessagesUpdated;
+            _messageHandler.Setup(ContentRoot);
+            CreateInputRow();
+
+            var mockData = new List<Message>
+            {
+                new Message(MessageType.System, "Alice", "Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!"),
+                new Message(MessageType.System, "Bob", "Hi, Alice!"),
+                new Message(MessageType.System, "Charlie", "Good morning everyone."),
+                new Message(MessageType.System, "Alice", "Hello, world!"),
+                new Message(MessageType.System, "Bob", "Hi, Alice!"),
+                new Message(MessageType.System, "Charlie", "Good morning everyone."),
+                new Message(MessageType.System, "Alice", "Hello, world!"),
+                new Message(MessageType.System, "Bob", "Hi, Alice!"),
+                new Message(MessageType.System, "Charlie", "Good morning everyone."),
+                new Message(MessageType.System, "Alice", "Hello, world!"),
+                new Message(MessageType.System, "Bob", "Hi, Alice!"),
+                new Message(MessageType.System, "Charlie", "Good morning everyone."),
+            };
+            _messageHandler.Update(mockData);
+            SetActiveMode(false);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
+        }
 
         public override string Name => "GOILauncher.Chat";
 
@@ -45,64 +67,43 @@ namespace GOILauncher.Multiplayer.UI
 
         public override bool CanDragAndResize => true;
 
-        public void BindChatComponent(IChatUiComponent chatComponent)
-        {
-            this.chatComponent = chatComponent;
-            RefreshMessages();
-        }
-
-        public void RefreshMessages()
-        {
-            if (messageListContent == null)
-                return;
-
-            for (int i = messageListContent.transform.childCount - 1; i >= 0; i--)
-            {
-                Object.Destroy(messageListContent.transform.GetChild(i).gameObject);
-            }
-
-            int rowIndex = 0;
-            foreach (ChatMessageViewData message in GetMessages())
-            {
-                CreateMessageRow(message, rowIndex);
-                rowIndex++;
-            }
-
-            if (messageListScrollbar != null)
-                messageListScrollbar.UpdateSliderHandle();
-        }
-
         protected override void ConstructPanelContent()
         {
-            GameObject headerRow = UIFactory.CreateHorizontalGroup(
-                ContentRoot,
-                "ChatHeaderRow",
-                false,
-                false,
-                true,
-                true,
-                6,
-                new Vector4(8, 4, 8, 4),
-                new Color(0.16f, 0.16f, 0.16f, 1f));
-            UIFactory.SetLayoutElement(headerRow, minHeight: 30, flexibleHeight: 0);
+        }
 
-            Text headerText = UIFactory.CreateLabel(headerRow, "ChatHeaderText", "聊天", TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(headerText.gameObject, minHeight: 22, flexibleHeight: 0, flexibleWidth: 9999);
+        public override void Update()
+        {
+            if (messageInput == null || inputRow == null)
+                return;
 
-            ButtonRef refreshButton = UIFactory.CreateButton(headerRow, "ChatRefreshButton", "刷新");
-            UIFactory.SetLayoutElement(refreshButton.Component.gameObject, minWidth: 70, minHeight: 22, flexibleWidth: 0, flexibleHeight: 0);
-            refreshButton.OnClick += RefreshMessages;
+            if (!isActiveMode)
+            {
+                if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+                    SetActiveMode(true);
 
-            GameObject messageScroll = UIFactory.CreateScrollView(
-                ContentRoot,
-                "ChatMessageScroll",
-                out messageListContent,
-                out messageListScrollbar,
-                new Color(0.09f, 0.09f, 0.09f, 1f));
-            UIFactory.SetLayoutElement(messageScroll, minHeight: 110, flexibleHeight: 9999, flexibleWidth: 9999);
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(messageListContent, false, false, true, true, 3, 4, 4, 4, 4, TextAnchor.UpperLeft);
+                UpdatePassiveFade();
+                return;
+            }
 
-            GameObject inputRow = UIFactory.CreateHorizontalGroup(
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                SetActiveMode(false);
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            {
+                OnSendClicked();
+                return;
+            }
+
+            if (Input.GetMouseButtonDown(0) && !IsPointerInside(Rect))
+                SetActiveMode(false);
+        }
+
+        private void CreateInputRow()
+        {
+            inputRow = UIFactory.CreateHorizontalGroup(
                 ContentRoot,
                 "ChatInputRow",
                 false,
@@ -110,82 +111,103 @@ namespace GOILauncher.Multiplayer.UI
                 true,
                 true,
                 6,
-                new Vector4(8, 4, 8, 6),
-                new Color(0.14f, 0.14f, 0.14f, 1f));
-            UIFactory.SetLayoutElement(inputRow, minHeight: 34, flexibleHeight: 0);
+                new Vector4(6, 4, 6, 6),
+                new Color(0f, 0f, 0f, 0.35f),
+                TextAnchor.MiddleLeft);
+            UIFactory.SetLayoutElement(inputRow, minHeight: 34, flexibleHeight: 0, flexibleWidth: 9999);
 
-            messageInput = UIFactory.CreateInputField(inputRow, "ChatInput", "输入消息...");
+            messageInput = UIFactory.CreateInputField(inputRow, "ChatInput", "\u8f93\u5165\u6d88\u606f...");
             UIFactory.SetLayoutElement(messageInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
-            ButtonRef sendButton = UIFactory.CreateButton(inputRow, "ChatSendButton", "发送");
-            UIFactory.SetLayoutElement(sendButton.Component.gameObject, minWidth: 80, minHeight: 24, flexibleWidth: 0, flexibleHeight: 0);
+            ButtonRef sendButton = UIFactory.CreateButton(inputRow, "ChatSendButton", "\u53d1\u9001");
+            UIFactory.SetLayoutElement(sendButton.Component.gameObject, minWidth: 78, minHeight: 24, flexibleWidth: 0, flexibleHeight: 0);
             sendButton.OnClick += OnSendClicked;
-
-            RefreshMessages();
         }
 
         private void OnSendClicked()
         {
-            if (messageInput == null)
+            if (messageInput == null || _messageHandler == null)
                 return;
 
-            string message = messageInput.Text;
-            if (string.IsNullOrWhiteSpace(message))
+            string text = messageInput.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(text))
                 return;
 
-            if (chatComponent != null)
-            {
-                chatComponent.SendMessage(message);
-            }
+            List<Message> messages = _messageHandler.Messages ?? new List<Message>();
+            messages.Add(new Message(MessageType.Player, "\u6211", text));
+            _messageHandler.Update(messages);
+            messageInput.Text = string.Empty;
+            FocusInput();
+        }
+
+        private void OnMessagesUpdated(bool hasNewMessages)
+        {
+            if (!hasNewMessages)
+                return;
+
+            ShowPassiveNow();
+        }
+
+        private void SetActiveMode(bool active)
+        {
+            isActiveMode = active;
+            TitleBar.SetActive(active);
+            inputRow.SetActive(active);
+            canvasGroup.alpha = 1f;
+            canvasGroup.blocksRaycasts = active;
+
+            if (active)
+                FocusInput();
             else
             {
-                Plugin.Logger.LogInfo("Send chat: " + message);
+                messageInput.Component.DeactivateInputField();
+                ShowPassiveNow();
             }
 
-            messageInput.Text = string.Empty;
-            RefreshMessages();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
         }
 
-        private ChatMessageViewData[] GetMessages()
+        private void ShowPassiveNow()
         {
-            if (chatComponent == null)
-                return DefaultMessages;
+            lastPassiveActivityTime = Time.unscaledTime;
+            canvasGroup.alpha = 1f;
+        }
 
-            List<ChatMessageViewData> messages = new List<ChatMessageViewData>();
-            foreach (ChatMessageViewData message in chatComponent.GetMessages())
+        private void UpdatePassiveFade()
+        {
+            float elapsed = Time.unscaledTime - lastPassiveActivityTime;
+            if (elapsed <= PassiveVisibleSeconds)
             {
-                messages.Add(message);
+                canvasGroup.alpha = 1f;
+                return;
             }
 
-            if (messages.Count == 0)
-                return DefaultMessages;
-
-            return messages.ToArray();
+            float fadeProgress = PassiveFadeSeconds > 0f
+                ? Mathf.Clamp01((elapsed - PassiveVisibleSeconds) / PassiveFadeSeconds)
+                : 1f;
+            canvasGroup.alpha = 1f - fadeProgress;
         }
 
-        private void CreateMessageRow(ChatMessageViewData message, int rowIndex)
+        private void FocusInput()
         {
-            Color rowColor = rowIndex % 2 == 0
-                ? new Color(0.13f, 0.13f, 0.13f, 1f)
-                : new Color(0.1f, 0.1f, 0.1f, 1f);
+            messageInput.Component.ActivateInputField();
+            messageInput.Component.Select();
+        }
 
-            GameObject row = UIFactory.CreateHorizontalGroup(
-                messageListContent,
-                "ChatRow_" + rowIndex,
-                false,
-                false,
-                true,
-                true,
-                0,
-                new Vector4(6, 3, 6, 3),
-                rowColor,
-                TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(row, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
+        private static bool IsPointerInside(RectTransform rect)
+        {
+            return rect != null &&
+                   RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition);
+        }
 
-            string display = "[" + message.Sender + "] " + message.Message;
-            Text text = UIFactory.CreateLabel(row, "ChatRowText", display, TextAnchor.MiddleLeft);
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            UIFactory.SetLayoutElement(text.gameObject, minHeight: 18, flexibleHeight: 0, flexibleWidth: 9999);
+        private static void MakeImageTransparent(GameObject gameObject)
+        {
+            Image image = gameObject.GetComponent<Image>();
+            if (image == null)
+                return;
+
+            image.color = Color.clear;
+            image.raycastTarget = false;
         }
     }
 }
