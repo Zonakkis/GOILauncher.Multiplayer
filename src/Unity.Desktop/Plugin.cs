@@ -8,9 +8,11 @@ using GOILauncher.Multiplayer.UI.Theme;
 using GOILauncher.Multiplayer.Unity;
 using NLog;
 using NLog.Targets;
+using System.Reflection;
 using UnityEngine;
 using UniverseLib;
 using UniverseLib.Config;
+using UniverseLib.Input;
 using UniverseLib.UI;
 
 namespace GOILauncher.Multiplayer;
@@ -21,9 +23,12 @@ public class Plugin : BaseUnityPlugin
     internal static new ManualLogSource Logger;
     public static ITheme Theme { get; private set; }
     public static UIBase UIBase { get; private set; }
+    // UniverseLib exposes the config flag, but keeps the immediate cursor refresh internal.
+    private static readonly MethodInfo UpdateCursorControlMethod = typeof(CursorUnlocker).GetMethod("UpdateCursorControl", BindingFlags.Static | BindingFlags.NonPublic);
+
     private MultiplayerUI _multiplayerUI;
     private ChatHudUI _chatHudUI;
-    private PlayerListOverlayUI _playerListOverlayUI;
+    private PlayerListUI _playerListOverlayUI;
 
     private void Awake()
     {
@@ -32,7 +37,7 @@ public class Plugin : BaseUnityPlugin
 
         Universe.Init(1f, OnInitialized, OnLog, new UniverseLibConfig
         {
-            Force_Unlock_Mouse = true,
+            Force_Unlock_Mouse = false,
             Disable_EventSystem_Override = false
         });
     }
@@ -45,7 +50,11 @@ public class Plugin : BaseUnityPlugin
         Theme = container.Resolve<ITheme>();
         _multiplayerUI = container.Resolve<MultiplayerUI>();
         _chatHudUI = container.Resolve<ChatHudUI>();
-        _playerListOverlayUI = container.Resolve<PlayerListOverlayUI>();
+        _playerListOverlayUI = container.Resolve<PlayerListUI>();
+        _chatHudUI.ActiveModeChanged += OnChatActiveModeChanged;
+        _multiplayerUI.SetActive(false);
+        _playerListOverlayUI.SetActive(false);
+        ApplyCursorState();
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loaded!");
     }
 
@@ -81,7 +90,7 @@ public class Plugin : BaseUnityPlugin
         builder.RegisterType<MessageHandler>()
         .AsSelf()
         .SingleInstance();
-        builder.RegisterType<PlayerListOverlayUI>()
+        builder.RegisterType<PlayerListUI>()
         .AsSelf()
         .SingleInstance();
     }
@@ -105,13 +114,43 @@ public class Plugin : BaseUnityPlugin
 
     private void Update()
     {
+        if (_multiplayerUI == null || _playerListOverlayUI == null)
+            return;
+
         if (Input.GetKeyDown(KeyCode.F1))
+        {
             _multiplayerUI.SetActive(!_multiplayerUI.Enabled);
+            ApplyCursorState();
+        }
 
         if (Input.GetKeyDown(KeyCode.Tab))
+        {
             _playerListOverlayUI.SetActive(true);
+            ApplyCursorState();
+        }
         else if (Input.GetKeyUp(KeyCode.Tab))
+        {
             _playerListOverlayUI.SetActive(false);
+            ApplyCursorState();
+        }
 
+    }
+
+    private void OnChatActiveModeChanged(bool active)
+    {
+        ApplyCursorState();
+    }
+
+    private void ApplyCursorState()
+    {
+        ConfigManager.Force_Unlock_Mouse = ShouldUnlockCursor();
+        UpdateCursorControlMethod?.Invoke(null, null);
+    }
+
+    private bool ShouldUnlockCursor()
+    {
+        return (_multiplayerUI != null && _multiplayerUI.Enabled)
+            || (_playerListOverlayUI != null && _playerListOverlayUI.Enabled)
+            || (_chatHudUI != null && _chatHudUI.IsActiveMode);
     }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.UI.ScrollView.Message;
@@ -66,6 +67,10 @@ namespace GOILauncher.Multiplayer.UI
         public override Vector2 DefaultPosition => new Vector2(-Screen.currentResolution.width / 2, 0);
 
         public override bool CanDragAndResize => true;
+
+        public bool IsActiveMode => isActiveMode;
+
+        public event Action<bool> ActiveModeChanged;
 
         protected override void ConstructPanelContent()
         {
@@ -150,6 +155,7 @@ namespace GOILauncher.Multiplayer.UI
 
         private void SetActiveMode(bool active)
         {
+            bool changed = isActiveMode != active;
             isActiveMode = active;
             TitleBar.SetActive(active);
             inputRow.SetActive(active);
@@ -165,6 +171,9 @@ namespace GOILauncher.Multiplayer.UI
             }
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
+
+            if (changed)
+                ActiveModeChanged?.Invoke(active);
         }
 
         private void ShowPassiveNow()

@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 namespace GOILauncher.Multiplayer.UI
 {
-    public class PlayerListOverlayUI : PanelBase
+    public class PlayerListUI : PanelBase
     {
         private static readonly PlayerListItemViewData[] DefaultPlayers = new PlayerListItemViewData[]
         {
@@ -22,7 +22,7 @@ namespace GOILauncher.Multiplayer.UI
         private GameObject playerListContent;
         private AutoSliderScrollbar playerListScrollbar;
 
-        public PlayerListOverlayUI(UIBase owner) : base(owner)
+        public PlayerListUI(UIBase owner) : base(owner)
         {
         }
 
