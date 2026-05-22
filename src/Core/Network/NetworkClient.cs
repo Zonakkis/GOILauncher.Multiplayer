@@ -62,7 +62,7 @@ namespace GOILauncher.Multiplayer.Network
         {
             if (!IsConnected) return;
 
-            var bytes = _processor.WriteNetSerializable(packet);
+            var bytes = NetSerializablePacketWriter.Write(packet);
             _server.Send(bytes, method);
         }
     }

@@ -61,7 +61,7 @@ namespace GOILauncher.Multiplayer.Network
             var peer = _netManager.GetPeerById(clientId);
             if (peer == null) return;
 
-            var bytes = _processor.WriteNetSerializable(packet);
+            var bytes = NetSerializablePacketWriter.Write(packet);
             peer.Send(bytes, method);
         }
     }
