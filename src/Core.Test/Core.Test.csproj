@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\..\packages\NUnit3TestAdapter.6.2.0\build\net462\NUnit3TestAdapter.props" Condition="Exists('..\..\packages\NUnit3TestAdapter.6.2.0\build\net462\NUnit3TestAdapter.props')" />
+  <Import Project="..\..\packages\Microsoft.Testing.Extensions.Telemetry.2.1.0\build\netstandard2.0\Microsoft.Testing.Extensions.Telemetry.props" Condition="Exists('..\..\packages\Microsoft.Testing.Extensions.Telemetry.2.1.0\build\netstandard2.0\Microsoft.Testing.Extensions.Telemetry.props')" />
+  <Import Project="..\..\packages\Microsoft.Testing.Platform.MSBuild.2.1.0\build\Microsoft.Testing.Platform.MSBuild.props" Condition="Exists('..\..\packages\Microsoft.Testing.Platform.MSBuild.2.1.0\build\Microsoft.Testing.Platform.MSBuild.props')" />
+  <Import Project="..\..\packages\Microsoft.Testing.Platform.2.1.0\build\netstandard2.0\Microsoft.Testing.Platform.props" Condition="Exists('..\..\packages\Microsoft.Testing.Platform.2.1.0\build\netstandard2.0\Microsoft.Testing.Platform.props')" />
   <Import Project="..\packages\NUnit3TestAdapter.6.1.0\build\net462\NUnit3TestAdapter.props" Condition="Exists('..\packages\NUnit3TestAdapter.6.1.0\build\net462\NUnit3TestAdapter.props')" />
   <Import Project="..\packages\Microsoft.Testing.Extensions.Telemetry.2.0.2\build\netstandard2.0\Microsoft.Testing.Extensions.Telemetry.props" Condition="Exists('..\packages\Microsoft.Testing.Extensions.Telemetry.2.0.2\build\netstandard2.0\Microsoft.Testing.Extensions.Telemetry.props')" />
   <Import Project="..\packages\Microsoft.Testing.Platform.MSBuild.2.0.2\build\Microsoft.Testing.Platform.MSBuild.props" Condition="Exists('..\packages\Microsoft.Testing.Platform.MSBuild.2.0.2\build\Microsoft.Testing.Platform.MSBuild.props')" />
@@ -53,19 +57,24 @@
       <HintPath>..\packages\Microsoft.ApplicationInsights.2.23.0\lib\net46\Microsoft.ApplicationInsights.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Testing.Extensions.MSBuild, Version=2.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Testing.Platform.MSBuild.2.0.2\lib\netstandard2.0\Microsoft.Testing.Extensions.MSBuild.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Testing.Platform.MSBuild.2.1.0\lib\netstandard2.0\Microsoft.Testing.Extensions.MSBuild.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Testing.Extensions.Telemetry, Version=2.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Testing.Extensions.Telemetry.2.0.2\lib\netstandard2.0\Microsoft.Testing.Extensions.Telemetry.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Testing.Extensions.Telemetry.2.1.0\lib\netstandard2.0\Microsoft.Testing.Extensions.Telemetry.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Testing.Extensions.TrxReport.Abstractions, Version=2.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Testing.Extensions.TrxReport.Abstractions.2.0.2\lib\netstandard2.0\Microsoft.Testing.Extensions.TrxReport.Abstractions.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Testing.Extensions.TrxReport.Abstractions.2.1.0\lib\netstandard2.0\Microsoft.Testing.Extensions.TrxReport.Abstractions.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Testing.Extensions.VSTestBridge, Version=2.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Testing.Extensions.VSTestBridge.2.0.2\lib\netstandard2.0\Microsoft.Testing.Extensions.VSTestBridge.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Testing.Extensions.VSTestBridge.2.1.0\lib\netstandard2.0\Microsoft.Testing.Extensions.VSTestBridge.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Testing.Platform, Version=2.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Testing.Platform.2.0.2\lib\netstandard2.0\Microsoft.Testing.Platform.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.Testing.Platform.2.1.0\lib\netstandard2.0\Microsoft.Testing.Platform.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.TestPlatform.AdapterUtilities, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.TestPlatform.AdapterUtilities.18.0.1\lib\net462\Microsoft.TestPlatform.AdapterUtilities.dll</HintPath>
@@ -160,8 +169,18 @@
     <Error Condition="!Exists('..\packages\Microsoft.Testing.Extensions.Telemetry.2.0.2\build\netstandard2.0\Microsoft.Testing.Extensions.Telemetry.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Testing.Extensions.Telemetry.2.0.2\build\netstandard2.0\Microsoft.Testing.Extensions.Telemetry.props'))" />
     <Error Condition="!Exists('..\packages\NUnit3TestAdapter.6.1.0\build\net462\NUnit3TestAdapter.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NUnit3TestAdapter.6.1.0\build\net462\NUnit3TestAdapter.props'))" />
     <Error Condition="!Exists('..\packages\NUnit3TestAdapter.6.1.0\build\net462\NUnit3TestAdapter.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\NUnit3TestAdapter.6.1.0\build\net462\NUnit3TestAdapter.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Testing.Platform.2.1.0\build\netstandard2.0\Microsoft.Testing.Platform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Testing.Platform.2.1.0\build\netstandard2.0\Microsoft.Testing.Platform.props'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Testing.Platform.2.1.0\build\netstandard2.0\Microsoft.Testing.Platform.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Testing.Platform.2.1.0\build\netstandard2.0\Microsoft.Testing.Platform.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Testing.Platform.MSBuild.2.1.0\build\Microsoft.Testing.Platform.MSBuild.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Testing.Platform.MSBuild.2.1.0\build\Microsoft.Testing.Platform.MSBuild.props'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Testing.Platform.MSBuild.2.1.0\build\Microsoft.Testing.Platform.MSBuild.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Testing.Platform.MSBuild.2.1.0\build\Microsoft.Testing.Platform.MSBuild.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Microsoft.Testing.Extensions.Telemetry.2.1.0\build\netstandard2.0\Microsoft.Testing.Extensions.Telemetry.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Testing.Extensions.Telemetry.2.1.0\build\netstandard2.0\Microsoft.Testing.Extensions.Telemetry.props'))" />
+    <Error Condition="!Exists('..\..\packages\NUnit3TestAdapter.6.2.0\build\net462\NUnit3TestAdapter.props')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\NUnit3TestAdapter.6.2.0\build\net462\NUnit3TestAdapter.props'))" />
+    <Error Condition="!Exists('..\..\packages\NUnit3TestAdapter.6.2.0\build\net462\NUnit3TestAdapter.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\NUnit3TestAdapter.6.2.0\build\net462\NUnit3TestAdapter.targets'))" />
   </Target>
   <Import Project="..\packages\Microsoft.Testing.Platform.2.0.2\build\netstandard2.0\Microsoft.Testing.Platform.targets" Condition="Exists('..\packages\Microsoft.Testing.Platform.2.0.2\build\netstandard2.0\Microsoft.Testing.Platform.targets')" />
   <Import Project="..\packages\Microsoft.Testing.Platform.MSBuild.2.0.2\build\Microsoft.Testing.Platform.MSBuild.targets" Condition="Exists('..\packages\Microsoft.Testing.Platform.MSBuild.2.0.2\build\Microsoft.Testing.Platform.MSBuild.targets')" />
   <Import Project="..\packages\NUnit3TestAdapter.6.1.0\build\net462\NUnit3TestAdapter.targets" Condition="Exists('..\packages\NUnit3TestAdapter.6.1.0\build\net462\NUnit3TestAdapter.targets')" />
+  <Import Project="..\..\packages\Microsoft.Testing.Platform.2.1.0\build\netstandard2.0\Microsoft.Testing.Platform.targets" Condition="Exists('..\..\packages\Microsoft.Testing.Platform.2.1.0\build\netstandard2.0\Microsoft.Testing.Platform.targets')" />
+  <Import Project="..\..\packages\Microsoft.Testing.Platform.MSBuild.2.1.0\build\Microsoft.Testing.Platform.MSBuild.targets" Condition="Exists('..\..\packages\Microsoft.Testing.Platform.MSBuild.2.1.0\build\Microsoft.Testing.Platform.MSBuild.targets')" />
+  <Import Project="..\..\packages\NUnit3TestAdapter.6.2.0\build\net462\NUnit3TestAdapter.targets" Condition="Exists('..\..\packages\NUnit3TestAdapter.6.2.0\build\net462\NUnit3TestAdapter.targets')" />
 </Project>
