@@ -7,7 +7,7 @@ namespace GOILauncher.Multiplayer.Network
 {
     public class NetworkClient : INetworkClient
     {
-        public bool IsConnected => _server != null;
+        public bool IsConnected => _server != null && _server.ConnectionState == ConnectionState.Connected;
         private readonly NetManager _netManager;
         private readonly NetPacketProcessor _processor;
         private readonly ILogger<NetworkClient> _logger;
