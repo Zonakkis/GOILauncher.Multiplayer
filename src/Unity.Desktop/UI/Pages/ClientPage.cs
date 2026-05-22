@@ -1,47 +1,73 @@
+using System;
+using System.Collections.Generic;
+using GOILauncher.Multiplayer.Client;
+using GOILauncher.Multiplayer.Core.Event;
+using GOILauncher.Multiplayer.Core.Log;
+using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.UI.Components;
+using GOILauncher.Multiplayer.UI.Theme;
+using UnityEngine;
+using UnityEngine.UI;
 using UniverseLib;
 using UniverseLib.UI;
 using UniverseLib.UI.Models;
 using UniverseLib.UI.Widgets;
-using UnityEngine;
-using UnityEngine.UI;
-using GOILauncher.Multiplayer.UI.Theme;
-using GOILauncher.Multiplayer.Extensions;
-using GOILauncher.Multiplayer.Client;
 
 namespace GOILauncher.Multiplayer.UI.Pages
 {
     public class ClientPage : IPage
     {
+        private const string DefaultPlayerName = "\u73a9\u5bb6";
+        private const string DefaultServerHost = "127.0.0.1";
+        private const int DefaultServerPort = 9027;
+
         private static readonly RoomListItemViewData[] MockRoomItems = new RoomListItemViewData[]
         {
-            new RoomListItemViewData("新手休闲房", "1/4"),
-            new RoomListItemViewData("双人协作", "2/2"),
-            new RoomListItemViewData("速通挑战", "3/4"),
-            new RoomListItemViewData("中文交流房", "2/6"),
-            new RoomListItemViewData("公开大厅 #1", "5/8"),
-            new RoomListItemViewData("公开大厅 #2", "0/8")
+            new RoomListItemViewData("\u65b0\u624b\u4f11\u95f2\u623f", "1/4"),
+            new RoomListItemViewData("\u53cc\u4eba\u534f\u4f5c", "2/2"),
+            new RoomListItemViewData("\u901f\u901a\u6311\u6218", "3/4"),
+            new RoomListItemViewData("\u4e2d\u6587\u4ea4\u6d41\u623f", "2/6"),
+            new RoomListItemViewData("\u516c\u5f00\u5927\u5385 #1", "5/8"),
+            new RoomListItemViewData("\u516c\u5f00\u5927\u5385 #2", "0/8")
         };
 
-        public IUnityClient _client;
+        private readonly IUnityClient _client;
+        private readonly IEventBus _eventBus;
+        private readonly ILogger<ClientPage> _logger;
+        private readonly Toast _toast;
+        private readonly ITheme _theme = Plugin.Theme;
 
         private GameObject roomListContent;
         private AutoSliderScrollbar roomListScrollbar;
         private IRoomListUiComponent roomListComponent;
         private InputFieldRef playerNameInput;
-        private InputFieldRef serverIpInput;
+        private InputFieldRef serverHostInput;
+        private InputFieldRef serverPortInput;
+        private ButtonRef connectButton;
+        private ButtonRef disconnectButton;
+        private bool isConnecting;
+        private bool disconnectRequested;
+        private string lastServerHost = DefaultServerHost;
+        private int lastServerPort = DefaultServerPort;
 
-        public GameObject Root { get; private set; }
-        private readonly ITheme _theme = Plugin.Theme;
-
-        public ClientPage(IUnityClient unityClient)
+        public ClientPage(IUnityClient unityClient, IEventBus eventBus, ILogger<ClientPage> logger, Toast toast)
         {
             _client = unityClient;
+            _eventBus = eventBus;
+            _logger = logger;
+            _toast = toast;
+            _eventBus.Subscribe<ServerConnectedEvent>(OnServerConnected);
+            _eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
         }
+
+        public GameObject Root { get; private set; }
 
         public void SetActive(bool active)
         {
             Root?.SetActive(active);
+
+            if (active)
+                RefreshClientState();
         }
 
         public void Bind(IRoomListUiComponent roomListComponent)
@@ -77,10 +103,10 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 new Color(0.16f, 0.16f, 0.16f, 1f));
             UIFactory.SetLayoutElement(titleRow, minHeight: 34, flexibleHeight: 0);
 
-            Text roomListTitle = UIFactory.CreateLabel(titleRow, "RoomListTitle", "可用房间列表", TextAnchor.MiddleLeft);
+            Text roomListTitle = UIFactory.CreateLabel(titleRow, "RoomListTitle", "\u53ef\u7528\u623f\u95f4\u5217\u8868", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(roomListTitle.gameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
-            ButtonRef refreshButton = UIFactory.CreateButton(titleRow, "RefreshRoomList", "刷新");
+            ButtonRef refreshButton = UIFactory.CreateButton(titleRow, "RefreshRoomList", "\u5237\u65b0");
             UIFactory.SetLayoutElement(refreshButton.Component.gameObject, minHeight: 24, minWidth: 80, flexibleWidth: 0, flexibleHeight: 0);
             refreshButton.OnClick += OnRefreshClicked;
 
@@ -96,13 +122,13 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 new Color(0.2f, 0.2f, 0.2f, 1f));
             UIFactory.SetLayoutElement(tableHeader, minHeight: 32, flexibleHeight: 0);
 
-            Text roomNameHeader = UIFactory.CreateLabel(tableHeader, "RoomNameHeader", "房间名", TextAnchor.MiddleLeft);
+            Text roomNameHeader = UIFactory.CreateLabel(tableHeader, "RoomNameHeader", "\u623f\u95f4\u540d", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(roomNameHeader.gameObject, minHeight: 22, flexibleHeight: 0, flexibleWidth: 9999);
 
-            Text playerCountHeader = UIFactory.CreateLabel(tableHeader, "PlayerCountHeader", "玩家数", TextAnchor.MiddleCenter);
+            Text playerCountHeader = UIFactory.CreateLabel(tableHeader, "PlayerCountHeader", "\u73a9\u5bb6\u6570", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(playerCountHeader.gameObject, minWidth: 100, preferredWidth: 110, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
 
-            Text actionHeader = UIFactory.CreateLabel(tableHeader, "ActionHeader", "操作", TextAnchor.MiddleCenter);
+            Text actionHeader = UIFactory.CreateLabel(tableHeader, "ActionHeader", "\u64cd\u4f5c", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(actionHeader.gameObject, minWidth: 90, preferredWidth: 100, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
 
             GameObject roomListScroll = UIFactory.CreateScrollView(
@@ -126,15 +152,15 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 new Color(0.16f, 0.16f, 0.16f, 1f));
             UIFactory.SetLayoutElement(nameRow, minHeight: 30, flexibleHeight: 0);
 
-            Text nameLabel = UIFactory.CreateLabel(nameRow, "NameLabel", "名字", TextAnchor.MiddleLeft);
+            Text nameLabel = UIFactory.CreateLabel(nameRow, "NameLabel", "\u540d\u5b57", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(nameLabel.gameObject, minWidth: 72, preferredWidth: 80, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
 
-            playerNameInput = UIFactory.CreateInputField(nameRow, "PlayerNameInput", "输入名字");
+            playerNameInput = UIFactory.CreateInputField(nameRow, "PlayerNameInput", "\u8f93\u5165\u540d\u5b57");
             UIFactory.SetLayoutElement(playerNameInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
-            GameObject ipRow = UIFactory.CreateHorizontalGroup(
+            GameObject addressRow = UIFactory.CreateHorizontalGroup(
                 Root,
-                "ServerIpRow",
+                "ServerAddressRow",
                 false,
                 false,
                 true,
@@ -142,13 +168,20 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 6,
                 new Vector4(6, 4, 6, 4),
                 new Color(0.16f, 0.16f, 0.16f, 1f));
-            UIFactory.SetLayoutElement(ipRow, minHeight: 30, flexibleHeight: 0);
+            UIFactory.SetLayoutElement(addressRow, minHeight: 30, flexibleHeight: 0);
 
-            Text ipLabel = UIFactory.CreateLabel(ipRow, "ServerIpLabel", "服务器IP", TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(ipLabel.gameObject, minWidth: 72, preferredWidth: 80, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
+            Text hostLabel = UIFactory.CreateLabel(addressRow, "ServerHostLabel", "\u670d\u52a1\u5668IP", TextAnchor.MiddleLeft);
+            UIFactory.SetLayoutElement(hostLabel.gameObject, minWidth: 72, preferredWidth: 80, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
 
-            serverIpInput = UIFactory.CreateInputField(ipRow, "ServerIpInput", "127.0.0.1:7777");
-            UIFactory.SetLayoutElement(serverIpInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
+            serverHostInput = UIFactory.CreateInputField(addressRow, "ServerHostInput", DefaultServerHost);
+            UIFactory.SetLayoutElement(serverHostInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
+
+            Text portLabel = UIFactory.CreateLabel(addressRow, "ServerPortLabel", "\u7aef\u53e3", TextAnchor.MiddleLeft);
+            UIFactory.SetLayoutElement(portLabel.gameObject, minWidth: 40, preferredWidth: 44, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
+
+            serverPortInput = UIFactory.CreateInputField(addressRow, "ServerPortInput", DefaultServerPort.ToString());
+            serverPortInput.Component.contentType = InputField.ContentType.IntegerNumber;
+            UIFactory.SetLayoutElement(serverPortInput.GameObject, minWidth: 90, preferredWidth: 110, minHeight: 24, flexibleHeight: 0, flexibleWidth: 0);
 
             GameObject connectRow = UIFactory.CreateHorizontalGroup(
                 Root,
@@ -162,18 +195,19 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 new Color(0.16f, 0.16f, 0.16f, 1f));
             UIFactory.SetLayoutElement(connectRow, minHeight: 32, flexibleHeight: 0);
 
-            ButtonRef connectButton = UIFactory.CreateButton(connectRow, "ConnectButton", "连接");
+            connectButton = UIFactory.CreateButton(connectRow, "ConnectButton", "\u8fde\u63a5");
             UIFactory.SetLayoutElement(connectButton.Component.gameObject, minWidth: 100, minHeight: 24, flexibleWidth: 9999, flexibleHeight: 0);
             connectButton.SetColor(_theme.ConfirmButtonColor);
             connectButton.OnClick += OnConnectClicked;
 
-            ButtonRef disconnectButton = UIFactory.CreateButton(connectRow, "DisconnectButton", "断开");
+            disconnectButton = UIFactory.CreateButton(connectRow, "DisconnectButton", "\u65ad\u5f00");
             UIFactory.SetLayoutElement(disconnectButton.Component.gameObject, minWidth: 100, minHeight: 24, flexibleWidth: 9999, flexibleHeight: 0);
             disconnectButton.SetColor(_theme.CancelButtonColor);
             disconnectButton.OnClick += OnDisconnectClicked;
 
             PopulateRoomList();
             SyncConnectionInputs();
+            RefreshClientState();
         }
 
         private void OnRefreshClicked()
@@ -210,7 +244,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             if (roomListComponent == null)
                 return MockRoomItems;
 
-            var items = new System.Collections.Generic.List<RoomListItemViewData>();
+            var items = new List<RoomListItemViewData>();
             foreach (RoomListItemViewData item in roomListComponent.GetRooms())
             {
                 items.Add(item);
@@ -247,7 +281,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             Text playersText = UIFactory.CreateLabel(row, "RoomPlayers", item.PlayerCountText, TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(playersText.gameObject, minWidth: 100, preferredWidth: 110, minHeight: 24, flexibleHeight: 0, flexibleWidth: 0);
 
-            ButtonRef joinButton = UIFactory.CreateButton(row, "JoinRoomButton", "加入");
+            ButtonRef joinButton = UIFactory.CreateButton(row, "JoinRoomButton", "\u52a0\u5165");
             UIFactory.SetLayoutElement(joinButton.Component.gameObject, minWidth: 90, preferredWidth: 100, minHeight: 24, flexibleWidth: 0, flexibleHeight: 0);
             RuntimeHelper.SetColorBlock(
                 joinButton.Component,
@@ -275,48 +309,158 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnConnectClicked()
         {
-            string playerName = playerNameInput != null ? playerNameInput.Text : string.Empty;
-            string serverIp = serverIpInput != null ? serverIpInput.Text : string.Empty;
-
-            if (roomListComponent != null)
+            if (_client == null || isConnecting || _client.IsConnected)
             {
-                roomListComponent.Connect(playerName, serverIp);
-                SyncConnectionInputs();
+                RefreshClientState();
                 return;
             }
 
-            Plugin.Logger.LogInfo("Connect clicked: " + playerName + " @ " + serverIp);
+            string playerName = GetPlayerName();
+            string serverHost = GetServerHost();
+            if (!TryGetServerPort(out int serverPort))
+                return;
+
+            lastServerHost = serverHost;
+            lastServerPort = serverPort;
+            isConnecting = true;
+            disconnectRequested = false;
+            RefreshClientState();
+
+            try
+            {
+                _client.Connect(serverHost, serverPort, playerName);
+                _toast.Show($"\u6b63\u5728\u8fde\u63a5 {serverHost}:{serverPort}");
+            }
+            catch (Exception ex)
+            {
+                isConnecting = false;
+                _logger.Error("Failed to connect to server", ex);
+                _toast.Show($"\u8fde\u63a5\u5931\u8d25: {ex.Message}");
+                RefreshClientState();
+            }
         }
 
         private void OnDisconnectClicked()
         {
-            if (roomListComponent != null)
+            if (_client == null || (!isConnecting && !_client.IsConnected))
             {
-                roomListComponent.Disconnect();
+                RefreshClientState();
                 return;
             }
 
-            Plugin.Logger.LogInfo("Disconnect clicked.");
+            disconnectRequested = true;
+
+            try
+            {
+                _client.Disconnect();
+            }
+            catch (Exception ex)
+            {
+                disconnectRequested = false;
+                _logger.Error("Failed to disconnect from server", ex);
+                _toast.Show($"\u65ad\u5f00\u5931\u8d25: {ex.Message}");
+                RefreshClientState();
+            }
+        }
+
+        private void OnServerConnected(ServerConnectedEvent connectedEvent)
+        {
+            isConnecting = false;
+            disconnectRequested = false;
+            _toast.Show($"\u5df2\u8fde\u63a5 {lastServerHost}:{lastServerPort}");
+            RefreshClientState();
+        }
+
+        private void OnServerDisconnected(ServerDisconnectedEvent disconnectedEvent)
+        {
+            bool wasConnecting = isConnecting;
+            bool wasDisconnectRequested = disconnectRequested;
+            isConnecting = false;
+            disconnectRequested = false;
+
+            if (wasDisconnectRequested)
+                _toast.Show("\u5df2\u65ad\u5f00\u8fde\u63a5");
+            else if (wasConnecting)
+                _toast.Show($"\u8fde\u63a5\u5931\u8d25: {disconnectedEvent.Reason}");
+            else
+                _toast.Show($"\u8fde\u63a5\u5df2\u65ad\u5f00: {disconnectedEvent.Reason}");
+
+            RefreshClientState();
+        }
+
+        private void RefreshClientState()
+        {
+            if (connectButton == null || disconnectButton == null)
+                return;
+
+            bool connected = _client != null && _client.IsConnected && !isConnecting;
+            bool canEditConnection = !isConnecting && !connected;
+
+            connectButton.Component.interactable = canEditConnection;
+            disconnectButton.Component.interactable = isConnecting || connected;
+            SetInputInteractable(playerNameInput, canEditConnection);
+            SetInputInteractable(serverHostInput, canEditConnection);
+            SetInputInteractable(serverPortInput, canEditConnection);
         }
 
         private void SyncConnectionInputs()
         {
-            if (playerNameInput == null || serverIpInput == null)
+            if (playerNameInput == null || serverHostInput == null || serverPortInput == null)
                 return;
 
-            if (roomListComponent == null)
+            if (string.IsNullOrEmpty(playerNameInput.Text))
+                playerNameInput.Text = DefaultPlayerName;
+
+            if (string.IsNullOrEmpty(serverHostInput.Text))
+                serverHostInput.Text = DefaultServerHost;
+
+            if (string.IsNullOrEmpty(serverPortInput.Text))
+                serverPortInput.Text = DefaultServerPort.ToString();
+        }
+
+        private string GetPlayerName()
+        {
+            string playerName = playerNameInput != null ? playerNameInput.Text?.Trim() : string.Empty;
+            if (string.IsNullOrWhiteSpace(playerName))
+                playerName = DefaultPlayerName;
+
+            if (playerNameInput != null)
+                playerNameInput.Text = playerName;
+
+            return playerName;
+        }
+
+        private string GetServerHost()
+        {
+            string serverHost = serverHostInput != null ? serverHostInput.Text?.Trim() : string.Empty;
+            if (string.IsNullOrWhiteSpace(serverHost))
+                serverHost = DefaultServerHost;
+
+            if (serverHostInput != null)
+                serverHostInput.Text = serverHost;
+
+            return serverHost;
+        }
+
+        private bool TryGetServerPort(out int serverPort)
+        {
+            serverPort = DefaultServerPort;
+
+            string text = serverPortInput == null ? string.Empty : serverPortInput.Text?.Trim();
+            if (!int.TryParse(text, out serverPort) || serverPort < 1 || serverPort > 65535)
             {
-                if (string.IsNullOrEmpty(playerNameInput.Text))
-                    playerNameInput.Text = "玩家";
-
-                if (string.IsNullOrEmpty(serverIpInput.Text))
-                    serverIpInput.Text = "127.0.0.1:7777";
-
-                return;
+                _toast.Show("\u7aef\u53e3\u5fc5\u987b\u662f 1-65535 \u4e4b\u95f4\u7684\u6570\u5b57");
+                return false;
             }
 
-            playerNameInput.Text = roomListComponent.GetPlayerName() ?? string.Empty;
-            serverIpInput.Text = roomListComponent.GetServerIp() ?? string.Empty;
+            serverPortInput.Text = serverPort.ToString();
+            return true;
+        }
+
+        private static void SetInputInteractable(InputFieldRef input, bool interactable)
+        {
+            if (input != null)
+                input.Component.interactable = interactable;
         }
     }
 }

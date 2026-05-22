@@ -1,36 +1,43 @@
-using UniverseLib.UI;
-using UniverseLib.UI.Models;
-using UnityEngine;
-using UnityEngine.UI;
-using GOILauncher.Multiplayer.Unity;
+﻿using System;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Extensions;
-using System;
+using GOILauncher.Multiplayer.Unity;
+using UnityEngine;
+using UnityEngine.UI;
+using UniverseLib.UI;
+using UniverseLib.UI.Models;
 
 namespace GOILauncher.Multiplayer.UI.Pages
 {
     public class ServerPage : IPage
     {
         private const int DefaultPort = 9027;
-        public Toast Toast { get; set; }
-        public ILogger<ServerPage> Logger { get; set; }
-        public IUnityServer _server;
-        public GameObject Root { get; private set; }
+
+        private readonly IUnityServer _server;
+        private readonly ILogger<ServerPage> _logger;
+        private readonly Toast _toast;
+
         private Text _serverStateText;
         private InputFieldRef portInput;
         private ButtonRef _startButton;
         private ButtonRef _stopButton;
+        private int _lastListenPort = DefaultPort;
 
         public ServerPage(IUnityServer unityServer, ILogger<ServerPage> logger, Toast toast)
         {
             _server = unityServer;
-            Logger = logger;
-            Toast = toast;
+            _logger = logger;
+            _toast = toast;
         }
+
+        public GameObject Root { get; private set; }
 
         public void SetActive(bool active)
         {
             Root?.SetActive(active);
+
+            if (active)
+                RefreshServerState();
         }
 
         public void CreateContent(GameObject pagesContainer)
@@ -60,7 +67,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(topArea, minHeight: 34, flexibleHeight: 9999, flexibleWidth: 9999);
             UIFactory.SetLayoutGroup<VerticalLayoutGroup>(topArea, false, false, true, true, 0, childAlignment: TextAnchor.MiddleCenter);
 
-            _serverStateText = UIFactory.CreateLabel(topArea, "ServerStateText", "服务端未启动", TextAnchor.MiddleCenter);
+            _serverStateText = UIFactory.CreateLabel(topArea, "ServerStateText", "\u670d\u52a1\u7aef\u672a\u542f\u52a8", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(_serverStateText.gameObject, minHeight: 24, preferredHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
             GameObject portRow = UIFactory.CreateHorizontalGroup(
@@ -75,7 +82,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 new Color(0.16f, 0.16f, 0.16f, 1f));
             UIFactory.SetLayoutElement(portRow, minHeight: 30, flexibleHeight: 0);
 
-            Text portLabel = UIFactory.CreateLabel(portRow, "PortLabel", "启动端口", TextAnchor.MiddleLeft);
+            Text portLabel = UIFactory.CreateLabel(portRow, "PortLabel", "\u542f\u52a8\u7aef\u53e3", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(portLabel.gameObject, minWidth: 72, preferredWidth: 80, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
 
             portInput = UIFactory.CreateInputField(portRow, "ServerPortInput", DefaultPort.ToString());
@@ -95,71 +102,98 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 new Color(0.16f, 0.16f, 0.16f, 1f));
             UIFactory.SetLayoutElement(actionRow, minHeight: 32, flexibleHeight: 0);
 
-            _startButton = UIFactory.CreateButton(actionRow, "StartServerButton", "启动");
+            _startButton = UIFactory.CreateButton(actionRow, "StartServerButton", "\u542f\u52a8");
             UIFactory.SetLayoutElement(_startButton.Component.gameObject, minWidth: 100, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
             _startButton.SetConfirm();
             _startButton.OnClick += OnStartClicked;
 
-            _stopButton = UIFactory.CreateButton(actionRow, "StopServerButton", "停止");
+            _stopButton = UIFactory.CreateButton(actionRow, "StopServerButton", "\u505c\u6b62");
             UIFactory.SetLayoutElement(_stopButton.Component.gameObject, minWidth: 100, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
             _stopButton.SetCancel();
             _stopButton.OnClick += OnStopClicked;
 
-            SetConnectionState(false);
-        }
-
-        private void SetConnectionState(bool connected)
-        {
-            _startButton.Component.interactable = !connected;
-            _stopButton.Component.interactable = connected;
-            _serverStateText.text = connected ? $"服务端已启动，监听端口 {GetListenPort()}" : "服务端未启动";
+            RefreshServerState();
         }
 
         private void OnStartClicked()
         {
+            if (_server.IsRunning)
+            {
+                RefreshServerState();
+                return;
+            }
+
+            if (!TryGetListenPort(out int port))
+                return;
+
             try
             {
-                int port = GetListenPort();
                 _server.Start(port);
-                Toast.Show($"服务端已启动，监听端口 {port}");
-                SetConnectionState(true);
+                _lastListenPort = port;
+                _toast.Show($"\u670d\u52a1\u7aef\u5df2\u542f\u52a8\uff0c\u76d1\u542c\u7aef\u53e3 {port}");
             }
             catch (Exception ex)
             {
-                Logger.Error("Failed to start server", ex);
-                Toast.Show($"服务端启动失败: {ex.Message}");
+                _logger.Error("Failed to start server", ex);
+                _toast.Show($"\u670d\u52a1\u7aef\u542f\u52a8\u5931\u8d25: {ex.Message}");
+            }
+            finally
+            {
+                RefreshServerState();
             }
         }
 
         private void OnStopClicked()
         {
+            if (!_server.IsRunning)
+            {
+                RefreshServerState();
+                return;
+            }
+
             try
             {
                 _server.Stop();
-                Toast.Show("服务端已停止");
-                SetConnectionState(false);
+                _toast.Show("\u670d\u52a1\u7aef\u5df2\u505c\u6b62");
             }
             catch (Exception ex)
             {
-                Logger.Error("Failed to stop server", ex);
-                Toast.Show($"服务端停止失败: {ex.Message}");
+                _logger.Error("Failed to stop server", ex);
+                _toast.Show($"\u670d\u52a1\u7aef\u505c\u6b62\u5931\u8d25: {ex.Message}");
+            }
+            finally
+            {
+                RefreshServerState();
             }
         }
 
-        private int GetListenPort()
+        private void RefreshServerState()
         {
-            if (portInput == null)
-                return DefaultPort;
+            if (_serverStateText == null || _startButton == null || _stopButton == null || portInput == null)
+                return;
 
-            string text = portInput.Text == null ? string.Empty : portInput.Text.Trim();
-            if (!int.TryParse(text, out int port))
-                port = DefaultPort;
+            bool running = _server.IsRunning;
+            _startButton.Component.interactable = !running;
+            _stopButton.Component.interactable = running;
+            portInput.Component.interactable = !running;
+            _serverStateText.text = running
+                ? $"\u670d\u52a1\u7aef\u5df2\u542f\u52a8\uff0c\u76d1\u542c\u7aef\u53e3 {_lastListenPort}"
+                : "\u670d\u52a1\u7aef\u672a\u542f\u52a8";
+        }
 
-            if (port < 1 || port > 65535)
-                port = DefaultPort;
+        private bool TryGetListenPort(out int port)
+        {
+            port = DefaultPort;
+
+            string text = portInput == null ? string.Empty : portInput.Text?.Trim();
+            if (!int.TryParse(text, out port) || port < 1 || port > 65535)
+            {
+                _toast.Show("\u7aef\u53e3\u5fc5\u987b\u662f 1-65535 \u4e4b\u95f4\u7684\u6570\u5b57");
+                return false;
+            }
 
             portInput.Text = port.ToString();
-            return port;
+            return true;
         }
     }
 }
