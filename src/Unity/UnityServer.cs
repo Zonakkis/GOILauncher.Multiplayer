@@ -21,5 +21,10 @@ namespace GOILauncher.Multiplayer.Unity
         {
             ServerService.Stop();
         }
+
+        public void Update()
+        {
+            ServerService?.Poll();
+        }
     }
 }
