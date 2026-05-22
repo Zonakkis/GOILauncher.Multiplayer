@@ -80,6 +80,39 @@ namespace GOILauncher.Multiplayer.Core.Test.Event
         }
 
         [Test]
+        public void Dispose_Subscription_RemovesHandler()
+        {
+            var bus = new EventBus(_loggerMock.Object);
+            var calls = 0;
+
+            IDisposable subscription = bus.Subscribe<TestEvent>(e => calls++);
+
+            bus.Publish(new TestEvent(1));
+            subscription.Dispose();
+            bus.Publish(new TestEvent(2));
+            subscription.Dispose();
+            bus.Publish(new TestEvent(3));
+
+            calls.Should().Be(1);
+        }
+
+        [Test]
+        public void Dispose_Subscription_WhenHandlerSubscribedTwice_RemovesOnlyThatSubscription()
+        {
+            var bus = new EventBus(_loggerMock.Object);
+            var calls = 0;
+            Action<TestEvent> handler = e => calls++;
+
+            IDisposable firstSubscription = bus.Subscribe(handler);
+            bus.Subscribe(handler);
+
+            firstSubscription.Dispose();
+            bus.Publish(new TestEvent(1));
+
+            calls.Should().Be(1);
+        }
+
+        [Test]
         public void Publish_WhenHandlerSubscribesDuringPublish_NewHandlerRunsOnNextPublishOnly()
         {
             var bus = new EventBus(_loggerMock.Object);

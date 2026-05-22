@@ -17,8 +17,11 @@ namespace GOILauncher.Multiplayer.Core.Event
             _logger = logger;
         }
 
-        public void Subscribe<TEvent>(Action<TEvent> handler)
+        public IDisposable Subscribe<TEvent>(Action<TEvent> handler)
         {
+            if (handler == null)
+                throw new ArgumentNullException("handler");
+
             var eventType = typeof(TEvent);
             lock (_lock)
             {
@@ -28,6 +31,8 @@ namespace GOILauncher.Multiplayer.Core.Event
                 }
                 _subscribers[eventType].Add(handler);
             }
+
+            return new Subscription(() => Unsubscribe(eventType, handler));
         }
 
         public void Publish<TEvent>(TEvent @event)
@@ -58,6 +63,45 @@ namespace GOILauncher.Multiplayer.Core.Event
                         }
                     }
                 }
+            }
+        }
+
+        private void Unsubscribe(Type eventType, Delegate handler)
+        {
+            lock (_lock)
+            {
+                List<Delegate> handlers;
+                if (!_subscribers.TryGetValue(eventType, out handlers))
+                    return;
+
+                handlers.Remove(handler);
+
+                if (handlers.Count == 0)
+                    _subscribers.Remove(eventType);
+            }
+        }
+
+        private sealed class Subscription : IDisposable
+        {
+            private readonly object _lock = new object();
+            private Action _unsubscribe;
+
+            public Subscription(Action unsubscribe)
+            {
+                _unsubscribe = unsubscribe;
+            }
+
+            public void Dispose()
+            {
+                Action unsubscribe;
+                lock (_lock)
+                {
+                    unsubscribe = _unsubscribe;
+                    _unsubscribe = null;
+                }
+
+                if (unsubscribe != null)
+                    unsubscribe();
             }
         }
     }
