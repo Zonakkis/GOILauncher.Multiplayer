@@ -13,6 +13,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
 
         public List<Client.Models.Message> Messages { get; set; } = new List<Client.Models.Message>();
         public ScrollPool<MessageCell> _scrollPool;
+        private RectTransform _scrollViewRect;
         private int _lastItemCount;
         public int ItemCount => Messages.Count;
         public event Action<bool> MessagesUpdated;
@@ -25,6 +26,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
                 out GameObject scrollView,
                 out GameObject scrollContent,
                 MessageAreaBackgroundColor);
+            _scrollViewRect = scrollView.GetComponent<RectTransform>();
             HideMaskGraphic(scrollView.transform.Find("Viewport")?.gameObject);
             UIFactory.SetLayoutElement(scrollView, minWidth: 400, minHeight: 120, flexibleWidth: 9999, flexibleHeight: 9999);
 
@@ -71,14 +73,30 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
             cell.Enable();
         }
 
-        public void Update(List<Client.Models.Message> messages)
+        public void Update(List<Client.Models.Message> messages, bool scrollToBottom = false)
         {
             Messages = messages ?? new List<Client.Models.Message>();
             int currentCount = Messages.Count;
             bool hasNewMessages = currentCount > _lastItemCount;
             _scrollPool.Refresh(true);
             _lastItemCount = currentCount;
+            if (hasNewMessages && scrollToBottom)
+                ScrollToBottom();
             MessagesUpdated?.Invoke(hasNewMessages);
+        }
+
+        public bool IsPointerInside()
+        {
+            return _scrollViewRect != null &&
+                   RectTransformUtility.RectangleContainsScreenPoint(_scrollViewRect, Input.mousePosition);
+        }
+
+        private void ScrollToBottom()
+        {
+            if (Messages.Count == 0 || _scrollPool == null || _scrollPool.CellPool.Count == 0)
+                return;
+
+            _scrollPool.JumpToIndex(Messages.Count - 1, null);
         }
     }
 }

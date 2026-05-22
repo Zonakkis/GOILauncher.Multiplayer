@@ -140,7 +140,7 @@ namespace GOILauncher.Multiplayer.UI
             if (_messageHandler == null || e == null)
                 return;
 
-            _messageHandler.Update(e.Messages);
+            _messageHandler.Update(e.Messages, ShouldAutoScrollMessages());
         }
 
         private void RefreshMessages()
@@ -157,6 +157,11 @@ namespace GOILauncher.Multiplayer.UI
                 return;
 
             ShowPassiveNow();
+        }
+
+        private bool ShouldAutoScrollMessages()
+        {
+            return _messageHandler != null && !_messageHandler.IsPointerInside();
         }
 
         private void SetActiveMode(bool active)
