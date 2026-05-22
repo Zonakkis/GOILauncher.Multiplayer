@@ -15,6 +15,9 @@ namespace GOILauncher.Multiplayer.Client.Extensions
             builder.RegisterType<PlayerService>()
                 .As<IPlayerService>()
                 .SingleInstance();
+            builder.RegisterType<ChatService>()
+                .As<IChatService>()
+                .SingleInstance();
             return builder;
         }
     }

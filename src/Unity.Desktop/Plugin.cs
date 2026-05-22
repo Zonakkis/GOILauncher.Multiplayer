@@ -36,6 +36,9 @@ public class Plugin : BaseUnityPlugin
 
     private void Awake()
     {
+        // Debug
+        Application.runInBackground = true;
+
         // Plugin startup logic
         Logger = base.Logger;
 

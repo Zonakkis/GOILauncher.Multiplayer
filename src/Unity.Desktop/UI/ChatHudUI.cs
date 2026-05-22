@@ -1,6 +1,8 @@
 using System;
-using System.Collections.Generic;
+using GOILauncher.Multiplayer.Client;
+using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
+using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.UI.ScrollView.Message;
 using UniverseLib.UI;
 using UniverseLib.UI.Models;
@@ -16,40 +18,27 @@ namespace GOILauncher.Multiplayer.UI
         private const float PassiveFadeSeconds = 0.75f;
 
         private InputFieldRef messageInput;
+        private readonly IUnityClient _client;
         private MessageHandler _messageHandler;
         private GameObject inputRow;
         private CanvasGroup canvasGroup;
         private bool isActiveMode;
         private float lastPassiveActivityTime;
 
-        public ChatHudUI(UIBase owner, MessageHandler messageHandler) : base(owner)
+        public ChatHudUI(UIBase owner, MessageHandler messageHandler, IUnityClient client, IEventBus eventBus) : base(owner)
         {
             MakeImageTransparent(UIRoot);
             MakeImageTransparent(ContentRoot);
             canvasGroup = UIRoot.GetComponent<CanvasGroup>() ?? UIRoot.AddComponent<CanvasGroup>();
             canvasGroup.alpha = 1f;
 
+            _client = client;
             _messageHandler = messageHandler;
             _messageHandler.MessagesUpdated += OnMessagesUpdated;
             _messageHandler.Setup(ContentRoot);
             CreateInputRow();
-
-            var mockData = new List<Message>
-            {
-                new Message(MessageType.System, "Alice", "Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!Hello, world!"),
-                new Message(MessageType.System, "Bob", "Hi, Alice!"),
-                new Message(MessageType.System, "Charlie", "Good morning everyone."),
-                new Message(MessageType.System, "Alice", "Hello, world!"),
-                new Message(MessageType.System, "Bob", "Hi, Alice!"),
-                new Message(MessageType.System, "Charlie", "Good morning everyone."),
-                new Message(MessageType.System, "Alice", "Hello, world!"),
-                new Message(MessageType.System, "Bob", "Hi, Alice!"),
-                new Message(MessageType.System, "Charlie", "Good morning everyone."),
-                new Message(MessageType.System, "Alice", "Hello, world!"),
-                new Message(MessageType.System, "Bob", "Hi, Alice!"),
-                new Message(MessageType.System, "Charlie", "Good morning everyone."),
-            };
-            _messageHandler.Update(mockData);
+            eventBus.Subscribe<ChatMessagesUpdatedEvent>(OnChatMessagesUpdated);
+            RefreshMessages();
             SetActiveMode(false);
             LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
         }
@@ -141,11 +130,25 @@ namespace GOILauncher.Multiplayer.UI
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
-            List<Message> messages = _messageHandler.Messages ?? new List<Message>();
-            messages.Add(new Message(MessageType.Player, "\u6211", text));
-            _messageHandler.Update(messages);
+            _client.SendMessage(MessageType.Player, text);
             messageInput.Text = string.Empty;
             FocusInput();
+        }
+
+        private void OnChatMessagesUpdated(ChatMessagesUpdatedEvent e)
+        {
+            if (_messageHandler == null || e == null)
+                return;
+
+            _messageHandler.Update(e.Messages);
+        }
+
+        private void RefreshMessages()
+        {
+            if (_messageHandler == null || _client == null)
+                return;
+
+            _messageHandler.Update(_client.ChatMessages);
         }
 
         private void OnMessagesUpdated(bool hasNewMessages)

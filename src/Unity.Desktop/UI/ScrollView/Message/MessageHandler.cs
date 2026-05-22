@@ -13,6 +13,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
 
         public List<Client.Models.Message> Messages { get; set; } = new List<Client.Models.Message>();
         public ScrollPool<MessageCell> _scrollPool;
+        private int _lastItemCount;
         public int ItemCount => Messages.Count;
         public event Action<bool> MessagesUpdated;
 
@@ -72,10 +73,12 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
 
         public void Update(List<Client.Models.Message> messages)
         {
-            int previousCount = Messages?.Count ?? 0;
-            Messages = messages;
+            Messages = messages ?? new List<Client.Models.Message>();
+            int currentCount = Messages.Count;
+            bool hasNewMessages = currentCount > _lastItemCount;
             _scrollPool.Refresh(true);
-            MessagesUpdated?.Invoke(Messages.Count > previousCount);
+            _lastItemCount = currentCount;
+            MessagesUpdated?.Invoke(hasNewMessages);
         }
     }
 }

@@ -2,6 +2,7 @@ using FluentAssertions;
 using GOILauncher.Multiplayer.Core.Data;
 using LiteNetLib.Utils;
 using NUnit.Framework;
+using System.Reflection;
 
 namespace GOILauncher.Multiplayer.Core.Test.Data
 {
@@ -36,6 +37,28 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
             _processor.WriteNetSerializable(_writer, sendPacket);
 
             var reader = new NetDataReader(_writer.CopyData());
+            _dispatcher.Dispatch(null, reader);
+
+            called.Should().BeTrue();
+            receivedPacket.Value.Should().Be(42);
+        }
+
+        [Test]
+        public void RuntimeNetSerializableWriter_WithInterfaceTypedPacket_WritesConcretePacketId()
+        {
+            var called = false;
+            TestStructPacket receivedPacket = default;
+
+            _dispatcher.RegisterStruct<TestStructPacket>((packet, peer) =>
+            {
+                called = true;
+                receivedPacket = packet;
+            });
+
+            INetSerializable sendPacket = new TestStructPacket { Value = 42 };
+            var bytes = WriteNetSerializableWithRuntimeType(sendPacket);
+
+            var reader = new NetDataReader(bytes);
             _dispatcher.Dispatch(null, reader);
 
             called.Should().BeTrue();
@@ -83,6 +106,13 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
         public class TestClassPacket 
         {
             public string Message { get; set; }
+        }
+
+        private static byte[] WriteNetSerializableWithRuntimeType(INetSerializable packet)
+        {
+            var writerType = typeof(PacketDispatcher).Assembly.GetType("GOILauncher.Multiplayer.Network.NetSerializablePacketWriter");
+            var write = writerType.GetMethod("Write", BindingFlags.Public | BindingFlags.Static);
+            return (byte[])write.Invoke(null, new object[] { packet });
         }
     }
 }

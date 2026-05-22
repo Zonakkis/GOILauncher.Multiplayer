@@ -15,13 +15,13 @@ namespace GOILauncher.Multiplayer.Client.Services
     {
         private readonly INetworkClient _networkClient;
         private readonly IEventBus _eventBus;
-        private readonly ILogger<PlayerService> _logger;
+        private readonly ILogger<ChatService> _logger;
         private readonly IPlayerService _playerService;
-        public List<Message> ChatMessages { get; } = new List<Message>();
+        public List<Message> Messages { get; } = new List<Message>();
         public ChatService(INetworkClient networkClient,
             IPacketDispatcher dispatcher,
             IEventBus eventBus,
-            ILogger<PlayerService> logger,
+            ILogger<ChatService> logger,
             IPlayerService playerService)
         {
             _networkClient = networkClient;
@@ -33,20 +33,58 @@ namespace GOILauncher.Multiplayer.Client.Services
             eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
         }
 
-        public void AddMessage(Message message)
+        private void AddMessage(Message message)
         {
-            ChatMessages.Add(message);
+            if (message == null)
+                return;
+
+            Messages.Add(message);
+            _eventBus.Publish(new ChatMessagesUpdatedEvent(Messages, message));
         }
 
-        public void SendSystemMessage(string content)
+        private void AddChatMessage(Message message)
+        {
+            if (message == null)
+                return;
+
+            AddMessage(message);
+            _eventBus.Publish(new ChatMessageEvent(message));
+        }
+
+        private void SendSystemMessage(string content)
         {
             AddMessage(new Message(MessageType.System, "系统", content));
         }
 
-        public void SendChatMessage(string content)
+        private void SendChatMessage(string content)
         {
+            if (!_networkClient.IsConnected)
+            {
+                SendSystemMessage("尚未连接到服务器。");
+                return;
+            }
+
             var packet = new C2SChatMessagePacket(content);
             _networkClient.Send(packet, DeliveryMethod.ReliableUnordered);
+        }
+
+        public void SendMessage(MessageType type, string content)
+        {
+            switch (type)
+            {
+                case MessageType.System:
+                    SendSystemMessage(content);
+                    break;
+                case MessageType.Player:
+                    SendChatMessage(content);
+                    break;
+                case MessageType.Server:
+                    AddMessage(new Message(MessageType.Server, "服务器", content));
+                    break;
+                default:
+                    _logger.Warn("Unknown message type: {MessageType}, Content: {Content}", type, content);
+                    break;
+            }
         }
 
         private void OnChatMessage(S2CChatMessagePacket packet, NetPeer _)
@@ -56,12 +94,13 @@ namespace GOILauncher.Multiplayer.Client.Services
             if (_playerService.Players.TryGetValue(playerId, out var player))
             {
                 var message = new Message(MessageType.Player, player.Name, packet.Content, dateTime);
-                AddMessage(message);
-                _eventBus.Publish(new ChatMessageEvent(message));
+                AddChatMessage(message);
             }
             else
             {
                 _logger.Warn("Unknown playerId: {PlayerId}, Content: {Content}", playerId, packet.Content);
+                var message = new Message(MessageType.Player, $"玩家 {playerId}", packet.Content, dateTime);
+                AddChatMessage(message);
             }
         }
         private void OnPlayerJoined(PlayerJoinedEvent e)
