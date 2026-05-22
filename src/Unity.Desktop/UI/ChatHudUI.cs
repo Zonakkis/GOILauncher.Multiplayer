@@ -84,7 +84,10 @@ namespace GOILauncher.Multiplayer.UI
             if (!isActiveMode)
             {
                 if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+                {
                     SetActiveMode(true);
+                    return;
+                }
 
                 UpdatePassiveFade();
                 return;

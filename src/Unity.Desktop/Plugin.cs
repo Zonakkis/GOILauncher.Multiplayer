@@ -8,6 +8,7 @@ using GOILauncher.Multiplayer.UI.Theme;
 using GOILauncher.Multiplayer.Unity;
 using NLog;
 using NLog.Targets;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 using UniverseLib;
@@ -24,11 +25,14 @@ public class Plugin : BaseUnityPlugin
     public static ITheme Theme { get; private set; }
     public static UIBase UIBase { get; private set; }
     // UniverseLib exposes the config flag, but keeps the immediate cursor refresh internal.
+    private static readonly FieldInfo RegisteredUisField = typeof(UniversalUI).GetField("registeredUIs", BindingFlags.Static | BindingFlags.NonPublic);
     private static readonly MethodInfo UpdateCursorControlMethod = typeof(CursorUnlocker).GetMethod("UpdateCursorControl", BindingFlags.Static | BindingFlags.NonPublic);
 
     private MultiplayerUI _multiplayerUI;
     private ChatHudUI _chatHudUI;
     private PlayerListUI _playerListOverlayUI;
+    private bool _hasAppliedCursorState;
+    private bool _lastCursorUnlockState;
 
     private void Awake()
     {
@@ -48,6 +52,7 @@ public class Plugin : BaseUnityPlugin
         var container = MultiplayerUnityCore.Initialize(Configure);
 
         Theme = container.Resolve<ITheme>();
+        UIBase = container.Resolve<UIBase>();
         _multiplayerUI = container.Resolve<MultiplayerUI>();
         _chatHudUI = container.Resolve<ChatHudUI>();
         _playerListOverlayUI = container.Resolve<PlayerListUI>();
@@ -134,6 +139,7 @@ public class Plugin : BaseUnityPlugin
             ApplyCursorState();
         }
 
+        ApplyCursorState();
     }
 
     private void OnChatActiveModeChanged(bool active)
@@ -143,7 +149,14 @@ public class Plugin : BaseUnityPlugin
 
     private void ApplyCursorState()
     {
-        ConfigManager.Force_Unlock_Mouse = ShouldUnlockCursor();
+        bool shouldUnlockCursor = ShouldUnlockCursor() || IsOtherUniverseUiShowing();
+
+        if (_hasAppliedCursorState && _lastCursorUnlockState == shouldUnlockCursor)
+            return;
+
+        _hasAppliedCursorState = true;
+        _lastCursorUnlockState = shouldUnlockCursor;
+        ConfigManager.Force_Unlock_Mouse = shouldUnlockCursor;
         UpdateCursorControlMethod?.Invoke(null, null);
     }
 
@@ -152,5 +165,23 @@ public class Plugin : BaseUnityPlugin
         return (_multiplayerUI != null && _multiplayerUI.Enabled)
             || (_playerListOverlayUI != null && _playerListOverlayUI.Enabled)
             || (_chatHudUI != null && _chatHudUI.IsActiveMode);
+    }
+
+    private bool IsOtherUniverseUiShowing()
+    {
+        if (RegisteredUisField?.GetValue(null) is not IDictionary<string, UIBase> registeredUis)
+            return false;
+
+        foreach (KeyValuePair<string, UIBase> registeredUi in registeredUis)
+        {
+            UIBase uiBase = registeredUi.Value;
+            if (uiBase == null || ReferenceEquals(uiBase, UIBase))
+                continue;
+
+            if (uiBase.Enabled)
+                return true;
+        }
+
+        return false;
     }
 }
