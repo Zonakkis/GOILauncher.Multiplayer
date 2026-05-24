@@ -12,10 +12,24 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
         private GameObject playerListContent;
         private AutoSliderScrollbar playerListScrollbar;
 
-        public void Setup(GameObject parent, Color backgroundColor)
+        public void Setup(GameObject parent, Color backgroundColor, Color headerBackgroundColor)
         {
-            GameObject playerScroll = UIFactory.CreateScrollView(
+            GameObject body = UIFactory.CreateVerticalGroup(
                 parent,
+                "PlayerListBody",
+                false,
+                false,
+                true,
+                true,
+                0,
+                new Vector4(0, 0, 0, 0),
+                backgroundColor);
+            UIFactory.SetLayoutElement(body, minHeight: 120, flexibleHeight: 9999, flexibleWidth: 9999);
+
+            CreateTableHeader(body, headerBackgroundColor);
+
+            GameObject playerScroll = UIFactory.CreateScrollView(
+                body,
                 "PlayerListScroll",
                 out playerListContent,
                 out playerListScrollbar,
@@ -51,6 +65,27 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             {
                 Object.Destroy(playerListContent.transform.GetChild(i).gameObject);
             }
+        }
+
+        private static void CreateTableHeader(GameObject parent, Color backgroundColor)
+        {
+            GameObject tableHeader = UIFactory.CreateHorizontalGroup(
+                parent,
+                "PlayerTableHeader",
+                false,
+                false,
+                true,
+                true,
+                4,
+                new Vector4(8, 4, 8, 4),
+                backgroundColor);
+            UIFactory.SetLayoutElement(tableHeader, minHeight: 28, flexibleHeight: 0);
+
+            Text playerNameHeader = UIFactory.CreateLabel(tableHeader, "PlayerNameHeader", "玩家", TextAnchor.MiddleLeft);
+            UIFactory.SetLayoutElement(playerNameHeader.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
+
+            Text detailHeader = UIFactory.CreateLabel(tableHeader, "PlayerDetailHeader", "信息", TextAnchor.MiddleCenter);
+            UIFactory.SetLayoutElement(detailHeader.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
 
         private void CreatePlayerRow(PlayerListItemViewData player, int rowIndex)

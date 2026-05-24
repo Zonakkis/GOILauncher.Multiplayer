@@ -21,7 +21,7 @@ namespace GOILauncher.Multiplayer.UI
             this.playerListComponent = playerListComponent;
             ImageUtility.MakeTransparent(UIRoot);
             ImageUtility.MakeTransparent(ContentRoot);
-            this.playerListHandler.Setup(ContentRoot, PanelBackgroundColor);
+            this.playerListHandler.Setup(ContentRoot, PanelBackgroundColor, HeaderBackgroundColor);
             RefreshPlayers();
             LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
         }
@@ -72,24 +72,6 @@ namespace GOILauncher.Multiplayer.UI
 
             Text headerText = UIFactory.CreateLabel(headerRow, "PlayerListHeaderText", "在线玩家", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(headerText.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
-
-            GameObject tableHeader = UIFactory.CreateHorizontalGroup(
-                ContentRoot,
-                "PlayerTableHeader",
-                false,
-                false,
-                true,
-                true,
-                4,
-                new Vector4(8, 4, 8, 4),
-                HeaderBackgroundColor);
-            UIFactory.SetLayoutElement(tableHeader, minHeight: 28, flexibleHeight: 0);
-
-            Text playerNameHeader = UIFactory.CreateLabel(tableHeader, "PlayerNameHeader", "玩家", TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(playerNameHeader.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
-
-            Text detailHeader = UIFactory.CreateLabel(tableHeader, "PlayerDetailHeader", "信息", TextAnchor.MiddleCenter);
-            UIFactory.SetLayoutElement(detailHeader.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
     }
 }
