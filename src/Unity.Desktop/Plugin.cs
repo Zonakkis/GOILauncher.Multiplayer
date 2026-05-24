@@ -2,8 +2,10 @@
 using BepInEx;
 using BepInEx.Logging;
 using GOILauncher.Multiplayer.UI;
+using GOILauncher.Multiplayer.UI.Components;
 using GOILauncher.Multiplayer.UI.Pages;
 using GOILauncher.Multiplayer.UI.ScrollView.Message;
+using GOILauncher.Multiplayer.UI.ScrollView.Player;
 using GOILauncher.Multiplayer.UI.Theme;
 using GOILauncher.Multiplayer.Unity;
 using NLog;
@@ -96,6 +98,12 @@ public class Plugin : BaseUnityPlugin
         .AsSelf()
         .SingleInstance();
         builder.RegisterType<MessageHandler>()
+        .AsSelf()
+        .SingleInstance();
+        builder.RegisterType<DefaultPlayerListUiComponent>()
+        .As<IPlayerListUiComponent>()
+        .SingleInstance();
+        builder.RegisterType<PlayerListHandler>()
         .AsSelf()
         .SingleInstance();
         builder.RegisterType<PlayerListUI>()

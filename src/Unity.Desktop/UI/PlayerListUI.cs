@@ -1,9 +1,7 @@
-using System.Collections.Generic;
 using GOILauncher.Multiplayer.UI.Components;
+using GOILauncher.Multiplayer.UI.ScrollView.Player;
 using UniverseLib.UI;
-using UniverseLib.UI.Models;
 using UniverseLib.UI.Panels;
-using UniverseLib.UI.Widgets;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,21 +12,18 @@ namespace GOILauncher.Multiplayer.UI
         private static readonly Color PanelBackgroundColor = new Color(0f, 0f, 0f, 0.35f);
         private static readonly Color HeaderBackgroundColor = new Color(0f, 0f, 0f, 0.42f);
 
-        private static readonly PlayerListItemViewData[] DefaultPlayers = new PlayerListItemViewData[]
-        {
-            new PlayerListItemViewData("玩家A", "PC"),
-            new PlayerListItemViewData("玩家B", "PC"),
-            new PlayerListItemViewData("玩家C", "SteamDeck")
-        };
+        private readonly PlayerListHandler playerListHandler;
+        private readonly IPlayerListUiComponent playerListComponent;
 
-        private IPlayerListUiComponent playerListComponent;
-        private GameObject playerListContent;
-        private AutoSliderScrollbar playerListScrollbar;
-
-        public PlayerListUI(UIBase owner) : base(owner)
+        public PlayerListUI(UIBase owner, PlayerListHandler playerListHandler, IPlayerListUiComponent playerListComponent) : base(owner)
         {
+            this.playerListHandler = playerListHandler;
+            this.playerListComponent = playerListComponent;
             ImageUtility.MakeTransparent(UIRoot);
             ImageUtility.MakeTransparent(ContentRoot);
+            this.playerListHandler.Setup(ContentRoot, PanelBackgroundColor);
+            RefreshPlayers();
+            LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
         }
 
         public override string Name => "GOILauncher.PlayerList";
@@ -45,25 +40,20 @@ namespace GOILauncher.Multiplayer.UI
 
         public override bool CanDragAndResize => false;
 
+        public override void SetActive(bool active)
+        {
+            base.SetActive(active);
+
+            if (active)
+                RefreshPlayers();
+        }
+
         public void RefreshPlayers()
         {
-            if (playerListContent == null)
+            if (playerListHandler == null || playerListComponent == null)
                 return;
 
-            for (int i = playerListContent.transform.childCount - 1; i >= 0; i--)
-            {
-                Object.Destroy(playerListContent.transform.GetChild(i).gameObject);
-            }
-
-            int rowIndex = 0;
-            foreach (PlayerListItemViewData player in GetPlayers())
-            {
-                CreatePlayerRow(player, rowIndex);
-                rowIndex++;
-            }
-
-            if (playerListScrollbar != null)
-                playerListScrollbar.UpdateSliderHandle();
+            playerListHandler.Update(playerListComponent.GetPlayers());
         }
 
         protected override void ConstructPanelContent()
@@ -83,10 +73,6 @@ namespace GOILauncher.Multiplayer.UI
             Text headerText = UIFactory.CreateLabel(headerRow, "PlayerListHeaderText", "在线玩家", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(headerText.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
 
-            ButtonRef refreshButton = UIFactory.CreateButton(headerRow, "PlayerListRefresh", "刷新");
-            UIFactory.SetLayoutElement(refreshButton.Component.gameObject, minWidth: 70, minHeight: 22, flexibleWidth: 0, flexibleHeight: 0);
-            refreshButton.OnClick += RefreshPlayers;
-
             GameObject tableHeader = UIFactory.CreateHorizontalGroup(
                 ContentRoot,
                 "PlayerTableHeader",
@@ -104,71 +90,6 @@ namespace GOILauncher.Multiplayer.UI
 
             Text detailHeader = UIFactory.CreateLabel(tableHeader, "PlayerDetailHeader", "信息", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(detailHeader.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
-
-            GameObject playerScroll = UIFactory.CreateScrollView(
-                ContentRoot,
-                "PlayerListScroll",
-                out playerListContent,
-                out playerListScrollbar,
-                PanelBackgroundColor);
-            HideScrollbar(playerScroll);
-            UIFactory.SetLayoutElement(playerScroll, minHeight: 120, flexibleHeight: 9999, flexibleWidth: 9999);
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(playerListContent, false, false, true, true, 3, 4, 4, 4, 4, TextAnchor.UpperLeft);
-
-            RefreshPlayers();
-        }
-
-        private PlayerListItemViewData[] GetPlayers()
-        {
-            if (playerListComponent == null)
-                return DefaultPlayers;
-
-            List<PlayerListItemViewData> players = new List<PlayerListItemViewData>();
-            foreach (PlayerListItemViewData player in playerListComponent.GetPlayers())
-            {
-                players.Add(player);
-            }
-
-            if (players.Count == 0)
-                return DefaultPlayers;
-
-            return players.ToArray();
-        }
-
-        private void CreatePlayerRow(PlayerListItemViewData player, int rowIndex)
-        {
-            GameObject row = UIFactory.CreateHorizontalGroup(
-                playerListContent,
-                "PlayerRow_" + rowIndex,
-                false,
-                false,
-                true,
-                true,
-                4,
-                new Vector4(6, 3, 6, 3),
-                Color.clear,
-                TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(row, minHeight: 26, flexibleHeight: 0, flexibleWidth: 9999);
-            ImageUtility.MakeTransparent(row);
-
-            Text nameText = UIFactory.CreateLabel(row, "PlayerName", player.PlayerName, TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(nameText.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
-
-            Text detailText = UIFactory.CreateLabel(row, "PlayerDetail", player.Detail, TextAnchor.MiddleCenter);
-            UIFactory.SetLayoutElement(detailText.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
-        }
-
-        private static void HideScrollbar(GameObject scrollView)
-        {
-            Transform scrollbar = scrollView.transform.Find("AutoSliderScrollbar");
-            if (scrollbar != null)
-                scrollbar.gameObject.SetActive(false);
-
-            RectTransform viewport = scrollView.transform.Find("Viewport")?.GetComponent<RectTransform>();
-            if (viewport == null)
-                return;
-
-            viewport.offsetMax = Vector2.zero;
         }
     }
 }
