@@ -9,6 +9,10 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 {
     public class PlayerListHandler
     {
+        private const int ContentPadding = 4;
+        private const int RowHorizontalPadding = 6;
+        private const int HeaderHorizontalPadding = ContentPadding + RowHorizontalPadding;
+
         private GameObject playerListContent;
         private AutoSliderScrollbar playerListScrollbar;
 
@@ -36,7 +40,18 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 backgroundColor);
             HideScrollbar(playerScroll);
             UIFactory.SetLayoutElement(playerScroll, minHeight: 120, flexibleHeight: 9999, flexibleWidth: 9999);
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(playerListContent, false, false, true, true, 3, 4, 4, 4, 4, TextAnchor.UpperLeft);
+            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
+                playerListContent,
+                false,
+                false,
+                true,
+                true,
+                3,
+                ContentPadding,
+                ContentPadding,
+                ContentPadding,
+                ContentPadding,
+                TextAnchor.UpperLeft);
         }
 
         public void Update(IEnumerable<PlayerListItemViewData> players)
@@ -77,7 +92,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 true,
                 true,
                 4,
-                new Vector4(8, 4, 8, 4),
+                new Vector4(HeaderHorizontalPadding, 4, HeaderHorizontalPadding, 4),
                 backgroundColor);
             UIFactory.SetLayoutElement(tableHeader, minHeight: 28, flexibleHeight: 0);
 
@@ -98,7 +113,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 true,
                 true,
                 4,
-                new Vector4(6, 3, 6, 3),
+                new Vector4(RowHorizontalPadding, 3, RowHorizontalPadding, 3),
                 Color.clear,
                 TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(row, minHeight: 26, flexibleHeight: 0, flexibleWidth: 9999);

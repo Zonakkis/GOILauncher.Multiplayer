@@ -80,7 +80,8 @@ public class Plugin : BaseUnityPlugin
         .As<ITheme>()
         .SingleInstance();
         builder
-        .Register(_ => UniversalUI.RegisterUI(MyPluginInfo.PLUGIN_GUID, null))
+        .Register(_ => UniversalUI.RegisterUI<ResponsiveUIBase>(MyPluginInfo.PLUGIN_GUID, null))
+        .As<UIBase>()
         .SingleInstance();
         builder.RegisterType<Toast>()
         .AsSelf()

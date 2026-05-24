@@ -22,7 +22,7 @@ namespace GOILauncher.Multiplayer.UI
 
         public override Vector2 DefaultAnchorMax => new Vector2(0.5f, 0.5f);
 
-        public override Vector2 DefaultPosition => new Vector2(-300f, 400f);
+        public override Vector2 DefaultPosition => new Vector2(-MinWidth * 0.5f, MinHeight * 0.5f);
 
         public override bool CanDragAndResize => true;
 
@@ -47,6 +47,11 @@ namespace GOILauncher.Multiplayer.UI
 
         protected override void ConstructPanelContent()
         {
+        }
+
+        protected override PanelDragger CreatePanelDragger()
+        {
+            return new ResponsivePanelDragger(this);
         }
 
         private void CreateContent()

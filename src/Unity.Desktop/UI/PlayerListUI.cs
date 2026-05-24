@@ -58,20 +58,6 @@ namespace GOILauncher.Multiplayer.UI
 
         protected override void ConstructPanelContent()
         {
-            GameObject headerRow = UIFactory.CreateHorizontalGroup(
-                ContentRoot,
-                "PlayerListHeader",
-                false,
-                false,
-                true,
-                true,
-                6,
-                new Vector4(8, 6, 8, 6),
-                PanelBackgroundColor);
-            UIFactory.SetLayoutElement(headerRow, minHeight: 32, flexibleHeight: 0);
-
-            Text headerText = UIFactory.CreateLabel(headerRow, "PlayerListHeaderText", "在线玩家", TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(headerText.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
         }
     }
 }

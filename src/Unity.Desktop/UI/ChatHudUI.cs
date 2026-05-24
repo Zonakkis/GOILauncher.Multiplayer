@@ -53,16 +53,35 @@ namespace GOILauncher.Multiplayer.UI
 
         public override Vector2 DefaultAnchorMax => new Vector2(0, 0.4f);
 
-        public override Vector2 DefaultPosition => new Vector2(-Screen.currentResolution.width / 2, 0);
+        public override Vector2 DefaultPosition => new Vector2(-CanvasWidth * 0.5f, 0);
 
-        public override bool CanDragAndResize => true;
+        public override bool CanDragAndResize => isActiveMode;
 
         public bool IsActiveMode => isActiveMode;
 
         public event Action<bool> ActiveModeChanged;
 
+        private float CanvasWidth
+        {
+            get
+            {
+                float width = Screen.width > 0 ? Screen.width : ResponsiveUIBase.ReferenceWidth;
+                float height = Screen.height > 0 ? Screen.height : ResponsiveUIBase.ReferenceHeight;
+                float scaleFactor = Mathf.Min(width / ResponsiveUIBase.ReferenceWidth, height / ResponsiveUIBase.ReferenceHeight);
+                if (scaleFactor > 0f)
+                    return width / scaleFactor;
+
+                return ResponsiveUIBase.ReferenceWidth;
+            }
+        }
+
         protected override void ConstructPanelContent()
         {
+        }
+
+        protected override PanelDragger CreatePanelDragger()
+        {
+            return new ResponsivePanelDragger(this);
         }
 
         public override void Update()
@@ -172,6 +191,7 @@ namespace GOILauncher.Multiplayer.UI
             inputRow.SetActive(active);
             canvasGroup.alpha = 1f;
             canvasGroup.blocksRaycasts = active;
+            Dragger.OnEndResize();
 
             if (active)
                 FocusInput();
