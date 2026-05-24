@@ -23,7 +23,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
             UIRoot = UIFactory.CreateHorizontalGroup(parent, "MessageCell",
              true, false, true, true, 5,
              new Vector4(5, 5, 1, 1), Color.clear);
-            MakeImageTransparent(UIRoot);
+            ImageUtility.MakeTransparent(UIRoot);
 
             Rect = UIRoot.GetComponent<RectTransform>();
             UIFactory.SetLayoutElement(UIRoot, 400, 26, 9999, 0);

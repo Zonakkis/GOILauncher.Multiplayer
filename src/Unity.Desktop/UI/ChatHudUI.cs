@@ -27,8 +27,8 @@ namespace GOILauncher.Multiplayer.UI
 
         public ChatHudUI(UIBase owner, MessageHandler messageHandler, IUnityClient client, IEventBus eventBus) : base(owner)
         {
-            MakeImageTransparent(UIRoot);
-            MakeImageTransparent(ContentRoot);
+            ImageUtility.MakeTransparent(UIRoot);
+            ImageUtility.MakeTransparent(ContentRoot);
             canvasGroup = UIRoot.GetComponent<CanvasGroup>() ?? UIRoot.AddComponent<CanvasGroup>();
             canvasGroup.alpha = 1f;
 
@@ -218,16 +218,6 @@ namespace GOILauncher.Multiplayer.UI
         {
             return rect != null &&
                    RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition);
-        }
-
-        private static void MakeImageTransparent(GameObject gameObject)
-        {
-            Image image = gameObject.GetComponent<Image>();
-            if (image == null)
-                return;
-
-            image.color = Color.clear;
-            image.raycastTarget = false;
         }
     }
 }
