@@ -3,16 +3,16 @@
 layout: home
 
 hero:
-  name: "GOILauncher.Multiplayer"
-  text: "跨平台的Getting Over It联机Mod"
-  tagline: My great project tagline
+  name: "GOILauncher.\nMultiplayer"
+  text: "跨平台的\nGetting Over It\n联机Mod"
+  tagline: 开箱即用的Getting Over It联机Mod
   actions:
     - theme: brand
-      text: Markdown Examples
-      link: /markdown-examples
+      text: 快速开始
+      link: /introduction/getting-started
     - theme: alt
-      text: API Examples
-      link: /api-examples
+      text: 客户端开发指南
+      link: /client-development/guide
 
 features:
   - title: Feature A
