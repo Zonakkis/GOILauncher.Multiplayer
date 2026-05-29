@@ -55,8 +55,10 @@
     <Compile Include="ServerPlayer.cs" />
     <Compile Include="Services\IPlayerService.cs" />
     <Compile Include="Services\IServerService.cs" />
+    <Compile Include="Services\IChatService.cs" />
     <Compile Include="Services\PlayerService.cs" />
     <Compile Include="Services\ServerService.cs" />
+    <Compile Include="Services\ChatService.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj">

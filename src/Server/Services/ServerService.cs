@@ -3,7 +3,6 @@ using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Network;
-using GOILauncher.Multiplayer.Server.Events;
 using LiteNetLib;
 using LiteNetLib.Utils;
 
@@ -24,7 +23,6 @@ namespace GOILauncher.Multiplayer.Server.Services
             _networkServer = networkServer;
             _eventBus = eventBus;
             _playerService = playerService;
-            dispatcher.RegisterStruct<C2SChatMessagePacket>(OnChatMessage);
             eventBus.Subscribe<ClientConnectedEvent>(OnClientConnected);
             eventBus.Subscribe<ClientDisconnectedEvent>(OnClientDisconnected);
         }
@@ -73,21 +71,5 @@ namespace GOILauncher.Multiplayer.Server.Services
                 Broadcast(playerLeftPacket);
             }
         }
-
-        private void OnChatMessage(C2SChatMessagePacket packet, NetPeer peer)
-        {
-            var playerId = peer.Id;
-            var content = packet.Content;
-            var timestamp = packet.Timestamp;
-            var chatPacket = new S2CChatMessagePacket
-            {
-                PlayerId = playerId,
-                Content = content,
-                Timestamp = timestamp
-            };
-            Broadcast(chatPacket);
-            _eventBus.Publish(new ChatMessageEvent(playerId, content, timestamp));
-        }
-
     }
 }

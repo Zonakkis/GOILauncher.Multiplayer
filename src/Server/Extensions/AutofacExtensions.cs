@@ -15,7 +15,10 @@ namespace GOILauncher.Multiplayer.Server.Extensions
             builder.RegisterType<ServerService>()
                 .As<IServerService>()
                 .SingleInstance();
-            return builder; 
+            builder.RegisterType<ChatService>()
+                .As<IChatService>()
+                .SingleInstance();
+            return builder;
         }
     }
 }
