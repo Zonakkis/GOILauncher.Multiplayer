@@ -1,5 +1,4 @@
-﻿using LiteNetLib.Utils;
-using System;
+﻿using System;
 
 namespace GOILauncher.Multiplayer.Server.Services
 {
@@ -9,7 +8,5 @@ namespace GOILauncher.Multiplayer.Server.Services
         void Start(int port);
         void Stop();
         void Poll();
-        void Broadcast(
-            INetSerializable packet, Func<ServerPlayer, bool> predicate = null);
     }
 }
