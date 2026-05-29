@@ -8,8 +8,11 @@ namespace GOILauncher.Multiplayer.Server.Extensions
     {
         public static ContainerBuilder WithServer(this ContainerBuilder builder)
         {
-            builder.RegisterServerCore()
-                .RegisterType<ServerService>()
+            builder.RegisterServerCore();
+            builder.RegisterType<PlayerService>()
+                .As<IPlayerService>()
+                .SingleInstance();
+            builder.RegisterType<ServerService>()
                 .As<IServerService>()
                 .SingleInstance();
             return builder; 

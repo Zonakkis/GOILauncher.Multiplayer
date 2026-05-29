@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
@@ -15,15 +14,16 @@ namespace GOILauncher.Multiplayer.Server.Services
         public bool IsRunning => _networkServer.IsRunning;
         private readonly INetworkServer _networkServer;
         private readonly IEventBus _eventBus;
-        private readonly Dictionary<int, ServerPlayer> _players
-            = new Dictionary<int, ServerPlayer>();
+        private readonly IPlayerService _playerService;
 
         public ServerService(INetworkServer networkServer,
             IPacketDispatcher dispatcher,
-            IEventBus eventBus)
+            IEventBus eventBus,
+            IPlayerService playerService)
         {
             _networkServer = networkServer;
             _eventBus = eventBus;
+            _playerService = playerService;
             dispatcher.RegisterStruct<C2SClientHandShakePacket>(OnClientHandshake);
             dispatcher.RegisterStruct<C2SChatMessagePacket>(OnChatMessage);
             eventBus.Subscribe<ClientConnectedEvent>(OnClientConnected);
@@ -43,6 +43,7 @@ namespace GOILauncher.Multiplayer.Server.Services
         public void Stop()
         {
             _networkServer.Stop();
+            _playerService.Clear();
         }
 
         public void Poll()
@@ -52,7 +53,7 @@ namespace GOILauncher.Multiplayer.Server.Services
 
         public void Broadcast(INetSerializable packet, Func<ServerPlayer, bool> predicate = null)
         {
-            foreach (var player in _players.Values)
+            foreach (var player in _playerService.Players.Values)
             {
                 if (predicate != null && !predicate(player)) continue;
                 _networkServer.Send(player.Id, packet, DeliveryMethod.ReliableUnordered);
@@ -67,10 +68,9 @@ namespace GOILauncher.Multiplayer.Server.Services
 
         private void OnClientDisconnected(ClientDisconnectedEvent e)
         {
-            if (_players.TryGetValue(e.ClientId, out var player))
+            if (_playerService.TryRemove(e.ClientId, out var player))
             {
-                _players.Remove(e.ClientId);
-                var playerLeftPacket = new S2CPlayerLeftPacket { PlayerId = e.ClientId };
+                var playerLeftPacket = new S2CPlayerLeftPacket { PlayerId = player.Id };
                 Broadcast(playerLeftPacket);
             }
         }
@@ -80,8 +80,13 @@ namespace GOILauncher.Multiplayer.Server.Services
             var playerId = peer.Id;
             var playerName = packet.PlayerName;
             var platform = packet.Platform;
-            _players[playerId] = new ServerPlayer
-            { Peer = peer, Name = playerName, Platform = platform };
+            var player = new ServerPlayer
+            {
+                Peer = peer,
+                Name = playerName,
+                Platform = platform
+            };
+            _playerService.AddOrUpdate(player);
             var playerJoinedPacket = new S2CPlayerJoinedPacket
             { PlayerId = playerId, PlayerName = playerName, Platform = platform };
             // Notify existing players about the new player
