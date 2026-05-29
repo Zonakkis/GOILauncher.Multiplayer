@@ -24,7 +24,6 @@ namespace GOILauncher.Multiplayer.Server.Services
             _networkServer = networkServer;
             _eventBus = eventBus;
             _playerService = playerService;
-            dispatcher.RegisterStruct<C2SClientHandShakePacket>(OnClientHandshake);
             dispatcher.RegisterStruct<C2SChatMessagePacket>(OnChatMessage);
             eventBus.Subscribe<ClientConnectedEvent>(OnClientConnected);
             eventBus.Subscribe<ClientDisconnectedEvent>(OnClientDisconnected);
@@ -73,26 +72,6 @@ namespace GOILauncher.Multiplayer.Server.Services
                 var playerLeftPacket = new S2CPlayerLeftPacket { PlayerId = player.Id };
                 Broadcast(playerLeftPacket);
             }
-        }
-
-        private void OnClientHandshake(C2SClientHandShakePacket packet, NetPeer peer)
-        {
-            var playerId = peer.Id;
-            var playerName = packet.PlayerName;
-            var platform = packet.Platform;
-            var player = new ServerPlayer
-            {
-                Peer = peer,
-                Name = playerName,
-                Platform = platform
-            };
-            _playerService.AddOrUpdate(player);
-            var playerJoinedPacket = new S2CPlayerJoinedPacket
-            { PlayerId = playerId, PlayerName = playerName, Platform = platform };
-            // Notify existing players about the new player
-            Broadcast(playerJoinedPacket, p => p.Id != playerId);
-            _eventBus.Publish(
-                new ClientHandshakeEvent(playerName, platform));
         }
 
         private void OnChatMessage(C2SChatMessagePacket packet, NetPeer peer)
