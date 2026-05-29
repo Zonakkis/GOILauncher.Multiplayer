@@ -27,12 +27,6 @@ namespace GOILauncher.Multiplayer.Server.Services
             dispatcher.RegisterStruct<C2SClientHandShakePacket>(OnClientHandshake);
         }
 
-        public ServerPlayer AddOrUpdate(ServerPlayer player)
-        {
-            Players[player.Id] = player;
-            return player;
-        }
-
         public bool TryGet(int playerId, out ServerPlayer player)
         {
             return Players.TryGetValue(playerId, out player);
@@ -47,11 +41,6 @@ namespace GOILauncher.Multiplayer.Server.Services
             return true;
         }
 
-        public void Clear()
-        {
-            Players.Clear();
-        }
-
         private void OnClientHandshake(C2SClientHandShakePacket packet, NetPeer peer)
         {
             var playerId = peer.Id;
@@ -63,7 +52,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                 Name = playerName,
                 Platform = platform
             };
-            AddOrUpdate(player);
+            Players[player.Id] = player;
             var playerJoinedPacket = new S2CPlayerJoinedPacket
             { PlayerId = playerId, PlayerName = playerName, Platform = platform };
             // Notify existing players about the new player

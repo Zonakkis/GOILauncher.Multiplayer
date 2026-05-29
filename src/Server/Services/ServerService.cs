@@ -12,17 +12,12 @@ namespace GOILauncher.Multiplayer.Server.Services
     {
         public bool IsRunning => _networkServer.IsRunning;
         private readonly INetworkServer _networkServer;
-        private readonly IEventBus _eventBus;
         private readonly IPlayerService _playerService;
 
         public ServerService(INetworkServer networkServer,
-            IPacketDispatcher dispatcher,
-            IEventBus eventBus,
-            IPlayerService playerService)
+            IEventBus eventBus)
         {
             _networkServer = networkServer;
-            _eventBus = eventBus;
-            _playerService = playerService;
             eventBus.Subscribe<ClientConnectedEvent>(OnClientConnected);
             eventBus.Subscribe<ClientDisconnectedEvent>(OnClientDisconnected);
         }
@@ -40,7 +35,6 @@ namespace GOILauncher.Multiplayer.Server.Services
         public void Stop()
         {
             _networkServer.Stop();
-            _playerService.Clear();
         }
 
         public void Poll()
