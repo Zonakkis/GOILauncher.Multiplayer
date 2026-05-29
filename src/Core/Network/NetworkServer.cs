@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
@@ -70,13 +71,31 @@ namespace GOILauncher.Multiplayer.Network
         public void Multicast<T>(IEnumerable<int> clientIds, T packet, DeliveryMethod method) where T : class, new()
         {
             foreach (var clientId in clientIds)
-                Send(clientId, packet, method);
+            {
+                try
+                {
+                    Send(clientId, packet, method);
+                }
+                catch (Exception e)
+                {
+                    _logger.Error($"Failed to send packet to client {clientId}: {e.Message}");
+                }
+            }
         }
 
         public void Multicast(IEnumerable<int> clientIds, INetSerializable packet, DeliveryMethod method)
         {
             foreach (var clientId in clientIds)
-                Send(clientId, packet, method);
+            {
+                try
+                {
+                    Send(clientId, packet, method);
+                }
+                catch (Exception e)
+                {
+                    _logger.Error($"Failed to send packet to client {clientId}: {e.Message}");
+                }
+            }
         }
 
         public void Broadcast<T>(T packet, DeliveryMethod method) where T : class, new()
