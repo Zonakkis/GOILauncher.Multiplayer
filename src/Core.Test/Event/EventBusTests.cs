@@ -152,7 +152,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Event
             secondHandlerCalled.Should().BeTrue("执行不应该因为第一个抛出异常而被阻止");
 
             // Verify that the logger's Error method was called with a message containing "TestEvent" and the test exception
-            _loggerMock.Verify(l => l.Error(It.Is<string>(msg => msg.Contains("TestEvent")), testException), Times.Once);
+            _loggerMock.Verify(l => l.Error(testException, It.Is<string>(msg => msg.Contains("TestEvent"))), Times.Once);
         }
 
         private class TestEvent

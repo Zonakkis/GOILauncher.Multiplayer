@@ -35,11 +35,22 @@ namespace GOILauncher.Multiplayer.Core.Log
         {
             _logger.Warn(message, args);
         }
-        public void Error(string message, Exception ex = null)
+        public void Error(string message)
         {
-            _logger.Error(message, ex);
+            _logger.Error(message);
         }
-        public void Error(string message, Exception ex = null, params object[] args)
+
+        public void Error(string message, params object[] args)
+        {
+            _logger.Error(message, args);
+        }
+
+        public void Error(Exception ex, string message)
+        {
+            _logger.Error(ex, message);
+        }
+
+        public void Error(Exception ex, string message, params object[] args)
         {
             _logger.Error(ex, message, args);
         }

@@ -20,7 +20,7 @@ namespace GOILauncher.Multiplayer.Core.Extensions
 
             builder.Register(ctx => new ConsoleTarget()
             {
-                Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${level:uppercase=true}|${logger:shortName=true}|${message}"
+                Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${level:uppercase=true}|${logger:shortName=true}|${message}${onexception:inner=${newline}${exception:format=tostring}}"
             })
                 .As<Target>()
                 .SingleInstance();

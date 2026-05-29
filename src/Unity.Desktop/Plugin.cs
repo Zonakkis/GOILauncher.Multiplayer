@@ -72,7 +72,7 @@ public class Plugin : BaseUnityPlugin
     {
         builder.Register(_ => new BepInExTarget(Logger)
         {
-            Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${logger:shortName=true}|${message}"
+            Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${level:uppercase=true}|${logger:shortName=true}|${message}${onexception:inner=${newline}${exception:format=tostring}}"
         })
            .As<Target>()
            .SingleInstance();

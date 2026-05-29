@@ -134,7 +134,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             }
             catch (Exception ex)
             {
-                _logger.Error("Failed to start server", ex);
+                _logger.Error(ex, "Failed to start server");
                 _toast.Show($"\u670d\u52a1\u7aef\u542f\u52a8\u5931\u8d25: {ex.Message}");
             }
             finally
@@ -158,7 +158,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             }
             catch (Exception ex)
             {
-                _logger.Error("Failed to stop server", ex);
+                _logger.Error(ex, "Failed to stop server");
                 _toast.Show($"\u670d\u52a1\u7aef\u505c\u6b62\u5931\u8d25: {ex.Message}");
             }
             finally

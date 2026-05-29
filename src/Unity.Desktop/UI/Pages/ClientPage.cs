@@ -334,7 +334,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             catch (Exception ex)
             {
                 isConnecting = false;
-                _logger.Error("Failed to connect to server", ex);
+                _logger.Error(ex, "Failed to connect to server");
                 _toast.Show($"\u8fde\u63a5\u5931\u8d25: {ex.Message}");
                 RefreshClientState();
             }
@@ -357,7 +357,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             catch (Exception ex)
             {
                 disconnectRequested = false;
-                _logger.Error("Failed to disconnect from server", ex);
+                _logger.Error(ex, "Failed to disconnect from server");
                 _toast.Show($"\u65ad\u5f00\u5931\u8d25: {ex.Message}");
                 RefreshClientState();
             }

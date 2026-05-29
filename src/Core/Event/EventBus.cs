@@ -59,7 +59,7 @@ namespace GOILauncher.Multiplayer.Core.Event
                         }
                         catch (Exception ex)
                         {
-                            _logger.Error($"Error handling event {eventType.Name}", ex);
+                            _logger.Error(ex, $"Error handling event {eventType.Name}");
                         }
                     }
                 }
