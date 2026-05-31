@@ -8,15 +8,12 @@ namespace GOILauncher.Multiplayer.UI.Components
         {
             RoomList = new DefaultRoomListUiComponent();
             Chat = new DefaultChatUiComponent();
-            PlayerList = new DefaultPlayerListUiComponent();
             ServerControl = new DefaultServerControlUiComponent();
         }
 
         public IRoomListUiComponent RoomList { get; private set; }
 
         public IChatUiComponent Chat { get; private set; }
-
-        public IPlayerListUiComponent PlayerList { get; private set; }
 
         public IServerControlUiComponent ServerControl { get; private set; }
     }
@@ -93,21 +90,6 @@ namespace GOILauncher.Multiplayer.UI.Components
                 return;
 
             messages.Add(new ChatMessageViewData("我", message.Trim()));
-        }
-    }
-
-    public sealed class DefaultPlayerListUiComponent : IPlayerListUiComponent
-    {
-        private readonly List<PlayerListItemViewData> players = new List<PlayerListItemViewData>
-        {
-            new PlayerListItemViewData("玩家A", "PC"),
-            new PlayerListItemViewData("玩家B", "PC"),
-            new PlayerListItemViewData("玩家C", "SteamDeck")
-        };
-
-        public IEnumerable<PlayerListItemViewData> GetPlayers()
-        {
-            return players;
         }
     }
 

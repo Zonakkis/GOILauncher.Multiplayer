@@ -101,9 +101,6 @@ public class Plugin : BaseUnityPlugin
         builder.RegisterType<MessageHandler>()
         .AsSelf()
         .SingleInstance();
-        builder.RegisterType<DefaultPlayerListUiComponent>()
-        .As<IPlayerListUiComponent>()
-        .SingleInstance();
         builder.RegisterType<PlayerListHandler>()
         .AsSelf()
         .SingleInstance();

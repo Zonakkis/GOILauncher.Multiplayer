@@ -1,4 +1,5 @@
-using GOILauncher.Multiplayer.UI.Components;
+using GOILauncher.Multiplayer.Client;
+using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.UI.ScrollView.Player;
 using UniverseLib.UI;
 using UniverseLib.UI.Panels;
@@ -13,12 +14,13 @@ namespace GOILauncher.Multiplayer.UI
         private static readonly Color HeaderBackgroundColor = new Color(0f, 0f, 0f, 0.42f);
 
         private readonly PlayerListHandler playerListHandler;
-        private readonly IPlayerListUiComponent playerListComponent;
+        private readonly IUnityClient client;
 
-        public PlayerListUI(UIBase owner, PlayerListHandler playerListHandler, IPlayerListUiComponent playerListComponent) : base(owner)
+        public PlayerListUI(UIBase owner, PlayerListHandler playerListHandler, IUnityClient client) : base(owner)
         {
             this.playerListHandler = playerListHandler;
-            this.playerListComponent = playerListComponent;
+            this.client = client;
+            this.client.PlayerListUpdated += OnPlayerListUpdated;
             ImageUtility.MakeTransparent(UIRoot);
             ImageUtility.MakeTransparent(ContentRoot);
             this.playerListHandler.Setup(ContentRoot, PanelBackgroundColor, HeaderBackgroundColor);
@@ -50,14 +52,22 @@ namespace GOILauncher.Multiplayer.UI
 
         public void RefreshPlayers()
         {
-            if (playerListHandler == null || playerListComponent == null)
+            if (playerListHandler == null || client == null)
                 return;
 
-            playerListHandler.Update(playerListComponent.GetPlayers());
+            playerListHandler.Update(client.Players);
         }
 
         protected override void ConstructPanelContent()
         {
+        }
+
+        private void OnPlayerListUpdated(object sender, PlayerListUpdatedEventArgs e)
+        {
+            if (!Enabled)
+                return;
+
+            playerListHandler.Update(e.Players);
         }
     }
 }

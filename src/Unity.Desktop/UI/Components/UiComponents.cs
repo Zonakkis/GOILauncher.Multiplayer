@@ -28,19 +28,6 @@ namespace GOILauncher.Multiplayer.UI.Components
         public string Message { get; private set; }
     }
 
-    public sealed class PlayerListItemViewData
-    {
-        public PlayerListItemViewData(string playerName, string detail)
-        {
-            PlayerName = playerName;
-            Detail = detail;
-        }
-
-        public string PlayerName { get; private set; }
-
-        public string Detail { get; private set; }
-    }
-
     public interface IRoomListUiComponent
     {
         IEnumerable<RoomListItemViewData> GetRooms();
@@ -65,11 +52,6 @@ namespace GOILauncher.Multiplayer.UI.Components
         void SendMessage(string message);
     }
 
-    public interface IPlayerListUiComponent
-    {
-        IEnumerable<PlayerListItemViewData> GetPlayers();
-    }
-
     public interface IServerControlUiComponent
     {
         int GetListenPort();
@@ -84,8 +66,6 @@ namespace GOILauncher.Multiplayer.UI.Components
         IRoomListUiComponent RoomList { get; }
 
         IChatUiComponent Chat { get; }
-
-        IPlayerListUiComponent PlayerList { get; }
 
         IServerControlUiComponent ServerControl { get; }
     }
