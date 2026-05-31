@@ -9,7 +9,7 @@ namespace GOILauncher.Multiplayer.Core.Data
         void RegisterStruct<TPacket>(Action<TPacket, NetPeer> onReceive)
              where TPacket : struct, INetSerializable;
         void RegisterClass<TPacket>(Action<TPacket, NetPeer> onReceive)
-             where TPacket : class, new();
+             where TPacket : class, INetSerializable, new();
         void Dispatch(NetPeer peer, NetDataReader reader);
     }
 }

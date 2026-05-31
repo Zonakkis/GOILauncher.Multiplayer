@@ -20,7 +20,7 @@ namespace GOILauncher.Multiplayer.Core.Data
         }
 
         public void RegisterClass<TPacket>(Action<TPacket, NetPeer> onReceive)
-             where TPacket : class, new()
+             where TPacket : class, INetSerializable, new()
         {
             _processor.SubscribeReusable(onReceive);
         }
