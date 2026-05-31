@@ -78,7 +78,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
             });
 
             var sendPacket = new TestClassPacket { Message = "Hello World" };
-            _processor.Write(_writer, sendPacket);
+            _processor.WriteNetSerializable(_writer, sendPacket);
 
             var reader = new NetDataReader(_writer.CopyData());
             _dispatcher.Dispatch(null, reader);
@@ -103,9 +103,19 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
             }
         }
 
-        public class TestClassPacket 
+        public class TestClassPacket : INetSerializable
         {
             public string Message { get; set; }
+
+            public void Serialize(NetDataWriter writer)
+            {
+                writer.Put(Message);
+            }
+
+            public void Deserialize(NetDataReader reader)
+            {
+                Message = reader.GetString();
+            }
         }
 
         private static byte[] WriteNetSerializableWithRuntimeType(INetSerializable packet)
