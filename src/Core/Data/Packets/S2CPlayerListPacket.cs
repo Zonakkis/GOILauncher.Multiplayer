@@ -21,6 +21,7 @@ namespace GOILauncher.Multiplayer.Core.Data.Packets
 
         public void Deserialize(NetDataReader reader)
         {
+            Players.Clear();
             int playerCount = reader.GetInt();
             for (int i = 0; i < playerCount; i++)
             {
