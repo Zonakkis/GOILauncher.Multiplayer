@@ -13,6 +13,8 @@ namespace GOILauncher.Multiplayer.Client
 
     public class UnityClient : MonoBehaviour, IUnityClient
     {
+        private bool _initialized;
+
         public bool IsConnected => ClientService.IsConnected;
         public IList<ClientPlayer> Players { get; private set; } = new List<ClientPlayer>();
         public List<Message> ChatMessages => ChatService.Messages;
@@ -24,6 +26,10 @@ namespace GOILauncher.Multiplayer.Client
 
         public void Init()
         {
+            if (_initialized)
+                return;
+
+            _initialized = true;
             EventBus.Subscribe<PlayerListUpdatedEvent>(OnPlayerListUpdatedEvent);
         }
 

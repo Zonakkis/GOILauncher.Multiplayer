@@ -33,7 +33,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             dispatcher.RegisterStruct<S2CPlayerLeftPacket>(OnPlayerLeft);
             // Set local player when handshake is successful
             eventBus.Subscribe<ServerHandshakeEvent>(OnServerHandshake);
-            eventBus.Subscribe<ClientDisconnectedEvent>(OnClientDisconnected);
+            eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
         }
 
         public void UpdateLocalPlayerMetadata(PlayerMetadata metadata)
@@ -53,7 +53,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             _logger.Info("Connected to server with PlayerId: {PlayerId}", e.PlayerId);
         }
 
-        private void OnClientDisconnected(ClientDisconnectedEvent e)
+        private void OnServerDisconnected(ServerDisconnectedEvent e)
         {
             Players.Clear();
             _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));

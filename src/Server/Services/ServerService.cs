@@ -9,7 +9,6 @@ namespace GOILauncher.Multiplayer.Server.Services
     {
         public bool IsRunning => _networkServer.IsRunning;
         private readonly INetworkServer _networkServer;
-        private readonly IPlayerService _playerService;
 
         public ServerService(INetworkServer networkServer,
             IEventBus eventBus)

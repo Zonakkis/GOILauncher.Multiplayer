@@ -6,7 +6,7 @@ namespace GOILauncher.Multiplayer.Client.Events
 {
     public class PlayerListUpdatedEventArgs : EventArgs
     {
-        public IList<ClientPlayer> Players { get; set; }
+        public IList<ClientPlayer> Players { get; }
 
         public PlayerListUpdatedEventArgs(IList<ClientPlayer> players)
         {
