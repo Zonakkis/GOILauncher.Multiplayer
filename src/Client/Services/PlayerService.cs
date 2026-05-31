@@ -54,6 +54,7 @@ namespace GOILauncher.Multiplayer.Client.Services
         private void OnPlayerList(S2CPlayerListPacket packet, NetPeer _)
         {
             Players.Clear();
+            Players.Add(LocalPlayer.Id, LocalPlayer);
             foreach (var player in packet.Players)
             {
                 Players.Add(player.Id, new ClientPlayer
