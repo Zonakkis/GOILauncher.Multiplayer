@@ -9,18 +9,15 @@ namespace GOILauncher.Multiplayer.Network
     {
         public bool IsConnected => _server != null && _server.ConnectionState == ConnectionState.Connected;
         private readonly NetManager _netManager;
-        private readonly NetPacketProcessor _processor;
         private readonly ILogger<NetworkClient> _logger;
         private NetPeer _server;
 
         public NetworkClient(
             NetManager netManager,
-            NetPacketProcessor processor,
             IEventBus eventBus,
             ILogger<NetworkClient> logger)
         {
             _netManager = netManager;
-            _processor = processor;
             eventBus.Subscribe<ServerDisconnectedEvent>((_) => _server = null);
             _logger = logger;
             _netManager.Start();
@@ -48,14 +45,6 @@ namespace GOILauncher.Multiplayer.Network
         public void Poll()
         {
             _netManager.PollEvents();
-        }
-
-        public void Send<T>(T packet, DeliveryMethod method) where T : class, new()
-        {
-            if (!IsConnected) return;
-
-            var bytes = _processor.Write(packet);
-            _server.Send(bytes, method);
         }
 
         public void Send(INetSerializable packet, DeliveryMethod method)

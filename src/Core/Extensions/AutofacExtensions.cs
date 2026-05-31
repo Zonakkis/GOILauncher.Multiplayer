@@ -51,7 +51,6 @@ namespace GOILauncher.Multiplayer.Core.Extensions
             {
                 var netManager = new NetManager(c.Resolve<NetworkClientListener>());
                 return new NetworkClient(netManager,
-                    c.Resolve<NetPacketProcessor>(),
                     c.Resolve<IEventBus>(),
                     c.Resolve<ILogger<NetworkClient>>());
             })
@@ -69,8 +68,6 @@ namespace GOILauncher.Multiplayer.Core.Extensions
             {
                 var netManager = new NetManager(c.Resolve<NetworkServerListener>());
                 return new NetworkServer(netManager,
-                    c.Resolve<NetPacketProcessor>(),
-                    c.Resolve<IEventBus>(),
                     c.Resolve<ILogger<NetworkServer>>());
             })
                 .As<INetworkServer>()

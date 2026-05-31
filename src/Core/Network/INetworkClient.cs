@@ -10,7 +10,6 @@ namespace GOILauncher.Multiplayer.Network
         void Connect(string host, int port);
         void Disconnect();
         void Poll();
-        void Send<T>(T packet, DeliveryMethod method) where T : class, new();
         void Send(INetSerializable packet, DeliveryMethod method);
     }
 }
