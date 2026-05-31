@@ -4,6 +4,8 @@ using GOILauncher.Multiplayer.Client.Services;
 using GOILauncher.Multiplayer.Unity.Extensions;
 using UnityEngine;
 using System.Collections.Generic;
+using GOILauncher.Multiplayer.Core.Extensions;
+using GOILauncher.Multiplayer.Core.Data;
 
 namespace GOILauncher.Multiplayer.Client
 {
@@ -11,6 +13,7 @@ namespace GOILauncher.Multiplayer.Client
     public class UnityClient : MonoBehaviour, IUnityClient
     {
         public bool IsConnected => ClientService.IsConnected;
+        public ReadOnlyDictionary<int, ClientPlayer> Players => PlayerService.Players.AsReadOnly();
         public List<Message> ChatMessages => ChatService.Messages;
         public IClientService ClientService { get; set; }
         public IPlayerService PlayerService { get; set; }

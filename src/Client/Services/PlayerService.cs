@@ -16,7 +16,6 @@ namespace GOILauncher.Multiplayer.Client.Services
         private readonly INetworkClient _networkClient;
         private readonly IEventBus _eventBus;
         private readonly ILogger<PlayerService> _logger;
-
         public ClientPlayer LocalPlayer { get; } = new ClientPlayer();
         public Dictionary<int, ClientPlayer> Players { get; }
             = new Dictionary<int, ClientPlayer>();
@@ -29,6 +28,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             _networkClient = networkClient;
             _eventBus = eventBus;
             _logger = logger;
+            dispatcher.RegisterClass<S2CPlayerListPacket>(OnPlayerList);
             dispatcher.RegisterStruct<S2CPlayerJoinedPacket>(OnPlayerJoined);
             dispatcher.RegisterStruct<S2CPlayerLeftPacket>(OnPlayerLeft);
             // Set local player when handshake is successful
@@ -49,6 +49,21 @@ namespace GOILauncher.Multiplayer.Client.Services
             { PlayerName = LocalPlayer.Name, Platform = LocalPlayer.Platform };
             _networkClient.Send(packet, DeliveryMethod.ReliableOrdered);
             _logger.Info("Connected to server with PlayerId: {PlayerId}", e.PlayerId);
+        }
+
+        private void OnPlayerList(S2CPlayerListPacket packet, NetPeer _)
+        {
+            Players.Clear();
+            Players[LocalPlayer.Id] = LocalPlayer;
+            foreach (var player in packet.Players)
+            {
+                Players[player.Id] = new ClientPlayer
+                {
+                    Id = player.Id,
+                    Name = player.Name,
+                    Platform = player.Platform
+                };
+            }
         }
 
         private void OnPlayerJoined(S2CPlayerJoinedPacket packet, NetPeer _)

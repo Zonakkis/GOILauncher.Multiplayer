@@ -1,11 +1,13 @@
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Client.Models;
+using GOILauncher.Multiplayer.Core.Data;
 
 namespace GOILauncher.Multiplayer.Client
 {
     public interface IUnityClient
     {
         bool IsConnected { get; }
+        ReadOnlyDictionary<int, ClientPlayer> Players { get; }
         List<Message> ChatMessages { get; }
         void Connect(string host, int port, string playerName);
         void Disconnect();

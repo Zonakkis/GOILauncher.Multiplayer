@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using GOILauncher.Multiplayer.Core.Data;
+using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
@@ -42,11 +43,22 @@ namespace GOILauncher.Multiplayer.Server.Services
                 Platform = platform
             };
             Players[player.Id] = player;
+            // Notify existing players about the new player
             var playerJoinedPacket = new S2CPlayerJoinedPacket
             { PlayerId = playerId, PlayerName = playerName, Platform = platform };
-            // Notify existing players about the new player
             var existingPlayerIds = Players.Keys.Where(id => id != playerId);
             _networkServer.Multicast(existingPlayerIds, playerJoinedPacket, DeliveryMethod.ReliableUnordered);
+            // Notify the new player about the existing players
+            var playerListPacket = new S2CPlayerListPacket
+            {
+                Players = Players.Values.Select(p => new PlayerSnapshot
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Platform = p.Platform
+                }).Where(p => p.Id != playerId).ToList()
+            };
+            _networkServer.Send(playerId, playerListPacket, DeliveryMethod.ReliableUnordered);
             _eventBus.Publish(new ClientHandshakeEvent(playerName, platform));
         }
 
