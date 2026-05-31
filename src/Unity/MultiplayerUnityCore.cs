@@ -66,6 +66,7 @@ namespace GOILauncher.Multiplayer.Unity
                 obj.transform.SetParent(_core.transform);
                 var unityClient = obj.AddComponent<UnityClient>();
                 ctx.InjectProperties(unityClient);
+                unityClient.Init();
                 return unityClient;
             }).
             As<IUnityClient>().

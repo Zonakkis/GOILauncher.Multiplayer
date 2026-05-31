@@ -8,6 +8,7 @@ using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Network;
 using LiteNetLib;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace GOILauncher.Multiplayer.Client.Services
 {
@@ -32,6 +33,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             dispatcher.RegisterStruct<S2CPlayerLeftPacket>(OnPlayerLeft);
             // Set local player when handshake is successful
             eventBus.Subscribe<ServerHandshakeEvent>(OnServerHandshake);
+            eventBus.Subscribe<ClientDisconnectedEvent>(OnClientDisconnected);
         }
 
         public void UpdateLocalPlayerMetadata(PlayerMetadata metadata)
@@ -47,8 +49,14 @@ namespace GOILauncher.Multiplayer.Client.Services
             var packet = new C2SClientHandShakePacket
             { PlayerName = LocalPlayer.Name, Platform = LocalPlayer.Platform };
             _networkClient.Send(packet, DeliveryMethod.ReliableOrdered);
-            _eventBus.Publish(new PlayerListUpdatedEvent(Players));
+            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
             _logger.Info("Connected to server with PlayerId: {PlayerId}", e.PlayerId);
+        }
+
+        private void OnClientDisconnected(ClientDisconnectedEvent e)
+        {
+            Players.Clear();
+            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
         }
 
         private void OnPlayerList(S2CPlayerListPacket packet, NetPeer _)
@@ -64,7 +72,7 @@ namespace GOILauncher.Multiplayer.Client.Services
                     Platform = player.Platform
                 });
             }
-            _eventBus.Publish(new PlayerListUpdatedEvent(Players));
+            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
         }
 
         private void OnPlayerJoined(S2CPlayerJoinedPacket packet, NetPeer _)
@@ -77,7 +85,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             _eventBus.Publish(
                 new PlayerJoinedEvent(playerId, playerName, platform));
             _logger.Info("[{}][{}]{} joined.", playerName, playerId, platform);
-            _eventBus.Publish(new PlayerListUpdatedEvent(Players));
+            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
         }
 
         private void OnPlayerLeft(S2CPlayerLeftPacket packet, NetPeer _)
@@ -87,7 +95,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             {
                 Players.Remove(playerId);
                 _eventBus.Publish(new PlayerLeftEvent(playerId, player.Name, player.Platform));
-                _eventBus.Publish(new PlayerListUpdatedEvent(Players));
+                _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
                 _logger.Info($"{player.Format()} left.");
             }
             else

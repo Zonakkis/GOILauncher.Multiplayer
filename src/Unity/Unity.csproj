@@ -54,6 +54,7 @@
     <Compile Include="Events\GameRestartedEvent.cs" />
     <Compile Include="Events\GameQuitEvent.cs" />
     <Compile Include="Events\GameStartedEvent.cs" />
+    <Compile Include="Events\PlayerListUpdatedEventArgs.cs" />
     <Compile Include="Extensions\PlatformExtensions.cs" />
     <Compile Include="IUnityClient.cs" />
     <Compile Include="IUnityServer.cs" />
