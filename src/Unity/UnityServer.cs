@@ -7,6 +7,8 @@ namespace GOILauncher.Multiplayer.Unity
     {
         public bool IsRunning => ServerService.IsRunning;
         public IServerService ServerService { get; set; }
+        public IPlayerService PlayerService { get; set; }
+        public IChatService ChatService { get; set; }
 
         public void Start()
         {
