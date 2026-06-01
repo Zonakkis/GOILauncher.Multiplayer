@@ -1,12 +1,12 @@
-﻿using GOILauncher.Multiplayer.Client.Extensions;
+﻿using System;
+using System.Collections.Generic;
+using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Client.Services;
+using GOILauncher.Multiplayer.Core.Data.Models;
+using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Unity.Extensions;
 using UnityEngine;
-using System.Collections.Generic;
-using GOILauncher.Multiplayer.Core.Event;
-using GOILauncher.Multiplayer.Client.Events;
-using System;
 
 namespace GOILauncher.Multiplayer.Client
 {
@@ -16,7 +16,7 @@ namespace GOILauncher.Multiplayer.Client
         private bool _initialized;
 
         public bool IsConnected => ClientService.IsConnected;
-        public IList<ClientPlayer> Players { get; private set; } = new List<ClientPlayer>();
+        public IList<IClientPlayer> Players { get; private set; } = new List<IClientPlayer>();
         public List<Message> ChatMessages => ChatService.Messages;
         public IClientService ClientService { get; set; }
         public IPlayerService PlayerService { get; set; }
@@ -40,13 +40,13 @@ namespace GOILauncher.Multiplayer.Client
 
         public void Connect(string host, int port, string playerName)
         {
-            var playerMetadata = new PlayerMetadata
+            var playerInfo = new PlayerInfo
             {
                 Name = playerName,
                 Platform = Application.platform.ToPlatform()
             };
 
-            PlayerService.UpdateLocalPlayerMetadata(playerMetadata);
+            PlayerService.SetLocalPlayerInfo(playerInfo);
             ClientService.Connect(host, port);
         }
 

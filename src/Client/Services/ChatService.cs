@@ -93,7 +93,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             var dateTime = DateTimeUtils.FromUnixTimeSeconds(packet.Timestamp);
             if (_playerService.Players.TryGetValue(playerId, out var player))
             {
-                var message = new Message(MessageType.Player, player.Name, packet.Content, dateTime);
+                var message = new Message(MessageType.Player, player.Info.Name, packet.Content, dateTime);
                 AddChatMessage(message);
             }
             else

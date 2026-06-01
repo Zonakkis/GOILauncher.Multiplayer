@@ -8,7 +8,7 @@ namespace GOILauncher.Multiplayer.Client
     public interface IUnityClient
     {
         bool IsConnected { get; }
-        IList<ClientPlayer> Players { get; }
+        IList<IClientPlayer> Players { get; }
         List<Message> ChatMessages { get; }
 
         event EventHandler<PlayerListUpdatedEventArgs> PlayerListUpdated;

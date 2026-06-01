@@ -39,10 +39,14 @@ namespace GOILauncher.Multiplayer.Server.Services
             var player = new ServerPlayer
             {
                 Peer = peer,
-                Name = playerName,
-                Platform = platform
+                Info = new PlayerInfo
+                {
+                    Id = playerId,
+                    Name = playerName,
+                    Platform = platform
+                }
             };
-            Players[player.Id] = player;
+            Players[player.Info.Id] = player;
             // Notify existing players about the new player
             var playerJoinedPacket = new S2CPlayerJoinedPacket
             { PlayerId = playerId, PlayerName = playerName, Platform = platform };
@@ -51,11 +55,12 @@ namespace GOILauncher.Multiplayer.Server.Services
             // Notify the new player about the existing players
             var playerListPacket = new S2CPlayerListPacket
             {
-                Players = Players.Values.Select(p => new PlayerSnapshot
+                Players = Players.Values.Select(p => (IPlayerInfo)new PlayerInfo
                 {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Platform = p.Platform
+                    Id = p.Info.Id,
+                    Name = p.Info.Name,
+                    Platform = p.Info.Platform,
+                    IsInGame = p.Info.IsInGame
                 }).Where(p => p.Id != playerId).ToList()
             };
             _networkServer.Send(playerId, playerListPacket, DeliveryMethod.ReliableUnordered);
@@ -69,7 +74,7 @@ namespace GOILauncher.Multiplayer.Server.Services
             {
                 Players.Remove(playerId);
                 var otherPlayerIds = Players.Keys.ToList();
-                var playerLeftPacket = new S2CPlayerLeftPacket { PlayerId = player.Id };
+                var playerLeftPacket = new S2CPlayerLeftPacket { PlayerId = player.Info.Id };
                 _networkServer.Multicast(otherPlayerIds, playerLeftPacket, DeliveryMethod.ReliableUnordered);
             }
         }

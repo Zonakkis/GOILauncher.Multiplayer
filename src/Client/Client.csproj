@@ -55,7 +55,7 @@
     <Compile Include="Extensions\ClientPlayerExtensions.cs" />
     <Compile Include="Models\Message.cs" />
     <Compile Include="Models\MessageType.cs" />
-    <Compile Include="Models\PlayerMetadata.cs" />
+    <Compile Include="Models\IClientPlayer.cs" />
     <Compile Include="Models\ClientPlayer.cs" />
     <Compile Include="Services\ChatService.cs" />
     <Compile Include="Services\ClientService.cs" />

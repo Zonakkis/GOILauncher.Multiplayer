@@ -1,5 +1,5 @@
-﻿using GOILauncher.Multiplayer.Client.Extensions;
-using GOILauncher.Multiplayer.Client.Models;
+﻿using GOILauncher.Multiplayer.Client.Models;
+using GOILauncher.Multiplayer.Core.Data.Models;
 using System.Collections.Generic;
 
 namespace GOILauncher.Multiplayer.Client.Services
@@ -8,6 +8,6 @@ namespace GOILauncher.Multiplayer.Client.Services
     {
         ClientPlayer LocalPlayer { get; }
         Dictionary<int, ClientPlayer> Players { get; }
-        void UpdateLocalPlayerMetadata(PlayerMetadata metadata);
+        void SetLocalPlayerInfo(IPlayerInfo info);
     }
 }

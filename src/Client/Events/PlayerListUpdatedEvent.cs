@@ -5,9 +5,9 @@ namespace GOILauncher.Multiplayer.Client.Events
 {
     public class PlayerListUpdatedEvent
     {   
-        public IList<ClientPlayer> Players { get; }
+        public IList<IClientPlayer> Players { get; }
 
-        public PlayerListUpdatedEvent(IList<ClientPlayer> players)
+        public PlayerListUpdatedEvent(IList<IClientPlayer> players)
         {
             Players = players;
         }

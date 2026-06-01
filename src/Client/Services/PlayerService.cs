@@ -2,6 +2,7 @@
 using GOILauncher.Multiplayer.Client.Extensions;
 using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Core.Data;
+using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
@@ -36,43 +37,45 @@ namespace GOILauncher.Multiplayer.Client.Services
             eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
         }
 
-        public void UpdateLocalPlayerMetadata(PlayerMetadata metadata)
+        public void SetLocalPlayerInfo(IPlayerInfo info)
         {
-            LocalPlayer.Name = metadata.Name;
-            LocalPlayer.Platform = metadata.Platform;
+            LocalPlayer.Info = info;
         }
 
         private void OnServerHandshake(ServerHandshakeEvent e)
         {
-            LocalPlayer.Id = e.PlayerId;
+            LocalPlayer.Info = new PlayerInfo { Id = e.PlayerId, Name = LocalPlayer.Info.Name, Platform = LocalPlayer.Info.Platform };
             Players[e.PlayerId] = LocalPlayer;
             var packet = new C2SClientHandShakePacket
-            { PlayerName = LocalPlayer.Name, Platform = LocalPlayer.Platform };
+            { PlayerName = LocalPlayer.Info.Name, Platform = LocalPlayer.Info.Platform };
             _networkClient.Send(packet, DeliveryMethod.ReliableOrdered);
-            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
+            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.OfType<IClientPlayer>().ToList()));
             _logger.Info("Connected to server with PlayerId: {PlayerId}", e.PlayerId);
         }
 
         private void OnServerDisconnected(ServerDisconnectedEvent e)
         {
             Players.Clear();
-            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
+            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.OfType<IClientPlayer>().ToList()));
         }
 
         private void OnPlayerList(S2CPlayerListPacket packet, NetPeer _)
         {
             Players.Clear();
-            Players.Add(LocalPlayer.Id, LocalPlayer);
+            Players.Add(LocalPlayer.Info.Id, LocalPlayer);
             foreach (var player in packet.Players)
             {
                 Players.Add(player.Id, new ClientPlayer
                 {
-                    Id = player.Id,
-                    Name = player.Name,
-                    Platform = player.Platform
+                    Info = new PlayerInfo
+                    {
+                        Id = player.Id,
+                        Name = player.Name,
+                        Platform = player.Platform
+                    }
                 });
             }
-            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
+            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.OfType<IClientPlayer>().ToList()));
         }
 
         private void OnPlayerJoined(S2CPlayerJoinedPacket packet, NetPeer _)
@@ -81,11 +84,18 @@ namespace GOILauncher.Multiplayer.Client.Services
             var playerName = packet.PlayerName;
             var platform = packet.Platform;
             Players[playerId] = new ClientPlayer
-            { Id = playerId, Name = playerName, Platform = platform };
+            {
+                Info = new PlayerInfo
+                {
+                    Id = playerId,
+                    Name = playerName,
+                    Platform = platform
+                }
+            };
             _eventBus.Publish(
                 new PlayerJoinedEvent(playerId, playerName, platform));
             _logger.Info("[{}][{}]{} joined.", playerName, playerId, platform);
-            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
+            _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.OfType<IClientPlayer>().ToList()));
         }
 
         private void OnPlayerLeft(S2CPlayerLeftPacket packet, NetPeer _)
@@ -94,8 +104,8 @@ namespace GOILauncher.Multiplayer.Client.Services
             if (Players.TryGetValue(playerId, out var player))
             {
                 Players.Remove(playerId);
-                _eventBus.Publish(new PlayerLeftEvent(playerId, player.Name, player.Platform));
-                _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
+                _eventBus.Publish(new PlayerLeftEvent(playerId, player.Info.Name, player.Info.Platform));
+                _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.OfType<IClientPlayer>().ToList()));
                 _logger.Info($"{player.Format()} left.");
             }
             else

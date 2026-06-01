@@ -54,7 +54,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 TextAnchor.UpperLeft);
         }
 
-        public void Update(IEnumerable<ClientPlayer> players)
+        public void Update(IEnumerable<IClientPlayer> players)
         {
             if (playerListContent == null)
                 return;
@@ -64,7 +64,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 return;
 
             int rowIndex = 0;
-            foreach (ClientPlayer player in players)
+            foreach (IClientPlayer player in players)
             {
                 CreatePlayerRow(player, rowIndex);
                 rowIndex++;
@@ -103,7 +103,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             UIFactory.SetLayoutElement(detailHeader.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
 
-        private void CreatePlayerRow(ClientPlayer player, int rowIndex)
+        private void CreatePlayerRow(IClientPlayer player, int rowIndex)
         {
             GameObject row = UIFactory.CreateHorizontalGroup(
                 playerListContent,
@@ -122,13 +122,13 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             Text nameText = UIFactory.CreateLabel(row, "PlayerName", GetPlayerName(player), TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(nameText.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
 
-            Text detailText = UIFactory.CreateLabel(row, "PlayerDetail", player.Platform.ToString(), TextAnchor.MiddleCenter);
+            Text detailText = UIFactory.CreateLabel(row, "PlayerDetail", player.Info.Platform.ToString(), TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(detailText.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
 
-        private static string GetPlayerName(ClientPlayer player)
+        private static string GetPlayerName(IClientPlayer player)
         {
-            return string.IsNullOrEmpty(player.Name) ? "Player " + player.Id : player.Name;
+            return string.IsNullOrEmpty(player.Info.Name) ? "Player " + player.Info.Id : player.Info.Name;
         }
 
         private static void HideScrollbar(GameObject scrollView)

@@ -51,8 +51,9 @@
   <ItemGroup>
     <Compile Include="CoreManager.cs" />
     <Compile Include="Data\IPacketDispatcher.cs" />
-    <Compile Include="Data\Models\PlayerSnapshot.cs" />
     <Compile Include="Data\Models\Platform.cs" />
+    <Compile Include="Data\Models\IPlayerInfo.cs" />
+    <Compile Include="Data\Models\PlayerInfo.cs" />
     <Compile Include="Data\Models\PlayerState.cs" />
     <Compile Include="Data\Models\UnityQuaternion.cs" />
     <Compile Include="Data\Models\UnityVector3.cs" />
