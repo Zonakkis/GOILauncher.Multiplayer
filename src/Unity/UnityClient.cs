@@ -5,11 +5,12 @@ using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Client.Services;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
+using GOILauncher.Multiplayer.Unity;
 using GOILauncher.Multiplayer.Unity.Events;
 using GOILauncher.Multiplayer.Unity.Extensions;
 using UnityEngine;
 
-namespace GOILauncher.Multiplayer.Client
+namespace GOILauncher.Multiplayer.Unity
 {
 
     public class UnityClient : MonoBehaviour, IUnityClient
@@ -23,6 +24,8 @@ namespace GOILauncher.Multiplayer.Client
         public IPlayerService PlayerService { get; set; }
         public IChatService ChatService { get; set; }
         public IEventBus EventBus { get; set; }
+        public ISceneManager SceneManager { get; set; }
+
         public event EventHandler<PlayerListUpdatedEventArgs> PlayerListUpdated;
 
         public void Init()
@@ -46,7 +49,8 @@ namespace GOILauncher.Multiplayer.Client
             var playerInfo = new PlayerInfo
             {
                 Name = playerName,
-                Platform = Application.platform.ToPlatform()
+                Platform = Application.platform.ToPlatform(),
+                IsInGame = SceneManager.IsInGame
             };
 
             PlayerService.SetLocalPlayerInfo(playerInfo);

@@ -101,6 +101,9 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 
             Text detailHeader = UIFactory.CreateLabel(tableHeader, "PlayerDetailHeader", "信息", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(detailHeader.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+
+            Text statusHeader = UIFactory.CreateLabel(tableHeader, "PlayerStatusHeader", "状态", TextAnchor.MiddleCenter);
+            UIFactory.SetLayoutElement(statusHeader.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
 
         private void CreatePlayerRow(IClientPlayer player, int rowIndex)
@@ -108,7 +111,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             GameObject row = UIFactory.CreateHorizontalGroup(
                 playerListContent,
                 "PlayerRow_" + rowIndex,
-                false,
+                false,                          
                 false,
                 true,
                 true,
@@ -124,6 +127,9 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 
             Text detailText = UIFactory.CreateLabel(row, "PlayerDetail", player.Info.Platform.ToString(), TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(detailText.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+
+            Text statusText = UIFactory.CreateLabel(row, "PlayerStatus", player.Info.IsInGame ? "游戏中" : "大厅", TextAnchor.MiddleCenter);
+            UIFactory.SetLayoutElement(statusText.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
 
         private static string GetPlayerName(IClientPlayer player)

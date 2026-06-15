@@ -15,7 +15,7 @@ namespace GOILauncher.Multiplayer.Unity
         private static bool _isInitialized = false;
         private static IContainer _container;
         private static GameObject _core;
-        public static SceneManager SceneManager => _container.Resolve<SceneManager>();
+        public static ISceneManager SceneManager => _container.Resolve<ISceneManager>();
 
         public static IUnityClient UnityClient => _container.Resolve<IUnityClient>();
         public static IUnityServer UnityServer => _container.Resolve<IUnityServer>();
@@ -40,6 +40,7 @@ namespace GOILauncher.Multiplayer.Unity
 
             _container = builder.Build();
             _container.Resolve<CoreManager>();
+            _container.Resolve<SceneManager>();
             return _container;
         }
 
@@ -53,7 +54,7 @@ namespace GOILauncher.Multiplayer.Unity
                 ctx.InjectProperties(sceneManager);
                 return sceneManager;
             }).
-            As<SceneManager>().
+            As<ISceneManager>().
             SingleInstance();
             return builder;
         }

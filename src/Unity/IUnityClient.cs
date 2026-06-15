@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
 
-namespace GOILauncher.Multiplayer.Client
+namespace GOILauncher.Multiplayer.Unity
 {
     public interface IUnityClient
     {
