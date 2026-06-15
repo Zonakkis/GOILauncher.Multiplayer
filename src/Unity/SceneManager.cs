@@ -7,7 +7,8 @@ using UnitySceneManager = UnityEngine.SceneManagement.SceneManager;
 
 namespace GOILauncher.Multiplayer.Unity
 {
-    public class SceneManager : MonoBehaviour
+
+    public class SceneManager : MonoBehaviour, ISceneManager
     {
         public IEventBus EventBus { get; set; }
         private Scene _currentScene;
