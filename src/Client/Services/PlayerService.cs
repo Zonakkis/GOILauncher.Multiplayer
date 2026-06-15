@@ -47,6 +47,7 @@ namespace GOILauncher.Multiplayer.Client.Services
         {
             LocalPlayer.Info.IsInGame = isInGame;
             _networkClient.Send(new C2SIsInGameUpdatePacket(isInGame), DeliveryMethod.ReliableOrdered);
+            _eventBus.Publish(new PlayerListUpdatedEvent(GetPlayers()));
         }
 
         private IList<IClientPlayer> GetPlayers()
