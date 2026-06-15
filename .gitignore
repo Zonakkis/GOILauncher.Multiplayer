@@ -18,6 +18,7 @@ x86/
 [Aa][Rr][Mm]64/
 out/
 artifacts/
+LiteNetLibSampleUnity/
 
 ##################################################
 # User-specific files
@@ -63,7 +64,6 @@ _ReSharper*/
 **/[Pp]ackages/*
 !**/[Pp]ackages/build/
 !**/[Pp]ackages/repositories.config
-# 如果你使用 packages.config 并希望提交 packages，可删除上一行
 .nuget/packages/
 # NuGet v3 cache (optional, usually global user profile)
 # *.nuget.props
