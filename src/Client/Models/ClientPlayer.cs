@@ -4,6 +4,7 @@ namespace GOILauncher.Multiplayer.Client.Models
 {
     public class ClientPlayer : IClientPlayer
     {
-        public IPlayerInfo Info { get; set; }
+        public PlayerInfo Info { get; set; }
+        IPlayerInfo IClientPlayer.Info => Info;
     }
 }
