@@ -8,6 +8,7 @@ namespace GOILauncher.Multiplayer.Client.Services
     {
         ClientPlayer LocalPlayer { get; }
         Dictionary<int, ClientPlayer> Players { get; }
-        void SetLocalPlayerInfo(IPlayerInfo info);
+        void SetLocalPlayerInfo(PlayerInfo info);
+        void SetIsInGame(bool isInGame);
     }
 }

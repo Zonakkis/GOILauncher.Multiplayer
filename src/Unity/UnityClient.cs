@@ -5,6 +5,7 @@ using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Client.Services;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
+using GOILauncher.Multiplayer.Unity.Events;
 using GOILauncher.Multiplayer.Unity.Extensions;
 using UnityEngine;
 
@@ -31,6 +32,8 @@ namespace GOILauncher.Multiplayer.Client
 
             _initialized = true;
             EventBus.Subscribe<PlayerListUpdatedEvent>(OnPlayerListUpdatedEvent);
+            EventBus.Subscribe<GameStartedEvent>(OnGameStartedEvent);
+            EventBus.Subscribe<GameQuitEvent>(OnGameQuitEvent);
         }
 
         private void Update()
@@ -64,6 +67,16 @@ namespace GOILauncher.Multiplayer.Client
         {
             Players = @event.Players;
             PlayerListUpdated?.Invoke(this, new PlayerListUpdatedEventArgs(Players));
+        }
+
+        private void OnGameStartedEvent(GameStartedEvent @event)
+        {
+            PlayerService.SetIsInGame(true);
+        }
+
+        private void OnGameQuitEvent(GameQuitEvent @event)
+        {
+            PlayerService.SetIsInGame(false);
         }
     }
 }

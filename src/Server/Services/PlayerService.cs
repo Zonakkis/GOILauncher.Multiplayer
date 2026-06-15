@@ -28,6 +28,7 @@ namespace GOILauncher.Multiplayer.Server.Services
             _eventBus = eventBus;
             _logger = logger;
             packetDispatcher.RegisterStruct<C2SClientHandShakePacket>(OnClientHandshake);
+            packetDispatcher.RegisterStruct<C2SIsInGameUpdatePacket>(OnIsInGameUpdate);
             eventBus.Subscribe<ClientDisconnectedEvent>(OnClientDisconnected);
         }
 
@@ -49,7 +50,7 @@ namespace GOILauncher.Multiplayer.Server.Services
             Players[player.Info.Id] = player;
             // Notify existing players about the new player
             var playerJoinedPacket = new S2CPlayerJoinedPacket
-            { PlayerId = playerId, PlayerName = playerName, Platform = platform };
+            { PlayerId = playerId, PlayerName = playerName, Platform = platform, IsInGame = packet.IsInGame };
             var existingPlayerIds = Players.Keys.Where(id => id != playerId);
             _networkServer.Multicast(existingPlayerIds, playerJoinedPacket, DeliveryMethod.ReliableUnordered);
             // Notify the new player about the existing players
@@ -76,6 +77,22 @@ namespace GOILauncher.Multiplayer.Server.Services
                 var otherPlayerIds = Players.Keys.ToList();
                 var playerLeftPacket = new S2CPlayerLeftPacket { PlayerId = player.Info.Id };
                 _networkServer.Multicast(otherPlayerIds, playerLeftPacket, DeliveryMethod.ReliableUnordered);
+            }
+        }
+
+        private void OnIsInGameUpdate(C2SIsInGameUpdatePacket packet, NetPeer peer)
+        {
+            var playerId = peer.Id;
+            if (Players.TryGetValue(playerId, out var player))
+            {
+                player.Info.IsInGame = packet.IsInGame;
+                var isInGameUpdatePacket = new S2CIsInGameUpdatePacket
+                {
+                    PlayerId = playerId,
+                    IsInGame = packet.IsInGame
+                };
+                var otherPlayerIds = Players.Keys.Where(id => id != playerId);
+                _networkServer.Multicast(otherPlayerIds, isInGameUpdatePacket, DeliveryMethod.ReliableUnordered);
             }
         }
     }

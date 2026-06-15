@@ -58,6 +58,8 @@
     <Compile Include="Data\Models\UnityQuaternion.cs" />
     <Compile Include="Data\Models\UnityVector3.cs" />
     <Compile Include="Data\PacketDispatcher.cs" />
+    <Compile Include="Data\Packets\C2SIsInGameUpdatePacket.cs" />
+    <Compile Include="Data\Packets\S2CIsInGameUpdatePacket.cs" />
     <Compile Include="Data\Packets\S2CChatMessagePacket.cs" />
     <Compile Include="Data\Packets\S2CPlayerLeftPacket.cs" />
     <Compile Include="Data\Packets\S2CPlayerJoinedPacket.cs" />
