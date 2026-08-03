@@ -9,6 +9,7 @@ using UniverseLib.UI.Models;
 using UniverseLib.UI.Panels;
 using UnityEngine;
 using UnityEngine.UI;
+using GOILauncher.Multiplayer.Unity;
 
 namespace GOILauncher.Multiplayer.UI
 {

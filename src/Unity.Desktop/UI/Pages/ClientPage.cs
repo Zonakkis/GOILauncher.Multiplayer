@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using GOILauncher.Multiplayer.Client;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.UI.Components;
 using GOILauncher.Multiplayer.UI.Theme;
+using GOILauncher.Multiplayer.Unity;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib;
