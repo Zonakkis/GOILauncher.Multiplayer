@@ -24,7 +24,7 @@ namespace GOILauncher.Multiplayer.Unity
         public IPlayerService PlayerService { get; set; }
         public IChatService ChatService { get; set; }
         public IEventBus EventBus { get; set; }
-        public ISceneManager SceneManager { get; set; }
+        public IGameManager GameManager { get; set; }
 
         public event EventHandler<PlayerListUpdatedEventArgs> PlayerListUpdated;
 
@@ -50,7 +50,7 @@ namespace GOILauncher.Multiplayer.Unity
             {
                 Name = playerName,
                 Platform = Application.platform.ToPlatform(),
-                IsInGame = SceneManager.IsInGame
+                IsInGame = GameManager.IsInGame
             };
 
             PlayerService.SetLocalPlayerInfo(playerInfo);

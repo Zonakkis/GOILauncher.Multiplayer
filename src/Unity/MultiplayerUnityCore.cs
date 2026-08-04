@@ -1,6 +1,5 @@
 ﻿using System;
 using Autofac;
-using GOILauncher.Multiplayer.Client;
 using GOILauncher.Multiplayer.Client.Extensions;
 using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Core.Extensions;
@@ -15,7 +14,7 @@ namespace GOILauncher.Multiplayer.Unity
         private static bool _isInitialized = false;
         private static IContainer _container;
         private static GameObject _core;
-        public static ISceneManager SceneManager => _container.Resolve<ISceneManager>();
+        public static IGameManager GameManager => _container.Resolve<IGameManager>();
 
         public static IUnityClient UnityClient => _container.Resolve<IUnityClient>();
         public static IUnityServer UnityServer => _container.Resolve<IUnityServer>();
@@ -32,7 +31,7 @@ namespace GOILauncher.Multiplayer.Unity
 
             builder
             .RegisterMultiplayerCore().WithServer().WithClient()
-            .RegisterSceneManager()
+            .RegisterGameManager()
             .RegisterUnityClient()
             .RegisterUnityServer();
 
@@ -40,21 +39,21 @@ namespace GOILauncher.Multiplayer.Unity
 
             _container = builder.Build();
             _container.Resolve<CoreManager>();
-            _container.Resolve<SceneManager>();
+            _container.Resolve<GameManager>();
             return _container;
         }
 
-        private static ContainerBuilder RegisterSceneManager(this ContainerBuilder builder)
+        private static ContainerBuilder RegisterGameManager(this ContainerBuilder builder)
         {
             builder.Register(ctx =>
             {
-                var obj = new GameObject(nameof(SceneManager));
+                var obj = new GameObject(nameof(GameManager));
                 obj.transform.SetParent(_core.transform);
-                var sceneManager = obj.AddComponent<SceneManager>();
-                ctx.InjectProperties(sceneManager);
-                return sceneManager;
+                var gameManager = obj.AddComponent<GameManager>();
+                ctx.InjectProperties(gameManager);
+                return gameManager;
             }).
-            As<ISceneManager>().
+            As<IGameManager>().
             SingleInstance();
             return builder;
         }

@@ -1,6 +1,6 @@
 namespace GOILauncher.Multiplayer.Unity
 {
-    public interface ISceneManager
+    public interface IGameManager
     {
         bool IsInGame { get; }
     }
