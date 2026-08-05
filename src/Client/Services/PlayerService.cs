@@ -1,6 +1,5 @@
 ﻿using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Extensions;
-using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Data.Packets;
@@ -18,8 +17,8 @@ namespace GOILauncher.Multiplayer.Client.Services
         private readonly INetworkClient _networkClient;
         private readonly IEventBus _eventBus;
         private readonly ILogger<PlayerService> _logger;
-        public ClientPlayer LocalPlayer { get; } = new ClientPlayer();
-        public Dictionary<int, ClientPlayer> Players { get; } = new Dictionary<int, ClientPlayer>();
+        public PlayerInfo LocalPlayer { get; private set; } = new PlayerInfo(0, null, Platform.Unknown, false);
+        public Dictionary<int, PlayerInfo> Players { get; } = new Dictionary<int, PlayerInfo>();
 
         public PlayerService(INetworkClient networkClient,
             IPacketDispatcher dispatcher,
@@ -40,27 +39,27 @@ namespace GOILauncher.Multiplayer.Client.Services
 
         public void SetLocalPlayerInfo(PlayerInfo info)
         {
-            LocalPlayer.Info = info;
+            LocalPlayer = info;
         }
 
         public void SetIsInGame(bool isInGame)
         {
-            LocalPlayer.Info.IsInGame = isInGame;
+            LocalPlayer = LocalPlayer.WithIsInGame(isInGame);
             _networkClient.Send(new C2SIsInGameUpdatePacket(isInGame), DeliveryMethod.ReliableOrdered);
             _eventBus.Publish(new PlayerListUpdatedEvent(GetPlayers()));
         }
 
-        private IList<IClientPlayer> GetPlayers()
+        private IList<PlayerInfo> GetPlayers()
         {
-            return Players.Values.OfType<IClientPlayer>().ToList();
+            return Players.Values.ToList();
         }
 
         private void OnServerHandshake(ServerHandshakeEvent e)
         {
-            LocalPlayer.Info.Id = e.PlayerId;
+            LocalPlayer = new PlayerInfo(e.PlayerId, LocalPlayer.Name, LocalPlayer.Platform, LocalPlayer.IsInGame);
             Players[e.PlayerId] = LocalPlayer;
             var packet = new C2SClientHandShakePacket
-            { PlayerName = LocalPlayer.Info.Name, Platform = LocalPlayer.Info.Platform, IsInGame = LocalPlayer.Info.IsInGame };
+            { PlayerName = LocalPlayer.Name, Platform = LocalPlayer.Platform, IsInGame = LocalPlayer.IsInGame };
             _networkClient.Send(packet, DeliveryMethod.ReliableOrdered);
             _eventBus.Publish(new PlayerListUpdatedEvent(GetPlayers()));
             _logger.Info("Connected to server with PlayerId: {PlayerId}", e.PlayerId);
@@ -75,19 +74,10 @@ namespace GOILauncher.Multiplayer.Client.Services
         private void OnPlayerList(S2CPlayerListPacket packet, NetPeer _)
         {
             Players.Clear();
-            Players.Add(LocalPlayer.Info.Id, LocalPlayer);
+            Players.Add(LocalPlayer.Id, LocalPlayer);
             foreach (var player in packet.Players)
             {
-                Players.Add(player.Id, new ClientPlayer
-                {
-                    Info = new PlayerInfo
-                    {
-                        Id = player.Id,
-                        Name = player.Name,
-                        Platform = player.Platform,
-                        IsInGame = player.IsInGame
-                    }
-                });
+                Players.Add(player.Id, player);
             }
             _eventBus.Publish(new PlayerListUpdatedEvent(GetPlayers()));
         }
@@ -98,16 +88,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             var playerName = packet.PlayerName;
             var platform = packet.Platform;
             var isInGame = packet.IsInGame;
-            Players[playerId] = new ClientPlayer
-            {
-                Info = new PlayerInfo
-                {
-                    Id = playerId,
-                    Name = playerName,
-                    Platform = platform,
-                    IsInGame = isInGame
-                }
-            };
+            Players[playerId] = new PlayerInfo(playerId, playerName, platform, isInGame);
             _eventBus.Publish(
                 new PlayerJoinedEvent(playerId, playerName, platform, isInGame));
             _logger.Info("[{}][{}]{} joined.", playerName, playerId, platform);
@@ -120,8 +101,8 @@ namespace GOILauncher.Multiplayer.Client.Services
             if (Players.TryGetValue(playerId, out var player))
             {
                 Players.Remove(playerId);
-                _eventBus.Publish(new PlayerLeftEvent(playerId, player.Info.Name, player.Info.Platform));
-                _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.OfType<IClientPlayer>().ToList()));
+                _eventBus.Publish(new PlayerLeftEvent(playerId, player.Name, player.Platform));
+                _eventBus.Publish(new PlayerListUpdatedEvent(Players.Values.ToList()));
                 _logger.Info($"{player.Format()} left.");
             }
             else
@@ -135,7 +116,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             var playerId = packet.PlayerId;
             if (Players.TryGetValue(playerId, out var player))
             {
-                player.Info.IsInGame = packet.IsInGame;
+                Players[playerId] = player.WithIsInGame(packet.IsInGame);
                 _eventBus.Publish(new PlayerListUpdatedEvent(GetPlayers()));
             }
             else

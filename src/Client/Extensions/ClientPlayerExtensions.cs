@@ -1,12 +1,12 @@
-﻿using GOILauncher.Multiplayer.Client.Models;
+﻿using GOILauncher.Multiplayer.Core.Data.Models;
 
 namespace GOILauncher.Multiplayer.Client.Extensions
 {
     public static class ClientPlayerExtensions
     {
-        public static string Format(this IClientPlayer player)
+        public static string Format(this PlayerInfo player)
         {
-            return $"[{player.Info.Id}][{player.Info.Platform}]{player.Info.Name}";
+            return $"[{player.Id}][{player.Platform}]{player.Name}";
         }
     }
 }

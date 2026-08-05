@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Client.Events;
-using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
@@ -20,7 +19,7 @@ namespace GOILauncher.Multiplayer.Unity
         private readonly ILogger<PlayerManager> _logger;
 
         private readonly Dictionary<int, PlayerBase> _players = new Dictionary<int, PlayerBase>();
-        private readonly Dictionary<int, IClientPlayer> _knownPlayers = new Dictionary<int, IClientPlayer>();
+        private readonly Dictionary<int, PlayerInfo> _knownPlayers = new Dictionary<int, PlayerInfo>();
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
 
         private int _localPlayerId;
@@ -101,9 +100,9 @@ namespace GOILauncher.Multiplayer.Unity
             _knownPlayers.Clear();
             foreach (var player in e.Players)
             {
-                if (player.Info != null)
+                if (player != null)
                 {
-                    _knownPlayers[player.Info.Id] = player;
+                    _knownPlayers[player.Id] = player;
                 }
             }
 
@@ -151,9 +150,8 @@ namespace GOILauncher.Multiplayer.Unity
             }
         }
 
-        private void SyncPlayer(IClientPlayer clientPlayer)
+        private void SyncPlayer(PlayerInfo info)
         {
-            var info = clientPlayer.Info as PlayerInfo;
             if (info == null || info.Id == _localPlayerId)
             {
                 return;
@@ -194,9 +192,9 @@ namespace GOILauncher.Multiplayer.Unity
                 localPlayer = player.AddComponent<LocalPlayer>();
             }
 
-            IClientPlayer self;
-            string name = _knownPlayers.TryGetValue(_localPlayerId, out self) ? self.Info.Name : null;
-            localPlayer.Init(new PlayerInfo { Id = _localPlayerId, Name = name });
+            PlayerInfo self;
+            string name = _knownPlayers.TryGetValue(_localPlayerId, out self) ? self.Name : null;
+            localPlayer.Init(new PlayerInfo(_localPlayerId, name, Platform.PC, false));
             _localPlayer = localPlayer;
             _players[_localPlayerId] = localPlayer;
         }

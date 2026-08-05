@@ -16,8 +16,8 @@ namespace GOILauncher.Multiplayer.Server.Services
         private readonly INetworkServer _networkServer;
         private readonly IEventBus _eventBus;
         private readonly ILogger<PlayerService> _logger;
-        public Dictionary<int, ServerPlayer> Players { get; }
-            = new Dictionary<int, ServerPlayer>();
+        public Dictionary<int, PlayerInfo> Players { get; }
+            = new Dictionary<int, PlayerInfo>();
 
         public PlayerService(INetworkServer networkServer,
             IPacketDispatcher packetDispatcher,
@@ -37,17 +37,8 @@ namespace GOILauncher.Multiplayer.Server.Services
             var playerId = peer.Id;
             var playerName = packet.PlayerName;
             var platform = packet.Platform;
-            var player = new ServerPlayer
-            {
-                Peer = peer,
-                Info = new PlayerInfo
-                {
-                    Id = playerId,
-                    Name = playerName,
-                    Platform = platform
-                }
-            };
-            Players[player.Info.Id] = player;
+            var player = new PlayerInfo(playerId, playerName, platform, packet.IsInGame);
+            Players[player.Id] = player;
             // Notify existing players about the new player
             var playerJoinedPacket = new S2CPlayerJoinedPacket
             { PlayerId = playerId, PlayerName = playerName, Platform = platform, IsInGame = packet.IsInGame };
@@ -56,13 +47,7 @@ namespace GOILauncher.Multiplayer.Server.Services
             // Notify the new player about the existing players
             var playerListPacket = new S2CPlayerListPacket
             {
-                Players = Players.Values.Select(p => (IPlayerInfo)new PlayerInfo
-                {
-                    Id = p.Info.Id,
-                    Name = p.Info.Name,
-                    Platform = p.Info.Platform,
-                    IsInGame = p.Info.IsInGame
-                }).Where(p => p.Id != playerId).ToList()
+                Players = Players.Values.Where(p => p.Id != playerId).ToList()
             };
             _networkServer.Send(playerId, playerListPacket, DeliveryMethod.ReliableUnordered);
             _eventBus.Publish(new ClientHandshakeEvent(playerName, platform));
@@ -75,7 +60,7 @@ namespace GOILauncher.Multiplayer.Server.Services
             {
                 Players.Remove(playerId);
                 var otherPlayerIds = Players.Keys.ToList();
-                var playerLeftPacket = new S2CPlayerLeftPacket { PlayerId = player.Info.Id };
+                var playerLeftPacket = new S2CPlayerLeftPacket { PlayerId = player.Id };
                 _networkServer.Multicast(otherPlayerIds, playerLeftPacket, DeliveryMethod.ReliableUnordered);
             }
         }
@@ -85,7 +70,7 @@ namespace GOILauncher.Multiplayer.Server.Services
             var playerId = peer.Id;
             if (Players.TryGetValue(playerId, out var player))
             {
-                player.Info.IsInGame = packet.IsInGame;
+                Players[playerId] = player.WithIsInGame(packet.IsInGame);
                 var isInGameUpdatePacket = new S2CIsInGameUpdatePacket
                 {
                     PlayerId = playerId,

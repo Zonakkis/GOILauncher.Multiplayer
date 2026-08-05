@@ -1,5 +1,6 @@
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.UI.ScrollView.Player;
+using GOILauncher.Multiplayer.Unity.Events;
 using UniverseLib.UI;
 using UniverseLib.UI.Panels;
 using UnityEngine;

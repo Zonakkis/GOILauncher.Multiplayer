@@ -1,13 +1,12 @@
-﻿using GOILauncher.Multiplayer.Client.Models;
-using GOILauncher.Multiplayer.Core.Data.Models;
+﻿using GOILauncher.Multiplayer.Core.Data.Models;
 using System.Collections.Generic;
 
 namespace GOILauncher.Multiplayer.Client.Services
 {
     public interface IPlayerService
     {
-        ClientPlayer LocalPlayer { get; }
-        Dictionary<int, ClientPlayer> Players { get; }
+        PlayerInfo LocalPlayer { get; }
+        Dictionary<int, PlayerInfo> Players { get; }
         void SetLocalPlayerInfo(PlayerInfo info);
         void SetIsInGame(bool isInGame);
     }

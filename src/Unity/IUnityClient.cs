@@ -2,13 +2,15 @@ using System;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
+using GOILauncher.Multiplayer.Core.Data.Models;
+using GOILauncher.Multiplayer.Unity.Events;
 
 namespace GOILauncher.Multiplayer.Unity
 {
     public interface IUnityClient
     {
         bool IsConnected { get; }
-        IList<IClientPlayer> Players { get; }
+        IList<PlayerInfo> Players { get; }
         List<Message> ChatMessages { get; }
 
         event EventHandler<PlayerListUpdatedEventArgs> PlayerListUpdated;

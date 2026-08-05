@@ -5,7 +5,6 @@ using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Client.Services;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
-using GOILauncher.Multiplayer.Unity;
 using GOILauncher.Multiplayer.Unity.Events;
 using GOILauncher.Multiplayer.Unity.Extensions;
 using UnityEngine;
@@ -18,7 +17,7 @@ namespace GOILauncher.Multiplayer.Unity
         private bool _initialized;
 
         public bool IsConnected => ClientService.IsConnected;
-        public IList<IClientPlayer> Players { get; private set; } = new List<IClientPlayer>();
+        public IList<PlayerInfo> Players { get; private set; } = new List<PlayerInfo>();
         public List<Message> ChatMessages => ChatService.Messages;
         public IClientService ClientService { get; set; }
         public IPlayerService PlayerService { get; set; }
@@ -46,12 +45,7 @@ namespace GOILauncher.Multiplayer.Unity
 
         public void Connect(string host, int port, string playerName)
         {
-            var playerInfo = new PlayerInfo
-            {
-                Name = playerName,
-                Platform = Application.platform.ToPlatform(),
-                IsInGame = GameManager.IsInGame
-            };
+            var playerInfo = new PlayerInfo(0, playerName, Application.platform.ToPlatform(), GameManager.IsInGame);
 
             PlayerService.SetLocalPlayerInfo(playerInfo);
             ClientService.Connect(host, port);

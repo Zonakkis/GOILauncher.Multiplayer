@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using GOILauncher.Multiplayer.Client.Models;
+using GOILauncher.Multiplayer.Core.Data.Models;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
@@ -54,7 +54,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 TextAnchor.UpperLeft);
         }
 
-        public void Update(IEnumerable<IClientPlayer> players)
+        public void Update(IEnumerable<PlayerInfo> players)
         {
             if (playerListContent == null)
                 return;
@@ -64,7 +64,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 return;
 
             int rowIndex = 0;
-            foreach (IClientPlayer player in players)
+            foreach (PlayerInfo player in players)
             {
                 CreatePlayerRow(player, rowIndex);
                 rowIndex++;
@@ -106,7 +106,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             UIFactory.SetLayoutElement(statusHeader.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
 
-        private void CreatePlayerRow(IClientPlayer player, int rowIndex)
+        private void CreatePlayerRow(PlayerInfo player, int rowIndex)
         {
             GameObject row = UIFactory.CreateHorizontalGroup(
                 playerListContent,
@@ -125,16 +125,16 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             Text nameText = UIFactory.CreateLabel(row, "PlayerName", GetPlayerName(player), TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(nameText.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
 
-            Text detailText = UIFactory.CreateLabel(row, "PlayerDetail", player.Info.Platform.ToString(), TextAnchor.MiddleCenter);
+            Text detailText = UIFactory.CreateLabel(row, "PlayerDetail", player.Platform.ToString(), TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(detailText.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
-            Text statusText = UIFactory.CreateLabel(row, "PlayerStatus", player.Info.IsInGame ? "游戏中" : "大厅", TextAnchor.MiddleCenter);
+            Text statusText = UIFactory.CreateLabel(row, "PlayerStatus", player.IsInGame ? "游戏中" : "大厅", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(statusText.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
 
-        private static string GetPlayerName(IClientPlayer player)
+        private static string GetPlayerName(PlayerInfo player)
         {
-            return string.IsNullOrEmpty(player.Info.Name) ? "Player " + player.Info.Id : player.Info.Name;
+            return string.IsNullOrEmpty(player.Name) ? "Player " + player.Id : player.Name;
         }
 
         private static void HideScrollbar(GameObject scrollView)

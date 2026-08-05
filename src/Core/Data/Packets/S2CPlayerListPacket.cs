@@ -6,7 +6,7 @@ namespace GOILauncher.Multiplayer.Core.Data.Packets
 {
     public class S2CPlayerListPacket : INetSerializable
     {
-        public List<IPlayerInfo> Players { get; set; } = new List<IPlayerInfo>();
+        public List<PlayerInfo> Players { get; set; } = new List<PlayerInfo>();
 
         public void Serialize(NetDataWriter writer)
         {
@@ -26,13 +26,11 @@ namespace GOILauncher.Multiplayer.Core.Data.Packets
             int playerCount = reader.GetInt();
             for (int i = 0; i < playerCount; i++)
             {
-                Players.Add(new PlayerInfo
-                {
-                    Id = reader.GetInt(),
-                    Name = reader.GetString(),
-                    Platform = (Platform)reader.GetByte(),
-                    IsInGame = reader.GetBool()
-                });
+                Players.Add(new PlayerInfo(
+                    reader.GetInt(),
+                    reader.GetString(),
+                    (Platform)reader.GetByte(),
+                    reader.GetBool()));
             }
         }
     }

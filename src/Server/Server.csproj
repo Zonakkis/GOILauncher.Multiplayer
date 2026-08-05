@@ -52,8 +52,6 @@
     <Compile Include="Events\ClientHandshakeEvent.cs" />
     <Compile Include="Extensions\AutofacExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Models\IServerPlayer.cs" />
-    <Compile Include="Models\ServerPlayer.cs" />
     <Compile Include="Services\IPlayerService.cs" />
     <Compile Include="Services\IServerService.cs" />
     <Compile Include="Services\IChatService.cs" />
