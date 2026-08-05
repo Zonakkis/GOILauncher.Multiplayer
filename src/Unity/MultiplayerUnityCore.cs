@@ -33,7 +33,9 @@ namespace GOILauncher.Multiplayer.Unity
             .RegisterMultiplayerCore().WithServer().WithClient()
             .RegisterGameManager()
             .RegisterUnityClient()
-            .RegisterUnityServer();
+            .RegisterUnityServer()
+            .RegisterPlayerAvatarPool()
+            .RegisterPlayerManager();
 
             configure?.Invoke(builder);
 
@@ -86,6 +88,23 @@ namespace GOILauncher.Multiplayer.Unity
             }).
             As<IUnityServer>().
             SingleInstance();
+            return builder;
+        }
+
+        private static ContainerBuilder RegisterPlayerAvatarPool(this ContainerBuilder builder)
+        {
+            builder.RegisterType<PlayerAvatarPool>().
+            As<IPlayerAvatarPool>().
+            SingleInstance();
+            return builder;
+        }
+
+        private static ContainerBuilder RegisterPlayerManager(this ContainerBuilder builder)
+        {
+            builder.RegisterType<PlayerManager>().
+            As<IPlayerManager>().
+            SingleInstance().
+            OnActivated(e => e.Instance.Init());
             return builder;
         }
     }

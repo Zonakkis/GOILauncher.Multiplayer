@@ -31,6 +31,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\UnityLibraries\Android\Assembly-CSharp.dll</HintPath>
+    </Reference>
     <Reference Include="Autofac, Version=2.6.3.862, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Autofac.2.6.3.862\lib\NET35\Autofac.dll</HintPath>
     </Reference>
@@ -49,6 +52,10 @@
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\UnityLibraries\Android\UnityEngine.CoreModule.dll</HintPath>
     </Reference>
+    <Reference Include="UnityEngine.Physics2DModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\UnityLibraries\Android\UnityEngine.Physics2DModule.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Events\GameRestartedEvent.cs" />
@@ -58,10 +65,16 @@
     <Compile Include="Extensions\PlatformExtensions.cs" />
     <Compile Include="IUnityClient.cs" />
     <Compile Include="IUnityServer.cs" />
-    <Compile Include="ISceneManager.cs" />
+    <Compile Include="IGameManager.cs" />
+    <Compile Include="IPlayerManager.cs" />
+    <Compile Include="PlayerAvatarPool.cs" />
+    <Compile Include="PlayerManager.cs" />
+    <Compile Include="Models\PlayerBase.cs" />
+    <Compile Include="Models\LocalPlayer.cs" />
+    <Compile Include="Models\RemotePlayer.cs" />
     <Compile Include="Models\GOIScene.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SceneManager.cs" />
+    <Compile Include="GameManager.cs" />
     <Compile Include="UnityClient.cs" />
     <Compile Include="MultiplayerUnityCore.cs" />
     <Compile Include="UnityServer.cs" />
