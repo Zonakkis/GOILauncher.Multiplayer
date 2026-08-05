@@ -41,7 +41,9 @@ namespace GOILauncher.Multiplayer.Unity
 
             _container = builder.Build();
             _container.Resolve<CoreManager>();
-            _container.Resolve<GameManager>();
+            _container.Resolve<IGameManager>();
+            // PlayerManager 是事件驱动服务，必须立即实例化以完成事件订阅（懒注册不会被自动 Resolve）
+            _container.Resolve<IPlayerManager>();
             return _container;
         }
 
