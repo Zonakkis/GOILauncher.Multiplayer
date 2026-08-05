@@ -12,11 +12,11 @@ namespace GOILauncher.Multiplayer.Unity
 {
     public class PlayerManager : IPlayerManager, IDisposable
     {
-        private const int DefaultAvatarWarmUpCount = 4;
+        private const int DefaultInstanceWarmUpCount = 4;
 
         private readonly IEventBus _eventBus;
         private readonly IGameManager _gameManager;
-        private readonly IPlayerAvatarPool _avatarPool;
+        private readonly IPlayerInstancePool _instancePool;
         private readonly ILogger<PlayerManager> _logger;
 
         private readonly Dictionary<int, PlayerBase> _players = new Dictionary<int, PlayerBase>();
@@ -28,12 +28,12 @@ namespace GOILauncher.Multiplayer.Unity
 
         public PlayerManager(IEventBus eventBus,
             IGameManager gameManager,
-            IPlayerAvatarPool avatarPool,
+            IPlayerInstancePool instancePool,
             ILogger<PlayerManager> logger)
         {
             _eventBus = eventBus;
             _gameManager = gameManager;
-            _avatarPool = avatarPool;
+            _instancePool = instancePool;
             _logger = logger;
         }
 
@@ -77,7 +77,7 @@ namespace GOILauncher.Multiplayer.Unity
         private void OnGameStartedEvent(GameStartedEvent e)
         {
             EnsureLocalPlayer();
-            _avatarPool.WarmUp(DefaultAvatarWarmUpCount);
+            _instancePool.WarmUp(DefaultInstanceWarmUpCount);
             SyncRemotePlayers();
         }
 
@@ -85,7 +85,7 @@ namespace GOILauncher.Multiplayer.Unity
         {
             RemoveAllRemotePlayers();
             EnsureLocalPlayer();
-            _avatarPool.WarmUp(DefaultAvatarWarmUpCount);
+            _instancePool.WarmUp(DefaultInstanceWarmUpCount);
             SyncRemotePlayers();
         }
 
@@ -93,7 +93,7 @@ namespace GOILauncher.Multiplayer.Unity
         {
             RemoveAllRemotePlayers();
             ReleaseLocalPlayer();
-            _avatarPool.Clear();
+            _instancePool.Clear();
         }
 
         private void OnPlayerListUpdatedEvent(PlayerListUpdatedEvent e)
@@ -124,7 +124,7 @@ namespace GOILauncher.Multiplayer.Unity
             var remote = player as RemotePlayer;
             if (remote != null)
             {
-                _avatarPool.Return(remote);
+                _instancePool.Return(remote);
             }
             _logger.Info("Player {PlayerName} ({PlayerId}) removed.", e.PlayerName, e.PlayerId);
         }
@@ -133,7 +133,7 @@ namespace GOILauncher.Multiplayer.Unity
         {
             RemoveAllRemotePlayers();
             ReleaseLocalPlayer();
-            _avatarPool.Clear();
+            _instancePool.Clear();
             _knownPlayers.Clear();
             _localPlayerId = 0;
         }
@@ -166,11 +166,11 @@ namespace GOILauncher.Multiplayer.Unity
                 return;
             }
 
-            var avatar = _avatarPool.Rent(info);
-            if (avatar != null)
+            var instance = _instancePool.Rent(info);
+            if (instance != null)
             {
-                _players[info.Id] = avatar;
-                _logger.Info("Avatar created for remote player {PlayerName} ({PlayerId}).", info.Name, info.Id);
+                _players[info.Id] = instance;
+                _logger.Info("Instance created for remote player {PlayerName} ({PlayerId}).", info.Name, info.Id);
             }
         }
 
@@ -225,7 +225,7 @@ namespace GOILauncher.Multiplayer.Unity
                 var remote = pair.Value as RemotePlayer;
                 if (remote != null)
                 {
-                    _avatarPool.Return(remote);
+                    _instancePool.Return(remote);
                 }
             }
             _players.Clear();

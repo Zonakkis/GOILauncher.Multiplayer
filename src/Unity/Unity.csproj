@@ -67,7 +67,7 @@
     <Compile Include="IUnityServer.cs" />
     <Compile Include="IGameManager.cs" />
     <Compile Include="IPlayerManager.cs" />
-    <Compile Include="PlayerAvatarPool.cs" />
+    <Compile Include="PlayerInstancePool.cs" />
     <Compile Include="PlayerManager.cs" />
     <Compile Include="Models\PlayerBase.cs" />
     <Compile Include="Models\LocalPlayer.cs" />
