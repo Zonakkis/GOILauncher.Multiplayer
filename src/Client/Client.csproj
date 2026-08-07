@@ -46,7 +46,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Events\ChatMessageEvent.cs" />
-    <Compile Include="Events\ChatMessagesUpdatedEvent.cs" />
     <Compile Include="Events\PlayerLeftEvent.cs" />
     <Compile Include="Events\PlayerEnteredGameEvent.cs" />
     <Compile Include="Events\PlayerQuitGameEvent.cs" />

@@ -38,7 +38,7 @@ namespace GOILauncher.Multiplayer.UI
             _messageHandler.MessagesUpdated += OnMessagesUpdated;
             _messageHandler.Setup(ContentRoot);
             CreateInputRow();
-            eventBus.Subscribe<ChatMessagesUpdatedEvent>(OnChatMessagesUpdated);
+            eventBus.Subscribe<ChatMessageEvent>(OnChatMessage);
             RefreshMessages();
             SetActiveMode(false);
             LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
@@ -155,12 +155,13 @@ namespace GOILauncher.Multiplayer.UI
             FocusInput();
         }
 
-        private void OnChatMessagesUpdated(ChatMessagesUpdatedEvent e)
+        private void OnChatMessage(ChatMessageEvent e)
         {
             if (_messageHandler == null || e == null)
                 return;
 
-            _messageHandler.Update(e.Messages, ShouldAutoScrollMessages());
+            // 事件只做通知（单条消息），全量重绘从数据源读取，避免事件携带全量列表的双通道困惑
+            _messageHandler.Update(_client.ChatMessages, ShouldAutoScrollMessages());
         }
 
         private void RefreshMessages()

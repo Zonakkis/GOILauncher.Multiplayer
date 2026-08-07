@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Core.Data.Models;
@@ -11,7 +12,7 @@ namespace GOILauncher.Multiplayer.Unity
     {
         bool IsConnected { get; }
         IList<PlayerInfo> Players { get; }
-        List<Message> ChatMessages { get; }
+        ReadOnlyCollection<Message> ChatMessages { get; }
 
         event EventHandler<PlayerListUpdatedEventArgs> PlayerListUpdated;
         void Connect(string host, int port, string playerName);

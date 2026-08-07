@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Client.Services;
@@ -18,7 +19,7 @@ namespace GOILauncher.Multiplayer.Unity
 
         public bool IsConnected => ClientService.IsConnected;
         public IList<PlayerInfo> Players { get; private set; } = new List<PlayerInfo>();
-        public List<Message> ChatMessages => ChatService.Messages;
+        public ReadOnlyCollection<Message> ChatMessages => ChatService.Messages;
         public IClientService ClientService { get; set; }
         public IPlayerService PlayerService { get; set; }
         public IChatService ChatService { get; set; }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Core.Data;
@@ -18,7 +19,8 @@ namespace GOILauncher.Multiplayer.Client.Services
         private readonly IEventBus _eventBus;
         private readonly ILogger<ChatService> _logger;
         private readonly IPlayerService _playerService;
-        public List<Message> Messages { get; } = new List<Message>();
+        private readonly List<Message> _messages = new List<Message>();
+        public ReadOnlyCollection<Message> Messages { get; private set; }
         public ChatService(INetworkClient networkClient,
             IPacketDispatcher dispatcher,
             IEventBus eventBus,
@@ -29,6 +31,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             _eventBus = eventBus;
             _logger = logger;
             _playerService = playerService;
+            Messages = new ReadOnlyCollection<Message>(_messages);
             dispatcher.RegisterStruct<S2CChatMessagePacket>(OnChatMessage);
             eventBus.Subscribe<PlayerJoinedEvent>(OnPlayerJoined);
             eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
@@ -39,16 +42,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             if (message == null)
                 return;
 
-            Messages.Add(message);
-            _eventBus.Publish(new ChatMessagesUpdatedEvent(Messages, message));
-        }
-
-        private void AddChatMessage(Message message)
-        {
-            if (message == null)
-                return;
-
-            AddMessage(message);
+            _messages.Add(message);
             _eventBus.Publish(new ChatMessageEvent(message));
         }
 
@@ -69,7 +63,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             _networkClient.Send(packet, DeliveryMethod.ReliableUnordered);
 
             // 本地回显：服务端只把消息广播给其他玩家（排除发送者），自己的消息需要本地直接显示
-            AddChatMessage(new Message(MessageType.Player, _playerService.LocalPlayer.Name, content, DateTime.Now));
+            AddMessage(new Message(MessageType.Player, _playerService.LocalPlayer.Name, content, DateTime.Now));
         }
 
         public void SendMessage(MessageType type, string content)
@@ -98,13 +92,13 @@ namespace GOILauncher.Multiplayer.Client.Services
             if (_playerService.Players.TryGetValue(playerId, out var player))
             {
                 var message = new Message(MessageType.Player, player.Name, packet.Content, dateTime);
-                AddChatMessage(message);
+                AddMessage(message);
             }
             else
             {
                 _logger.Warn("Unknown playerId: {PlayerId}, Content: {Content}", playerId, packet.Content);
                 var message = new Message(MessageType.Player, $"玩家 {playerId}", packet.Content, dateTime);
-                AddChatMessage(message);
+                AddMessage(message);
             }
         }
         private void OnPlayerJoined(PlayerJoinedEvent e)

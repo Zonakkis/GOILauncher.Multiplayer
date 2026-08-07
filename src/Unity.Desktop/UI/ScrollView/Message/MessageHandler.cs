@@ -73,9 +73,12 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
             cell.Enable();
         }
 
-        public void Update(List<Client.Models.Message> messages, bool scrollToBottom = false)
+        public void Update(IList<Client.Models.Message> messages, bool scrollToBottom = false)
         {
-            Messages = messages ?? new List<Client.Models.Message>();
+            // 拷贝一份，防止外部只读集合/共享列表被后续修改影响渲染
+            Messages = messages != null
+                ? new List<Client.Models.Message>(messages)
+                : new List<Client.Models.Message>();
             int currentCount = Messages.Count;
             bool hasNewMessages = currentCount > _lastItemCount;
             _scrollPool.Refresh(true);
