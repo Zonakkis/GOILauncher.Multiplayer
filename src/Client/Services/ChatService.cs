@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Core.Data;
@@ -66,6 +67,9 @@ namespace GOILauncher.Multiplayer.Client.Services
 
             var packet = new C2SChatMessagePacket(content);
             _networkClient.Send(packet, DeliveryMethod.ReliableUnordered);
+
+            // 本地回显：服务端只把消息广播给其他玩家（排除发送者），自己的消息需要本地直接显示
+            AddChatMessage(new Message(MessageType.Player, _playerService.LocalPlayer.Name, content, DateTime.Now));
         }
 
         public void SendMessage(MessageType type, string content)
