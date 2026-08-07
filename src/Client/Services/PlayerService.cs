@@ -116,7 +116,23 @@ namespace GOILauncher.Multiplayer.Client.Services
             var playerId = packet.PlayerId;
             if (Players.TryGetValue(playerId, out var player))
             {
-                Players[playerId] = player.WithIsInGame(packet.IsInGame);
+                var updated = player.WithIsInGame(packet.IsInGame);
+                Players[playerId] = updated;
+
+                if (player.IsInGame != updated.IsInGame)
+                {
+                    if (updated.IsInGame)
+                    {
+                        _eventBus.Publish(new PlayerEnteredGameEvent(updated));
+                        _logger.Info("Player {PlayerName} ({PlayerId}) entered the game.", updated.Name, updated.Id);
+                    }
+                    else
+                    {
+                        _eventBus.Publish(new PlayerQuitGameEvent(updated));
+                        _logger.Info("Player {PlayerName} ({PlayerId}) quit the game.", updated.Name, updated.Id);
+                    }
+                }
+
                 _eventBus.Publish(new PlayerListUpdatedEvent(GetPlayers()));
             }
             else

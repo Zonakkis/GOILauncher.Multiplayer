@@ -48,6 +48,8 @@
     <Compile Include="Events\ChatMessageEvent.cs" />
     <Compile Include="Events\ChatMessagesUpdatedEvent.cs" />
     <Compile Include="Events\PlayerLeftEvent.cs" />
+    <Compile Include="Events\PlayerEnteredGameEvent.cs" />
+    <Compile Include="Events\PlayerQuitGameEvent.cs" />
     <Compile Include="Events\PlayerJoinedEvent.cs" />
     <Compile Include="Events\PlayerListUpdatedEvent.cs" />
     <Compile Include="Events\ServerHandshakeEvent.cs" />

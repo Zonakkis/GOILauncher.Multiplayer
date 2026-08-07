@@ -54,6 +54,8 @@ namespace GOILauncher.Multiplayer.Unity
             _subscriptions.Add(_eventBus.Subscribe<GameRestartedEvent>(OnGameRestartedEvent));
             _subscriptions.Add(_eventBus.Subscribe<GameQuitEvent>(OnGameQuitEvent));
             _subscriptions.Add(_eventBus.Subscribe<PlayerListUpdatedEvent>(OnPlayerListUpdatedEvent));
+            _subscriptions.Add(_eventBus.Subscribe<PlayerEnteredGameEvent>(OnPlayerEnteredGameEvent));
+            _subscriptions.Add(_eventBus.Subscribe<PlayerQuitGameEvent>(OnPlayerQuitGameEvent));
             _subscriptions.Add(_eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeftEvent));
             _subscriptions.Add(_eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnectedEvent));
         }
@@ -109,6 +111,47 @@ namespace GOILauncher.Multiplayer.Unity
             SyncRemotePlayers();
         }
 
+        private void OnPlayerEnteredGameEvent(PlayerEnteredGameEvent e)
+        {
+            var info = e.Player;
+            if (info == null || info.Id == _localPlayerId || !_gameManager.IsInGame)
+            {
+                return;
+            }
+
+            PlayerBase existing;
+            if (_players.TryGetValue(info.Id, out existing))
+            {
+                existing.Name = info.Name;
+                return;
+            }
+
+            CreateInstance(info);
+        }
+
+        private void OnPlayerQuitGameEvent(PlayerQuitGameEvent e)
+        {
+            var info = e.Player;
+            if (info == null)
+            {
+                return;
+            }
+
+            PlayerBase player;
+            if (!_players.TryGetValue(info.Id, out player))
+            {
+                return;
+            }
+
+            _players.Remove(info.Id);
+            var remote = player as RemotePlayer;
+            if (remote != null)
+            {
+                _instancePool.Return(remote);
+            }
+            _logger.Info("Player {PlayerName} ({PlayerId}) quit the game.", info.Name, info.Id);
+        }
+
         private void OnPlayerLeftEvent(PlayerLeftEvent e)
         {
             _knownPlayers.Remove(e.PlayerId);
@@ -152,7 +195,7 @@ namespace GOILauncher.Multiplayer.Unity
 
         private void SyncPlayer(PlayerInfo info)
         {
-            if (info == null || info.Id == _localPlayerId)
+            if (info == null || info.Id == _localPlayerId || !info.IsInGame)
             {
                 return;
             }
@@ -164,6 +207,11 @@ namespace GOILauncher.Multiplayer.Unity
                 return;
             }
 
+            CreateInstance(info);
+        }
+
+        private void CreateInstance(PlayerInfo info)
+        {
             var instance = _instancePool.Rent(info);
             if (instance != null)
             {
