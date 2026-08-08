@@ -45,8 +45,11 @@ namespace GOILauncher.Multiplayer.Client.Services
         public void SetIsInGame(bool isInGame)
         {
             LocalPlayer = LocalPlayer.WithIsInGame(isInGame);
+            // LocalPlayer 是不可变快照，替换属性后必须同步更新字典，否则 GetPlayers()/UI 读到的仍是旧状态
+            Players[LocalPlayer.Id] = LocalPlayer;
             _networkClient.Send(new C2SIsInGameUpdatePacket(isInGame), DeliveryMethod.ReliableOrdered);
             _eventBus.Publish(new PlayerListUpdatedEvent(GetPlayers()));
+            _logger.Info("Local player IsInGame set to {IsInGame}", isInGame);
         }
 
         private IList<PlayerInfo> GetPlayers()

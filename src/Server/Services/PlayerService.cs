@@ -43,13 +43,13 @@ namespace GOILauncher.Multiplayer.Server.Services
             var playerJoinedPacket = new S2CPlayerJoinedPacket
             { PlayerId = playerId, PlayerName = playerName, Platform = platform, IsInGame = packet.IsInGame };
             var existingPlayerIds = Players.Keys.Where(id => id != playerId);
-            _networkServer.Multicast(existingPlayerIds, playerJoinedPacket, DeliveryMethod.ReliableUnordered);
+            _networkServer.Multicast(existingPlayerIds, playerJoinedPacket, DeliveryMethod.ReliableOrdered);
             // Notify the new player about the existing players
             var playerListPacket = new S2CPlayerListPacket
             {
                 Players = Players.Values.Where(p => p.Id != playerId).ToList()
             };
-            _networkServer.Send(playerId, playerListPacket, DeliveryMethod.ReliableUnordered);
+            _networkServer.Send(playerId, playerListPacket, DeliveryMethod.ReliableOrdered);
             _eventBus.Publish(new ClientHandshakeEvent(playerName, platform));
         }
 
@@ -61,7 +61,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                 Players.Remove(playerId);
                 var otherPlayerIds = Players.Keys.ToList();
                 var playerLeftPacket = new S2CPlayerLeftPacket { PlayerId = player.Id };
-                _networkServer.Multicast(otherPlayerIds, playerLeftPacket, DeliveryMethod.ReliableUnordered);
+                _networkServer.Multicast(otherPlayerIds, playerLeftPacket, DeliveryMethod.ReliableOrdered);
             }
         }
 
@@ -77,7 +77,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                     IsInGame = packet.IsInGame
                 };
                 var otherPlayerIds = Players.Keys.Where(id => id != playerId);
-                _networkServer.Multicast(otherPlayerIds, isInGameUpdatePacket, DeliveryMethod.ReliableUnordered);
+                _networkServer.Multicast(otherPlayerIds, isInGameUpdatePacket, DeliveryMethod.ReliableOrdered);
             }
         }
     }

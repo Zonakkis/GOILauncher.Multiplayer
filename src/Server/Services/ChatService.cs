@@ -32,7 +32,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                 Timestamp = timestamp
             };
             var otherPlayerIds = _playerService.Players.Keys.Where(id => id != playerId);
-            _networkServer.Multicast(otherPlayerIds, chatPacket, DeliveryMethod.ReliableUnordered);
+            _networkServer.Multicast(otherPlayerIds, chatPacket, DeliveryMethod.ReliableOrdered);
         }
     }
 }

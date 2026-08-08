@@ -40,7 +40,7 @@ namespace GOILauncher.Multiplayer.Server.Services
         private void OnClientConnected(ClientConnectedEvent e)
         {
             var packet = new S2CServerHandShakePacket { PlayerId = e.ClientId };
-            _networkServer.Send(e.ClientId, packet, DeliveryMethod.ReliableUnordered);
+            _networkServer.Send(e.ClientId, packet, DeliveryMethod.ReliableOrdered);
         }
     }
 }

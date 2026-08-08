@@ -13,21 +13,35 @@ namespace GOILauncher.Multiplayer.Unity
     {
         public IEventBus EventBus { get; set; }
         public ILogger<GameManager> Logger { get; set; }
-        private Scene _currentScene;
-        public bool IsInGame => _currentScene.name == GOIScene.Mian.ToString();
+        private string _currentSceneName;
+        public bool IsInGame => _currentSceneName == GOIScene.Mian.ToString();
         public GameObject Player { get; private set; }
         public GameObject PlayerPrefab { get; private set; }
 
         public void Awake()
         {
-            _currentScene = UnitySceneManager.GetActiveScene();
+            // 存场景名字符串而非 Scene 结构体：Scene 在场景卸载后 name 会失效（返回空串），导致 IsInGame 误判
+            _currentSceneName = UnitySceneManager.GetActiveScene().name;
             UnitySceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        public void Start()
+        {
+            // Start 在属性注入（InjectProperties）之后执行，Logger 此时可用；Awake 里打日志会因 Logger 未注入而抛异常
+            Logger.Info("GameManager initialized, current scene: {SceneName}, isInGame: {IsInGame}", _currentSceneName, IsInGame);
+        }
+
+        public void OnDestroy()
+        {
+            // 检测 GameManager 是否被销毁重建（不依赖注入，用 Debug.Log）
+            Debug.Log("[GOILauncher.Multiplayer] GameManager destroyed.");
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             var wasInGame = IsInGame;
-            _currentScene = scene;
+            _currentSceneName = scene.name;
+            Logger.Info("Scene loaded: {SceneName}, wasInGame: {WasInGame}, isInGame: {IsInGame}", scene.name, wasInGame, IsInGame);
             if (IsInGame)
             {
                 if (!wasInGame)
