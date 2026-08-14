@@ -85,6 +85,8 @@ namespace GOILauncher.Multiplayer.Unity
         private void OnGameRestartedEvent(GameRestartedEvent e)
         {
             RemoveAllRemotePlayers();
+            ReleaseLocalPlayer();
+            _instancePool.Clear();
             EnsureLocalPlayer();
             _instancePool.WarmUp(DefaultInstanceWarmUpCount);
             SyncRemotePlayers();
@@ -249,21 +251,16 @@ namespace GOILauncher.Multiplayer.Unity
 
         private void ReleaseLocalPlayer()
         {
-            if (_localPlayer == null)
-            {
-                return;
-            }
-
             _players.Remove(_localPlayerId);
             _localPlayer = null;
-            // LocalPlayer 组件挂在真实玩家对象上，随场景卸载自动销毁，无需手动处理。
+            // 场景重载后 Unity 对象可能已销毁，但仍需清除托管引用。
         }
 
         private void RemoveAllRemotePlayers()
         {
             foreach (var pair in _players)
             {
-                if (pair.Value == _localPlayer)
+                if (ReferenceEquals(pair.Value, _localPlayer))
                 {
                     continue;
                 }

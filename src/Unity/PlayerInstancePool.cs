@@ -53,6 +53,8 @@ namespace GOILauncher.Multiplayer.Unity
                 return null;
             }
 
+            PruneDestroyedInstances();
+
             RemotePlayer instance;
             if (_available.Count > 0)
             {
@@ -94,12 +96,16 @@ namespace GOILauncher.Multiplayer.Unity
 
         public void WarmUp(int count)
         {
-            while (_all.Count < count)
+            PruneDestroyedInstances();
+            var targetCount = count < MaxInstances ? count : MaxInstances;
+            while (_all.Count < targetCount)
             {
-                if (CreateInstance() == null)
+                var instance = CreateInstance();
+                if (instance == null)
                 {
                     return;
                 }
+                _available.Enqueue(instance);
             }
         }
 
@@ -114,6 +120,21 @@ namespace GOILauncher.Multiplayer.Unity
             }
             _all.Clear();
             _available.Clear();
+        }
+
+        private void PruneDestroyedInstances()
+        {
+            _all.RemoveAll(instance => instance == null);
+
+            var availableCount = _available.Count;
+            for (var i = 0; i < availableCount; i++)
+            {
+                var instance = _available.Dequeue();
+                if (instance != null && _all.Contains(instance))
+                {
+                    _available.Enqueue(instance);
+                }
+            }
         }
 
         private RemotePlayer CreateInstance()
@@ -140,7 +161,6 @@ namespace GOILauncher.Multiplayer.Unity
             }
             go.SetActive(false);
             _all.Add(instance);
-            _available.Enqueue(instance);
             return instance;
         }
     }
