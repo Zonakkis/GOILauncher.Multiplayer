@@ -69,6 +69,7 @@
     <Compile Include="IPlayerManager.cs" />
     <Compile Include="PlayerInstancePool.cs" />
     <Compile Include="PlayerManager.cs" />
+    <Compile Include="PlayerStateSynchronizer.cs" />
     <Compile Include="Models\PlayerBase.cs" />
     <Compile Include="Models\LocalPlayer.cs" />
     <Compile Include="Models\RemotePlayer.cs" />

@@ -1,6 +1,7 @@
 ﻿using Autofac;
 using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Services;
+using GOILauncher.Multiplayer.Server.Synchronization;
 
 namespace GOILauncher.Multiplayer.Server.Extensions
 {
@@ -16,6 +17,9 @@ namespace GOILauncher.Multiplayer.Server.Extensions
                 .As<IServerService>()
                 .SingleInstance();
             builder.RegisterType<ChatService>()
+                .SingleInstance();
+            builder.RegisterType<PlayerStateRelay>()
+                .AsSelf()
                 .SingleInstance();
             return builder;
         }

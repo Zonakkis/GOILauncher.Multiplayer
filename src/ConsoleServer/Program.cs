@@ -2,6 +2,7 @@
 using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Server.Extensions;
 using GOILauncher.Multiplayer.Server.Services;
+using GOILauncher.Multiplayer.Server.Synchronization;
 using System;
 using System.Configuration;
 using System.Threading;
@@ -20,6 +21,7 @@ namespace ConsoleServer
             using (var container = Register())
             {
                 var serverService = container.Resolve<IServerService>();
+                container.Resolve<PlayerStateRelay>();
 
                 var port = Convert.ToInt32(ConfigurationManager.AppSettings["Port"]);
                 serverService.Start(port);

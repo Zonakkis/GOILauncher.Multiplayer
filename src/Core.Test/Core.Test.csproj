@@ -159,6 +159,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\PacketDispatcherTests.cs" />
+    <Compile Include="Data\PlayerStatePacketTests.cs" />
+    <Compile Include="Client\ClientPlayerStateSyncTests.cs" />
     <Compile Include="Event\EventBusTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -166,6 +168,10 @@
     <ProjectReference Include="..\Core\Core.csproj">
       <Project>{908cf820-b1ab-40a3-a504-96dfc6bc3b40}</Project>
       <Name>Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Client\Client.csproj">
+      <Project>{fe614c55-a3f2-4315-82e1-a3a293ca89d1}</Project>
+      <Name>Client</Name>
     </ProjectReference>
     <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj">
       <Project>{cd19dc5d-b660-02ac-3533-05551bf84ace}</Project>

@@ -38,6 +38,13 @@ Player
 
 更深层级和对象上的组件暂未完整记录。后续只在它们与多人状态、视觉表现、物理行为或生命周期有关时补充。
 
+## State Synchronization Runtime Behavior
+
+- `LocalPlayer` 挂载在 `Player` 根对象上，从 `Player`、`Player/Hub/Slider` 和 `Player/Hub/Slider/Handle` 读取世界位置与世界旋转。
+- `PlayerStateSynchronizer` 挂载在持久化的 `MultiplayerUnityCore` 子对象上，在 `LateUpdate` 以 60 Hz 采样本地 `Player`，仅在 `Mian` 且连接有效时发送。
+- `RemotePlayer` 使用相同的完整路径写入世界位置与世界旋转。首次收到状态时直接定位，后续状态在约一个 60 Hz 间隔内插值。
+- 远端实例由 `PlayerInstancePool` 创建的 `PlayerPrefab` 派生，并继续使用现有的无碰撞远端对象处理，因此当前不会与本地 `Player` 产生交互。
+
 ## Multiplayer Interaction
 
 - 当前阶段只要求远端玩家不与本地玩家产生交互。

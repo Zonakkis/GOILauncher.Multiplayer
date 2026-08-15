@@ -1,9 +1,11 @@
 ﻿using System;
 using Autofac;
 using GOILauncher.Multiplayer.Client.Extensions;
+using GOILauncher.Multiplayer.Client.Synchronization;
 using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Extensions;
+using GOILauncher.Multiplayer.Server.Synchronization;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -35,7 +37,8 @@ namespace GOILauncher.Multiplayer.Unity
             .RegisterUnityClient()
             .RegisterUnityServer()
             .RegisterPlayerInstancePool()
-            .RegisterPlayerManager();
+            .RegisterPlayerManager()
+            .RegisterPlayerStateSynchronizer();
 
             configure?.Invoke(builder);
 
@@ -44,6 +47,10 @@ namespace GOILauncher.Multiplayer.Unity
             _container.Resolve<IGameManager>();
             // PlayerManager 是事件驱动服务，必须立即实例化以完成事件订阅（懒注册不会被自动 Resolve）
             _container.Resolve<IPlayerManager>();
+            // 网络包处理 Module 通过构造函数注册回调，必须显式激活。
+            _container.Resolve<ClientPlayerStateSync>();
+            _container.Resolve<PlayerStateRelay>();
+            _container.Resolve<PlayerStateSynchronizer>();
             return _container;
         }
 
@@ -107,6 +114,22 @@ namespace GOILauncher.Multiplayer.Unity
             As<IPlayerManager>().
             SingleInstance().
             OnActivated(e => e.Instance.Init());
+            return builder;
+        }
+
+        private static ContainerBuilder RegisterPlayerStateSynchronizer(this ContainerBuilder builder)
+        {
+            builder.Register(ctx =>
+            {
+                var obj = new GameObject(nameof(PlayerStateSynchronizer));
+                obj.transform.SetParent(_core.transform);
+                var synchronizer = obj.AddComponent<PlayerStateSynchronizer>();
+                ctx.InjectProperties(synchronizer);
+                synchronizer.Init();
+                return synchronizer;
+            })
+            .AsSelf()
+            .SingleInstance();
             return builder;
         }
     }

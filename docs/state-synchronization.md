@@ -32,6 +32,31 @@
 - `PlayerState.HandlePosition` 和 `PlayerState.HandleRotation` 对应 `Player/Hub/Slider/Handle`。
 - `Player/handle` 是另一个独立对象，不是 `PlayerState.Handle*` 所指的对象。
 
+## Current Rewrite Implementation
+
+当前新版首个端到端实现采用独立的状态同步 Module，旧版基线中的对象集合和 60 Hz 不可靠投递仍然只是可调整的实验起点。
+
+```text
+Mian LateUpdate
+  -> LocalPlayer 采集 PlayerState
+  -> ClientPlayerStateSync 添加客户端 uint Sequence
+  -> C2SPlayerStatePacket (Unreliable)
+  -> Server PlayerStateRelay 校验 peer 与 IsInGame，并写入 peer.Id
+  -> S2CPlayerStatePacket (Unreliable) 转发给其他 IsInGame 玩家
+  -> 客户端按 PlayerId 丢弃过期 Sequence
+  -> PlayerStateReceivedEvent
+  -> RemotePlayer 首次定位、后续插值
+```
+
+- `C2SPlayerStatePacket` 不携带玩家 ID；服务端始终以 `NetPeer.Id` 为发送者身份。
+- `S2CPlayerStatePacket` 携带服务端写入的 `PlayerId`、原样 `Sequence` 和 `PlayerState`。
+- 序号使用应用层 `uint` 环回比较；LiteNetLib 的不可靠投递不使用跨玩家共享的 `Sequenced` 通道。
+- 客户端出站序号存在于持久化的 `ClientPlayerStateSync`，跨越 `Mian` 重开和奖励/主界面切换，仅在断开连接时重置。
+- 客户端按玩家保存最后序号；玩家离开或断开时清理该记录，使重新进入的玩家可以从任意序号开始。
+- `PlayerService` 仍只负责玩家身份和 `IsInGame`；`PlayerManager` 仍只负责 Unity 实例生命周期。同步 Module 在组合根中显式激活，以确保构造函数注册的包回调生效。
+- 当前 `PlayerStateRelay` 将状态发给所有其他 `IsInGame` 玩家；未来加入 `Room` 后，接收者筛选应在该 Module 内改为房间成员与房间交互设置，不扩散到 Unity 采样或协议模型。
+- 远端实例尚未创建时收到的状态可以丢弃；服务端按约 60 Hz 发送，实例创建后会继续收到后续状态。
+
 ## Validation Workflow
 
 - 仅凭对象层级和代码无法确认最终视觉效果是否正确。

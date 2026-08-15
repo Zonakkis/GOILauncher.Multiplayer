@@ -47,6 +47,22 @@ function Find-NuGet {
     return $null
 }
 
+function Find-VSTest {
+    $onPath = Get-Command vstest.console.exe -ErrorAction SilentlyContinue
+    if ($onPath) { return $onPath.Source }
+
+    $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path $vsWhere) {
+        $installPath = & $vsWhere -latest -products * -property installationPath
+        if ($installPath) {
+            $candidate = Join-Path $installPath "Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe"
+            if (Test-Path $candidate) { return $candidate }
+        }
+    }
+
+    return $null
+}
+
 # ---------- Build ----------
 $msbuild = Find-MSBuild
 if (-not $msbuild) {
@@ -88,11 +104,11 @@ if ($LASTEXITCODE -ne 0) {
 # ---------- Tests (optional) ----------
 if ($RunTests) {
     Write-Step "Running tests"
-    $vstest = Get-Command vstest.console.exe -ErrorAction SilentlyContinue
-    $testAssembly = Join-Path $solutionDir "src\Core.Test\bin\$Configuration\GOILauncher.Multiplayer.Core.Test.dll"
+    $vstest = Find-VSTest
+    $testAssembly = Join-Path $solutionDir "src\Core.Test\bin\$Configuration\Core.Test.dll"
 
     if ($vstest -and (Test-Path $testAssembly)) {
-        & $vstest.Source $testAssembly
+        & $vstest $testAssembly
         if ($LASTEXITCODE -ne 0) { Write-Host "Tests failed." -ForegroundColor Red; exit 1 }
     } else {
         Write-Host "vstest.console.exe not found or test assembly missing, skipping tests." -ForegroundColor Yellow

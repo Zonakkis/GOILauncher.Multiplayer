@@ -52,6 +52,7 @@
     <Compile Include="Events\PlayerJoinedEvent.cs" />
     <Compile Include="Events\PlayerListUpdatedEvent.cs" />
     <Compile Include="Events\ServerHandshakeEvent.cs" />
+    <Compile Include="Events\PlayerStateReceivedEvent.cs" />
     <Compile Include="Extensions\AutofacExtensions.cs" />
     <Compile Include="Extensions\ClientPlayerExtensions.cs" />
     <Compile Include="Models\Message.cs" />
@@ -63,6 +64,7 @@
     <Compile Include="Services\IClientService.cs" />
     <Compile Include="Services\IPlayerService.cs" />
     <Compile Include="Services\PlayerService.cs" />
+    <Compile Include="Synchronization\ClientPlayerStateSync.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj">

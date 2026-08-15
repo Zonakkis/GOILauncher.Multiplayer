@@ -25,6 +25,11 @@ namespace GOILauncher.Multiplayer.Unity
         private int _localPlayerId;
         private LocalPlayer _localPlayer;
 
+        public LocalPlayer LocalPlayer
+        {
+            get { return _localPlayer; }
+        }
+
         public PlayerManager(IEventBus eventBus,
             IGameManager gameManager,
             IPlayerInstancePool instancePool,
