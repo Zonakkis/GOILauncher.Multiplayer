@@ -36,7 +36,8 @@ namespace GOILauncher.Multiplayer.Network
 
         public void Disconnect()
         {
-            if (!IsConnected) return;
+            // An outgoing peer is not connected yet, but it still needs to be cancelled.
+            if (_server == null) return;
 
             _logger.Info("Disconnecting from server...");
             _server.Disconnect();

@@ -36,6 +36,7 @@ namespace GOILauncher.Multiplayer.Unity
             .RegisterGameManager()
             .RegisterUnityClient()
             .RegisterUnityServer()
+            .RegisterMultiplayerState()
             .RegisterPlayerInstancePool()
             .RegisterPlayerManager()
             .RegisterPlayerStateSynchronizer();
@@ -52,6 +53,14 @@ namespace GOILauncher.Multiplayer.Unity
             _container.Resolve<PlayerStateRelay>();
             _container.Resolve<PlayerStateSynchronizer>();
             return _container;
+        }
+
+        private static ContainerBuilder RegisterMultiplayerState(this ContainerBuilder builder)
+        {
+            builder.RegisterType<AlwaysEnabledMultiplayerState>()
+                .As<IMultiplayerState>()
+                .SingleInstance();
+            return builder;
         }
 
         private static ContainerBuilder RegisterGameManager(this ContainerBuilder builder)

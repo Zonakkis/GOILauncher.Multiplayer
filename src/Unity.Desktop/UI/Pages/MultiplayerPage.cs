@@ -5,7 +5,8 @@
         private enum MultiplayerPage
         {
             Client,
-            Server
+            Server,
+            Settings
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using GOILauncher.Multiplayer;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Extensions;
@@ -32,6 +33,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         };
 
         private readonly IUnityClient _client;
+        private readonly MultiplayerStateCoordinator _multiplayerState;
         private readonly IEventBus _eventBus;
         private readonly ILogger<ClientPage> _logger;
         private readonly Toast _toast;
@@ -45,19 +47,27 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private InputFieldRef serverPortInput;
         private ButtonRef connectButton;
         private ButtonRef disconnectButton;
+        private ButtonRef refreshButton;
         private bool isConnecting;
         private bool disconnectRequested;
         private string lastServerHost = DefaultServerHost;
         private int lastServerPort = DefaultServerPort;
 
-        public ClientPage(IUnityClient unityClient, IEventBus eventBus, ILogger<ClientPage> logger, Toast toast)
+        public ClientPage(
+            IUnityClient unityClient,
+            MultiplayerStateCoordinator multiplayerState,
+            IEventBus eventBus,
+            ILogger<ClientPage> logger,
+            Toast toast)
         {
             _client = unityClient;
+            _multiplayerState = multiplayerState;
             _eventBus = eventBus;
             _logger = logger;
             _toast = toast;
             _eventBus.Subscribe<ServerConnectedEvent>(OnServerConnected);
             _eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
+            _multiplayerState.EnabledChanged += OnMultiplayerEnabledChanged;
         }
 
         public GameObject Root { get; private set; }
@@ -106,7 +116,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             Text roomListTitle = UIFactory.CreateLabel(titleRow, "RoomListTitle", "\u53ef\u7528\u623f\u95f4\u5217\u8868", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(roomListTitle.gameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
-            ButtonRef refreshButton = UIFactory.CreateButton(titleRow, "RefreshRoomList", "\u5237\u65b0");
+            refreshButton = UIFactory.CreateButton(titleRow, "RefreshRoomList", "\u5237\u65b0");
             UIFactory.SetLayoutElement(refreshButton.Component.gameObject, minHeight: 24, minWidth: 80, flexibleWidth: 0, flexibleHeight: 0);
             refreshButton.OnClick += OnRefreshClicked;
 
@@ -212,6 +222,12 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnRefreshClicked()
         {
+            if (!IsMultiplayerEnabled)
+            {
+                RefreshClientState();
+                return;
+            }
+
             if (roomListComponent != null)
                 roomListComponent.RefreshRooms();
 
@@ -298,6 +314,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnJoinClicked(RoomListItemViewData item)
         {
+            if (!IsMultiplayerEnabled)
+                return;
+
             if (roomListComponent != null)
             {
                 roomListComponent.JoinRoom(item.RoomName);
@@ -309,7 +328,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnConnectClicked()
         {
-            if (_client == null || isConnecting || _client.IsConnected)
+            if (!IsMultiplayerEnabled || _client == null || isConnecting || _client.IsConnected)
             {
                 RefreshClientState();
                 return;
@@ -342,7 +361,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnDisconnectClicked()
         {
-            if (_client == null || (!isConnecting && !_client.IsConnected))
+            if (!IsMultiplayerEnabled || _client == null || (!isConnecting && !_client.IsConnected))
             {
                 RefreshClientState();
                 return;
@@ -365,6 +384,13 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnServerConnected(ServerConnectedEvent connectedEvent)
         {
+            if (!IsMultiplayerEnabled)
+            {
+                _client?.Disconnect();
+                RefreshClientState();
+                return;
+            }
+
             isConnecting = false;
             disconnectRequested = false;
             _toast.Show($"\u5df2\u8fde\u63a5 {lastServerHost}:{lastServerPort}");
@@ -388,16 +414,24 @@ namespace GOILauncher.Multiplayer.UI.Pages
             RefreshClientState();
         }
 
+        private void OnMultiplayerEnabledChanged(bool enabled)
+        {
+            RefreshClientState();
+        }
+
         private void RefreshClientState()
         {
             if (connectButton == null || disconnectButton == null)
                 return;
 
-            bool connected = _client != null && _client.IsConnected && !isConnecting;
-            bool canEditConnection = !isConnecting && !connected;
+            bool multiplayerEnabled = IsMultiplayerEnabled;
+            bool connected = multiplayerEnabled && _client != null && _client.IsConnected && !isConnecting;
+            bool canEditConnection = multiplayerEnabled && !isConnecting && !connected;
 
             connectButton.Component.interactable = canEditConnection;
-            disconnectButton.Component.interactable = isConnecting || connected;
+            disconnectButton.Component.interactable = multiplayerEnabled && (isConnecting || connected);
+            if (refreshButton != null)
+                refreshButton.Component.interactable = multiplayerEnabled;
             SetInputInteractable(playerNameInput, canEditConnection);
             SetInputInteractable(serverHostInput, canEditConnection);
             SetInputInteractable(serverPortInput, canEditConnection);
@@ -461,6 +495,11 @@ namespace GOILauncher.Multiplayer.UI.Pages
         {
             if (input != null)
                 input.Component.interactable = interactable;
+        }
+
+        private bool IsMultiplayerEnabled
+        {
+            get { return _multiplayerState == null || _multiplayerState.Enabled; }
         }
     }
 }

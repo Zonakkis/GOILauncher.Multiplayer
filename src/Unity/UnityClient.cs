@@ -17,7 +17,7 @@ namespace GOILauncher.Multiplayer.Unity
     {
         private bool _initialized;
 
-        public bool IsConnected => ClientService.IsConnected;
+        public bool IsConnected => IsMultiplayerEnabled && ClientService.IsConnected;
         public IList<PlayerInfo> Players { get; private set; } = new List<PlayerInfo>();
         public ReadOnlyCollection<Message> ChatMessages => ChatService.Messages;
         public IClientService ClientService { get; set; }
@@ -25,6 +25,7 @@ namespace GOILauncher.Multiplayer.Unity
         public IChatService ChatService { get; set; }
         public IEventBus EventBus { get; set; }
         public IGameManager GameManager { get; set; }
+        public IMultiplayerState MultiplayerState { get; set; }
 
         public event EventHandler<PlayerListUpdatedEventArgs> PlayerListUpdated;
 
@@ -46,6 +47,9 @@ namespace GOILauncher.Multiplayer.Unity
 
         public void Connect(string host, int port, string playerName)
         {
+            if (!IsMultiplayerEnabled)
+                return;
+
             var playerInfo = new PlayerInfo(0, playerName, Application.platform.ToPlatform(), GameManager.IsInGame);
 
             PlayerService.SetLocalPlayerInfo(playerInfo);
@@ -59,7 +63,15 @@ namespace GOILauncher.Multiplayer.Unity
 
         public void SendMessage(MessageType type, string message)
         {
+            if (!IsMultiplayerEnabled)
+                return;
+
             ChatService.SendMessage(type, message);
+        }
+
+        private bool IsMultiplayerEnabled
+        {
+            get { return MultiplayerState == null || MultiplayerState.Enabled; }
         }
 
         private void OnPlayerListUpdatedEvent(PlayerListUpdatedEvent @event)

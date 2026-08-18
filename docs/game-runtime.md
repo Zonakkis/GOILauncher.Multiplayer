@@ -52,6 +52,14 @@ Player
 - 玩家之间是否允许交互将在未来房间系统中成为房间设置。
 - 当前限制不是永久规则，实现时应避免把“不允许玩家交互”固化为不可配置的领域假设。
 
+## Multiplayer UI Lifecycle
+
+- `Plugin` 使用 `MultiplayerStateCoordinator` 管理 BepInEx 配置中的 `[Multiplayer] Enabled`；默认值为 `true`。
+- F2 始终切换 `MultiplayerUI`（“连接配置”）窗口，不受联机开关影响，因此关闭联机后仍可进入“设置”页重新启用。
+- 关闭联机开关时，协调器立即请求 `IUnityClient.Disconnect()` 和 `IUnityServer.Stop()`；Unity 客户端和服务端适配器也会拒绝后续的连接或启动请求。
+- 关闭联机时 `ChatHudUI` 被隐藏并退出输入激活状态，`PlayerListUI` 被隐藏，Plugin 不再响应 Tab 来显示玩家列表。
+- 重新启用联机时聊天窗口恢复为可用面板；客户端连接按钮、服务端启动按钮和对应输入控件会在页面激活或状态变更时刷新，Tab 玩家列表在下一次按键时恢复。
+
 ## Documentation Rules
 
 - 对象名和大小写按 Unity 运行时中的真实名称记录。

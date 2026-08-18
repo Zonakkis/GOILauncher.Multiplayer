@@ -62,6 +62,14 @@ namespace GOILauncher.Multiplayer.UI
 
         public event Action<bool> ActiveModeChanged;
 
+        public override void SetActive(bool active)
+        {
+            if (!active && isActiveMode)
+                SetActiveMode(false);
+
+            base.SetActive(active);
+        }
+
         private float CanvasWidth
         {
             get

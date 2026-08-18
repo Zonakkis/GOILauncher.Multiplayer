@@ -63,8 +63,10 @@
     <Compile Include="Events\GameStartedEvent.cs" />
     <Compile Include="Events\PlayerListUpdatedEventArgs.cs" />
     <Compile Include="Extensions\PlatformExtensions.cs" />
+    <Compile Include="AlwaysEnabledMultiplayerState.cs" />
     <Compile Include="IUnityClient.cs" />
     <Compile Include="IUnityServer.cs" />
+    <Compile Include="IMultiplayerState.cs" />
     <Compile Include="IGameManager.cs" />
     <Compile Include="IPlayerManager.cs" />
     <Compile Include="PlayerInstancePool.cs" />

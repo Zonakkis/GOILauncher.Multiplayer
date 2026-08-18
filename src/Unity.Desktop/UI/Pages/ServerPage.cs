@@ -14,6 +14,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private const int DefaultPort = 9027;
 
         private readonly IUnityServer _server;
+        private readonly MultiplayerStateCoordinator _multiplayerState;
         private readonly ILogger<ServerPage> _logger;
         private readonly Toast _toast;
 
@@ -23,11 +24,17 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private ButtonRef _stopButton;
         private int _lastListenPort = DefaultPort;
 
-        public ServerPage(IUnityServer unityServer, ILogger<ServerPage> logger, Toast toast)
+        public ServerPage(
+            IUnityServer unityServer,
+            MultiplayerStateCoordinator multiplayerState,
+            ILogger<ServerPage> logger,
+            Toast toast)
         {
             _server = unityServer;
+            _multiplayerState = multiplayerState;
             _logger = logger;
             _toast = toast;
+            _multiplayerState.EnabledChanged += OnMultiplayerEnabledChanged;
         }
 
         public GameObject Root { get; private set; }
@@ -117,7 +124,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnStartClicked()
         {
-            if (_server.IsRunning)
+            if (!IsMultiplayerEnabled || _server.IsRunning)
             {
                 RefreshServerState();
                 return;
@@ -145,7 +152,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnStopClicked()
         {
-            if (!_server.IsRunning)
+            if (!IsMultiplayerEnabled || !_server.IsRunning)
             {
                 RefreshServerState();
                 return;
@@ -172,13 +179,21 @@ namespace GOILauncher.Multiplayer.UI.Pages
             if (_serverStateText == null || _startButton == null || _stopButton == null || portInput == null)
                 return;
 
-            bool running = _server.IsRunning;
-            _startButton.Component.interactable = !running;
-            _stopButton.Component.interactable = running;
-            portInput.Component.interactable = !running;
-            _serverStateText.text = running
+            bool multiplayerEnabled = IsMultiplayerEnabled;
+            bool running = multiplayerEnabled && _server.IsRunning;
+            _startButton.Component.interactable = multiplayerEnabled && !running;
+            _stopButton.Component.interactable = multiplayerEnabled && running;
+            portInput.Component.interactable = multiplayerEnabled && !running;
+            _serverStateText.text = !multiplayerEnabled
+                ? "\u8054\u673a\u5df2\u7981\u7528"
+                : running
                 ? $"\u670d\u52a1\u7aef\u5df2\u542f\u52a8\uff0c\u76d1\u542c\u7aef\u53e3 {_lastListenPort}"
                 : "\u670d\u52a1\u7aef\u672a\u542f\u52a8";
+        }
+
+        private void OnMultiplayerEnabledChanged(bool enabled)
+        {
+            RefreshServerState();
         }
 
         private bool TryGetListenPort(out int port)
@@ -194,6 +209,11 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
             portInput.Text = port.ToString();
             return true;
+        }
+
+        private bool IsMultiplayerEnabled
+        {
+            get { return _multiplayerState == null || _multiplayerState.Enabled; }
         }
     }
 }

@@ -31,6 +31,7 @@ public class Plugin : BaseUnityPlugin
     private static readonly MethodInfo UpdateCursorControlMethod = typeof(CursorUnlocker).GetMethod("UpdateCursorControl", BindingFlags.Static | BindingFlags.NonPublic);
 
     private MultiplayerUI _multiplayerUI;
+    private MultiplayerStateCoordinator _multiplayerState;
     private ChatHudUI _chatHudUI;
     private PlayerListUI _playerListOverlayUI;
     private bool _hasAppliedCursorState;
@@ -56,6 +57,12 @@ public class Plugin : BaseUnityPlugin
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loading...");
         var container = MultiplayerUnityCore.Initialize(Configure);
 
+        _multiplayerState = container.Resolve<MultiplayerStateCoordinator>();
+        _multiplayerState.Attach(
+            container.Resolve<IUnityClient>(),
+            container.Resolve<IUnityServer>());
+        _multiplayerState.EnabledChanged += OnMultiplayerEnabledChanged;
+
         Theme = container.Resolve<ITheme>();
         UIBase = container.Resolve<UIBase>();
         _multiplayerUI = container.Resolve<MultiplayerUI>();
@@ -64,6 +71,7 @@ public class Plugin : BaseUnityPlugin
         _chatHudUI.ActiveModeChanged += OnChatActiveModeChanged;
         _multiplayerUI.SetActive(false);
         _playerListOverlayUI.SetActive(false);
+        ApplyMultiplayerUiState(_multiplayerState.Enabled);
         ApplyCursorState();
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loaded!");
     }
@@ -86,10 +94,17 @@ public class Plugin : BaseUnityPlugin
         builder.RegisterType<Toast>()
         .AsSelf()
         .SingleInstance();
+        builder.Register(_ => new MultiplayerStateCoordinator(Config, Logger))
+        .AsSelf()
+        .As<IMultiplayerState>()
+        .SingleInstance();
         builder.RegisterType<ClientPage>()
         .AsSelf()
         .SingleInstance();
         builder.RegisterType<ServerPage>()
+        .AsSelf()
+        .SingleInstance();
+        builder.RegisterType<SettingsPage>()
         .AsSelf()
         .SingleInstance();
         builder.RegisterType<MultiplayerUI>()
@@ -137,6 +152,15 @@ public class Plugin : BaseUnityPlugin
             ApplyCursorState();
         }
 
+        if (_multiplayerState == null || !_multiplayerState.Enabled)
+        {
+            if (_playerListOverlayUI.Enabled)
+                _playerListOverlayUI.SetActive(false);
+
+            ApplyCursorState();
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Tab))
         {
             _playerListOverlayUI.SetActive(true);
@@ -154,6 +178,21 @@ public class Plugin : BaseUnityPlugin
     private void OnChatActiveModeChanged(bool active)
     {
         ApplyCursorState();
+    }
+
+    private void OnMultiplayerEnabledChanged(bool enabled)
+    {
+        ApplyMultiplayerUiState(enabled);
+        ApplyCursorState();
+    }
+
+    private void ApplyMultiplayerUiState(bool enabled)
+    {
+        if (_chatHudUI != null)
+            _chatHudUI.SetActive(enabled);
+
+        if (!enabled && _playerListOverlayUI != null && _playerListOverlayUI.Enabled)
+            _playerListOverlayUI.SetActive(false);
     }
 
     private void ApplyCursorState()

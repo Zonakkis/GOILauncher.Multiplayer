@@ -29,12 +29,13 @@ namespace GOILauncher.Multiplayer.UI
         private readonly List<PageEntry> _pages;
         private GameObject _pagesContainer;
 
-        public MultiplayerUI(UIBase owner, ClientPage clientPage, ServerPage serverPage) : base(owner)
+        public MultiplayerUI(UIBase owner, ClientPage clientPage, ServerPage serverPage, SettingsPage settingsPage) : base(owner)
         {
             _pages = new List<PageEntry>
             {
                 new PageEntry(MultiplayerPage.Client, "\u5ba2\u6237\u7aef", clientPage),
-                new PageEntry(MultiplayerPage.Server, "\u670d\u52a1\u7aef", serverPage)
+                new PageEntry(MultiplayerPage.Server, "\u670d\u52a1\u7aef", serverPage),
+                new PageEntry(MultiplayerPage.Settings, "\u8bbe\u7f6e", settingsPage)
             };
 
             CreateContent();
