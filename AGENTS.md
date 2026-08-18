@@ -1,5 +1,12 @@
 # Repository Instructions
 
+## Build and Test
+
+Use `scripts\build.ps1` for all repository builds and test runs. Do not invoke `dotnet build` or `dotnet test` directly.
+
+- Build: `.\scripts\build.ps1 -Configuration Debug -SkipRestore`
+- Build and test: `.\scripts\build.ps1 -Configuration Debug -SkipRestore -RunTests`
+
 Before changing gameplay, player lifecycle, networking, or state synchronization code, read:
 
 - `CONTEXT.md`
