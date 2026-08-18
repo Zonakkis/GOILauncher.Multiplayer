@@ -27,6 +27,13 @@ namespace GOILauncher.Multiplayer.Unity
 
         public void Start()
         {
+            // 插件可能在 Mian 已经加载完成后才初始化，此时收不到当前场景的 sceneLoaded 事件。
+            if (IsInGame && Player == null)
+            {
+                OnGameStarted();
+                EventBus.Publish(new GameStartedEvent());
+            }
+
             // Start 在属性注入（InjectProperties）之后执行，Logger 此时可用；Awake 里打日志会因 Logger 未注入而抛异常
             Logger.Info("GameManager initialized, current scene: {SceneName}, isInGame: {IsInGame}", _currentSceneName, IsInGame);
         }
@@ -107,7 +114,7 @@ namespace GOILauncher.Multiplayer.Unity
             foreach (var rigidBody2D in playerPrefab.GetComponentsInChildren<Rigidbody2D>())
                 rigidBody2D.isKinematic = true;
             foreach (var collider in playerPrefab.GetComponentsInChildren<Collider2D>())
-                Destroy(collider);
+                Destroy(collider);   
             playerPrefab.SetActive(false);
             return playerPrefab;
         }

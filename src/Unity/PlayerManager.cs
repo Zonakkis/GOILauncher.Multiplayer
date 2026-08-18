@@ -78,13 +78,16 @@ namespace GOILauncher.Multiplayer.Unity
         {
             _localPlayerId = e.PlayerId;
             _logger.Info("Handshake completed, local player id: {PlayerId}", e.PlayerId);
+
+            if (_gameManager.IsInGame)
+            {
+                InitializeGamePlayers();
+            }
         }
 
         private void OnGameStartedEvent(GameStartedEvent e)
         {
-            EnsureLocalPlayer();
-            _instancePool.WarmUp(DefaultInstanceWarmUpCount);
-            SyncRemotePlayers();
+            InitializeGamePlayers();
         }
 
         private void OnGameRestartedEvent(GameRestartedEvent e)
@@ -92,9 +95,7 @@ namespace GOILauncher.Multiplayer.Unity
             RemoveAllRemotePlayers();
             ReleaseLocalPlayer();
             _instancePool.Clear();
-            EnsureLocalPlayer();
-            _instancePool.WarmUp(DefaultInstanceWarmUpCount);
-            SyncRemotePlayers();
+            InitializeGamePlayers();
         }
 
         private void OnGameQuitEvent(GameQuitEvent e)
@@ -227,10 +228,18 @@ namespace GOILauncher.Multiplayer.Unity
             }
         }
 
+        private void InitializeGamePlayers()
+        {
+            EnsureLocalPlayer();
+            _instancePool.WarmUp(DefaultInstanceWarmUpCount);
+            SyncRemotePlayers();
+        }
+
         private void EnsureLocalPlayer()
         {
             if (_localPlayer != null)
             {
+                BindLocalPlayer(_localPlayer);
                 return;
             }
 
@@ -247,8 +256,17 @@ namespace GOILauncher.Multiplayer.Unity
                 localPlayer = player.AddComponent<LocalPlayer>();
             }
 
+            BindLocalPlayer(localPlayer);
+        }
+
+        private void BindLocalPlayer(LocalPlayer localPlayer)
+        {
+            _players.Remove(localPlayer.Id);
+
             PlayerInfo self;
-            string name = _knownPlayers.TryGetValue(_localPlayerId, out self) ? self.Name : null;
+            string name = _knownPlayers.TryGetValue(_localPlayerId, out self)
+                ? self.Name
+                : localPlayer.Name;
             localPlayer.Init(new PlayerInfo(_localPlayerId, name, Platform.PC, false));
             _localPlayer = localPlayer;
             _players[_localPlayerId] = localPlayer;

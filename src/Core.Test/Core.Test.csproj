@@ -161,6 +161,7 @@
     <Compile Include="Data\PacketDispatcherTests.cs" />
     <Compile Include="Data\PlayerStatePacketTests.cs" />
     <Compile Include="Client\ClientPlayerStateSyncTests.cs" />
+    <Compile Include="Unity\PlayerManagerTests.cs" />
     <Compile Include="Event\EventBusTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -172,6 +173,10 @@
     <ProjectReference Include="..\Client\Client.csproj">
       <Project>{fe614c55-a3f2-4315-82e1-a3a293ca89d1}</Project>
       <Name>Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Unity\Unity.csproj">
+      <Project>{125c7a1a-0023-4e64-a620-e808ae58d966}</Project>
+      <Name>Unity</Name>
     </ProjectReference>
     <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj">
       <Project>{cd19dc5d-b660-02ac-3533-05551bf84ace}</Project>
