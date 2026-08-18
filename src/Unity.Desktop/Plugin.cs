@@ -131,7 +131,7 @@ public class Plugin : BaseUnityPlugin
         if (_multiplayerUI == null || _playerListOverlayUI == null)
             return;
 
-        if (Input.GetKeyDown(KeyCode.F1))
+        if (Input.GetKeyDown(KeyCode.F2))
         {
             _multiplayerUI.SetActive(!_multiplayerUI.Enabled);
             ApplyCursorState();
