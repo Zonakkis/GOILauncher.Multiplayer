@@ -7,6 +7,10 @@ Use `scripts\build.ps1` for all repository builds and test runs. Do not invoke `
 - Build: `.\scripts\build.ps1 -Configuration Debug -SkipRestore`
 - Build and test: `.\scripts\build.ps1 -Configuration Debug -SkipRestore -RunTests`
 
+## Collaboration Guidelines
+
+When encountering something you do not understand or cannot resolve, ask clarifying questions instead of repeatedly guessing and experimenting.
+
 Before changing gameplay, player lifecycle, networking, or state synchronization code, read:
 
 - `CONTEXT.md`
