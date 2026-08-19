@@ -1,14 +1,16 @@
-﻿using GOILauncher.Multiplayer.Core.Event;
+﻿using Autofac;
+using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using LiteNetLib;
 using LiteNetLib.Utils;
 
 namespace GOILauncher.Multiplayer.Network
 {
-    public class NetworkClient : INetworkClient
+    public class NetworkClient : INetworkClient, IStartable
     {
         public bool IsConnected => _server != null && _server.ConnectionState == ConnectionState.Connected;
         private readonly NetManager _netManager;
+        private readonly IEventBus _eventBus;
         private readonly ILogger<NetworkClient> _logger;
         private NetPeer _server;
 
@@ -18,8 +20,13 @@ namespace GOILauncher.Multiplayer.Network
             ILogger<NetworkClient> logger)
         {
             _netManager = netManager;
-            eventBus.Subscribe<ServerDisconnectedEvent>((_) => _server = null);
+            _eventBus = eventBus;
             _logger = logger;
+        }
+
+        void IStartable.Start()
+        {
+            _eventBus.Subscribe<ServerDisconnectedEvent>((_) => _server = null);
             _netManager.Start();
         }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using Autofac;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using GOILauncher.Multiplayer.Client.Events;
@@ -13,28 +14,34 @@ using LiteNetLib;
 
 namespace GOILauncher.Multiplayer.Client.Services
 {
-    public class ChatService : IChatService
+    public class ChatService : IChatService, IStartable
     {
         private readonly INetworkClient _networkClient;
+        private readonly IClientPacketDispatcher _dispatcher;
         private readonly IEventBus _eventBus;
         private readonly ILogger<ChatService> _logger;
         private readonly IPlayerService _playerService;
         private readonly List<Message> _messages = new List<Message>();
         public ReadOnlyCollection<Message> Messages { get; private set; }
         public ChatService(INetworkClient networkClient,
-            IPacketDispatcher dispatcher,
+            IClientPacketDispatcher dispatcher,
             IEventBus eventBus,
             ILogger<ChatService> logger,
             IPlayerService playerService)
         {
             _networkClient = networkClient;
+            _dispatcher = dispatcher;
             _eventBus = eventBus;
             _logger = logger;
             _playerService = playerService;
             Messages = new ReadOnlyCollection<Message>(_messages);
-            dispatcher.RegisterStruct<S2CChatMessagePacket>(OnChatMessage);
-            eventBus.Subscribe<PlayerJoinedEvent>(OnPlayerJoined);
-            eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
+        }
+
+        void IStartable.Start()
+        {
+            _dispatcher.RegisterStruct<S2CChatMessagePacket>(OnChatMessage);
+            _eventBus.Subscribe<PlayerJoinedEvent>(OnPlayerJoined);
+            _eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
         }
 
         private void AddMessage(Message message)
@@ -85,7 +92,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             }
         }
 
-        private void OnChatMessage(S2CChatMessagePacket packet, NetPeer _)
+        private void OnChatMessage(S2CChatMessagePacket packet, PacketSender _)
         {
             var playerId = packet.PlayerId;
             var dateTime = DateTimeUtils.FromUnixTimeSeconds(packet.Timestamp);

@@ -10,14 +10,14 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
     public class PacketDispatcherTests
     {
         private NetPacketProcessor _processor;
-        private PacketDispatcher _dispatcher;
+        private ClientPacketDispatcher _dispatcher;
         private NetDataWriter _writer;
 
         [SetUp]
         public void Setup()
         {
             _processor = new NetPacketProcessor();
-            _dispatcher = new PacketDispatcher(_processor);
+            _dispatcher = new ClientPacketDispatcher(_processor, null);
             _writer = new NetDataWriter();
         }
 
@@ -27,7 +27,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
             var called = false;
             TestStructPacket receivedPacket = default;
 
-            _dispatcher.RegisterStruct<TestStructPacket>((packet, peer) =>
+            _dispatcher.RegisterStruct<TestStructPacket>((packet, sender) =>
             {
                 called = true;
                 receivedPacket = packet;
@@ -37,7 +37,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
             _processor.WriteNetSerializable(_writer, sendPacket);
 
             var reader = new NetDataReader(_writer.CopyData());
-            _dispatcher.Dispatch(null, reader);
+            _dispatcher.Dispatch(default, reader);
 
             called.Should().BeTrue();
             receivedPacket.Value.Should().Be(42);
@@ -49,7 +49,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
             var called = false;
             TestStructPacket receivedPacket = default;
 
-            _dispatcher.RegisterStruct<TestStructPacket>((packet, peer) =>
+            _dispatcher.RegisterStruct<TestStructPacket>((packet, sender) =>
             {
                 called = true;
                 receivedPacket = packet;
@@ -59,7 +59,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
             var bytes = WriteNetSerializableWithRuntimeType(sendPacket);
 
             var reader = new NetDataReader(bytes);
-            _dispatcher.Dispatch(null, reader);
+            _dispatcher.Dispatch(default, reader);
 
             called.Should().BeTrue();
             receivedPacket.Value.Should().Be(42);
@@ -71,7 +71,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
             var called = false;
             TestClassPacket receivedPacket = null;
 
-            _dispatcher.RegisterClass<TestClassPacket>((packet, peer) =>
+            _dispatcher.RegisterClass<TestClassPacket>((packet, sender) =>
             {
                 called = true;
                 receivedPacket = packet;
@@ -81,7 +81,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Data
             _processor.WriteNetSerializable(_writer, sendPacket);
 
             var reader = new NetDataReader(_writer.CopyData());
-            _dispatcher.Dispatch(null, reader);
+            _dispatcher.Dispatch(default, reader);
 
             called.Should().BeTrue();
             receivedPacket.Should().NotBeNull();

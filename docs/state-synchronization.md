@@ -41,19 +41,22 @@ Mian LateUpdate
   -> LocalPlayer 采集 PlayerState
   -> ClientPlayerStateSync 添加客户端 uint Sequence
   -> C2SPlayerStatePacket (Unreliable)
-  -> Server PlayerStateRelay 校验 peer 与 IsInGame，并写入 peer.Id
+  -> Server PlayerStateRelay 校验 PacketSender 与 IsInGame，并写入 sender.Id
   -> S2CPlayerStatePacket (Unreliable) 转发给其他 IsInGame 玩家
   -> 客户端按 PlayerId 丢弃过期 Sequence
   -> PlayerStateReceivedEvent
   -> RemotePlayer 首次定位、后续插值
 ```
 
-- `C2SPlayerStatePacket` 不携带玩家 ID；服务端始终以 `NetPeer.Id` 为发送者身份。
+- `C2SPlayerStatePacket` 不携带玩家 ID；服务端始终以 `PacketSender.Id` 为发送者身份。
 - `S2CPlayerStatePacket` 携带服务端写入的 `PlayerId`、原样 `Sequence` 和 `PlayerState`。
 - 序号使用应用层 `uint` 环回比较；LiteNetLib 的不可靠投递不使用跨玩家共享的 `Sequenced` 通道。
 - 客户端出站序号存在于持久化的 `ClientPlayerStateSync`，跨越 `Mian` 重开和奖励/主界面切换，仅在断开连接时重置。
 - 客户端按玩家保存最后序号；玩家离开或断开时清理该记录，使重新进入的玩家可以从任意序号开始。
-- `PlayerService` 仍只负责玩家身份和 `IsInGame`；`PlayerManager` 仍只负责 Unity 实例生命周期。同步 Module 在组合根中显式激活，以确保构造函数注册的包回调生效。
+- `PlayerService` 仍只负责玩家身份和 `IsInGame`；`PlayerManager` 仍只负责 Unity 实例生命周期。同步 Module 实现 `Autofac.IStartable`，在容器 `Build()` 时自动激活，组合根不再逐个 `Resolve` 具体类型。
+- 客户端与服务端各自拥有独立的 `NetPacketProcessor`（`IClientPacketDispatcher` / `IServerPacketDispatcher`）。宿主同时跑两个角色时，服务端 socket 收到的 S2C 包不会触发本地客户端回调，反之亦然；未订阅的包在 `PacketDispatcher.Dispatch` 内记 `Warn` 日志后丢弃。
+- 包回调签名使用 Core 自己的 `PacketSender`（仅含 `int Id`）而非 LiteNetLib 的 `NetPeer`，服务端始终以 `PacketSender.Id` 为发送者身份。
+- `Client` 与 `Server` 的事件类型不得复用同一个类型：两个角色共用一条 `IEventBus`，隔离目前只靠事件类型不相交维持。引入 `Room` 若出现对称事件，需要先按角色拆分事件总线。
 - 当前 `PlayerStateRelay` 将状态发给所有其他 `IsInGame` 玩家；未来加入 `Room` 后，接收者筛选应在该 Module 内改为房间成员与房间交互设置，不扩散到 Unity 采样或协议模型。
 - 远端实例尚未创建时收到的状态可以丢弃；服务端按约 60 Hz 发送，实例创建后会继续收到后续状态。
 

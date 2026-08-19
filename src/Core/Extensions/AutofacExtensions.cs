@@ -33,17 +33,19 @@ namespace GOILauncher.Multiplayer.Core.Extensions
                 .As<IEventBus>()
                 .SingleInstance();
 
-            builder.RegisterType<NetPacketProcessor>()
-                .AsSelf()
-                .SingleInstance();
-            builder.RegisterType<PacketDispatcher>()
-                .As<IPacketDispatcher>()
-                .SingleInstance();
             return builder;
         }
 
         public static ContainerBuilder RegisterClientCore(this ContainerBuilder builder)
         {
+            // Each role owns a private NetPacketProcessor. Sharing one would let a packet
+            // arriving on the server socket invoke a client-side handler (and vice versa)
+            // whenever both roles run in the same process.
+            builder.Register(c => new ClientPacketDispatcher(
+                    new NetPacketProcessor(),
+                    c.Resolve<ILogger<PacketDispatcher>>()))
+                .As<IClientPacketDispatcher>()
+                .SingleInstance();
             builder.RegisterType<NetworkClientListener>()
                 .AsSelf()
                 .SingleInstance();
@@ -55,12 +57,18 @@ namespace GOILauncher.Multiplayer.Core.Extensions
                     c.Resolve<ILogger<NetworkClient>>());
             })
                 .As<INetworkClient>()
+                .As<IStartable>()
                 .SingleInstance();
             return builder;
         }
 
         public static ContainerBuilder RegisterServerCore(this ContainerBuilder builder)
         {
+            builder.Register(c => new ServerPacketDispatcher(
+                    new NetPacketProcessor(),
+                    c.Resolve<ILogger<PacketDispatcher>>()))
+                .As<IServerPacketDispatcher>()
+                .SingleInstance();
             builder.RegisterType<NetworkServerListener>()
                 .AsSelf()
                 .SingleInstance();

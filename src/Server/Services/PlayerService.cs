@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Autofac;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Data.Packets;
@@ -11,30 +12,36 @@ using LiteNetLib;
 
 namespace GOILauncher.Multiplayer.Server.Services
 {
-    public class PlayerService : IPlayerService
+    public class PlayerService : IPlayerService, IStartable
     {
         private readonly INetworkServer _networkServer;
+        private readonly IServerPacketDispatcher _packetDispatcher;
         private readonly IEventBus _eventBus;
         private readonly ILogger<PlayerService> _logger;
         public Dictionary<int, PlayerInfo> Players { get; }
             = new Dictionary<int, PlayerInfo>();
 
         public PlayerService(INetworkServer networkServer,
-            IPacketDispatcher packetDispatcher,
+            IServerPacketDispatcher packetDispatcher,
             IEventBus eventBus,
             ILogger<PlayerService> logger)
         {
             _networkServer = networkServer;
+            _packetDispatcher = packetDispatcher;
             _eventBus = eventBus;
             _logger = logger;
-            packetDispatcher.RegisterStruct<C2SClientHandShakePacket>(OnClientHandshake);
-            packetDispatcher.RegisterStruct<C2SIsInGameUpdatePacket>(OnIsInGameUpdate);
-            eventBus.Subscribe<ClientDisconnectedEvent>(OnClientDisconnected);
         }
 
-        private void OnClientHandshake(C2SClientHandShakePacket packet, NetPeer peer)
+        void IStartable.Start()
         {
-            var playerId = peer.Id;
+            _packetDispatcher.RegisterStruct<C2SClientHandShakePacket>(OnClientHandshake);
+            _packetDispatcher.RegisterStruct<C2SIsInGameUpdatePacket>(OnIsInGameUpdate);
+            _eventBus.Subscribe<ClientDisconnectedEvent>(OnClientDisconnected);
+        }
+
+        private void OnClientHandshake(C2SClientHandShakePacket packet, PacketSender sender)
+        {
+            var playerId = sender.Id;
             var playerName = packet.PlayerName;
             var platform = packet.Platform;
             var player = new PlayerInfo(playerId, playerName, platform, packet.IsInGame);
@@ -65,9 +72,9 @@ namespace GOILauncher.Multiplayer.Server.Services
             }
         }
 
-        private void OnIsInGameUpdate(C2SIsInGameUpdatePacket packet, NetPeer peer)
+        private void OnIsInGameUpdate(C2SIsInGameUpdatePacket packet, PacketSender sender)
         {
-            var playerId = peer.Id;
+            var playerId = sender.Id;
             if (Players.TryGetValue(playerId, out var player))
             {
                 Players[playerId] = player.WithIsInGame(packet.IsInGame);

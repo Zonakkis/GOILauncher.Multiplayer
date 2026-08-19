@@ -1,4 +1,5 @@
 using System.Linq;
+using Autofac;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Network;
@@ -6,23 +7,29 @@ using LiteNetLib;
 
 namespace GOILauncher.Multiplayer.Server.Services
 {
-    public class ChatService
+    public class ChatService : IStartable
     {
         private readonly IPlayerService _playerService;
         private readonly INetworkServer _networkServer;
+        private readonly IServerPacketDispatcher _dispatcher;
 
         public ChatService(IPlayerService playerService,
             INetworkServer networkServer,
-            IPacketDispatcher dispatcher)
+            IServerPacketDispatcher dispatcher)
         {
             _playerService = playerService;
             _networkServer = networkServer;
-            dispatcher.RegisterStruct<C2SChatMessagePacket>(OnChatMessage);
+            _dispatcher = dispatcher;
         }
 
-        private void OnChatMessage(C2SChatMessagePacket packet, NetPeer peer)
+        void IStartable.Start()
         {
-            var playerId = peer.Id;
+            _dispatcher.RegisterStruct<C2SChatMessagePacket>(OnChatMessage);
+        }
+
+        private void OnChatMessage(C2SChatMessagePacket packet, PacketSender sender)
+        {
+            var playerId = sender.Id;
             var content = packet.Content;
             var timestamp = packet.Timestamp;
             var chatPacket = new S2CChatMessagePacket

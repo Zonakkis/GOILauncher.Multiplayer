@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Autofac;
 using FluentAssertions;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Synchronization;
@@ -31,6 +32,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Client
             _networkClient = new FakeNetworkClient();
             _eventBus = new EventBus(new Mock<ILogger<EventBus>>().Object);
             _sync = new ClientPlayerStateSync(_networkClient, _dispatcher, _eventBus);
+            ((IStartable)_sync).Start();
         }
 
         [Test]
@@ -71,31 +73,31 @@ namespace GOILauncher.Multiplayer.Core.Test.Client
             received.Should().Be(2);
         }
 
-        private sealed class CapturingDispatcher : IPacketDispatcher
+        private sealed class CapturingDispatcher : IClientPacketDispatcher
         {
-            private Action<S2CPlayerStatePacket, NetPeer> _handler;
+            private Action<S2CPlayerStatePacket, PacketSender> _handler;
 
-            public void RegisterStruct<TPacket>(Action<TPacket, NetPeer> onReceive)
+            public void RegisterStruct<TPacket>(Action<TPacket, PacketSender> onReceive)
                 where TPacket : struct, INetSerializable
             {
                 if (typeof(TPacket) == typeof(S2CPlayerStatePacket))
                 {
-                    _handler = (Action<S2CPlayerStatePacket, NetPeer>)(object)onReceive;
+                    _handler = (Action<S2CPlayerStatePacket, PacketSender>)(object)onReceive;
                 }
             }
 
-            public void RegisterClass<TPacket>(Action<TPacket, NetPeer> onReceive)
+            public void RegisterClass<TPacket>(Action<TPacket, PacketSender> onReceive)
                 where TPacket : class, INetSerializable, new()
             {
             }
 
-            public void Dispatch(NetPeer peer, NetDataReader reader)
+            public void Dispatch(PacketSender sender, NetDataReader reader)
             {
             }
 
             public void Receive(S2CPlayerStatePacket packet)
             {
-                _handler(packet, null);
+                _handler(packet, default(PacketSender));
             }
         }
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Autofac;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Models;
@@ -15,9 +16,10 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
     /// The module is persistent across gameplay scene transitions; the outgoing counter is
     /// reset only when the server connection is lost.
     /// </summary>
-    public class ClientPlayerStateSync
+    public class ClientPlayerStateSync : IStartable
     {
         private readonly INetworkClient _networkClient;
+        private readonly IClientPacketDispatcher _dispatcher;
         private readonly IEventBus _eventBus;
         private readonly Dictionary<int, uint> _lastReceivedSequences = new Dictionary<int, uint>();
         private uint _nextSequence;
@@ -25,14 +27,19 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
         public bool IsConnected => _networkClient.IsConnected;
 
         public ClientPlayerStateSync(INetworkClient networkClient,
-            IPacketDispatcher dispatcher,
+            IClientPacketDispatcher dispatcher,
             IEventBus eventBus)
         {
             _networkClient = networkClient;
+            _dispatcher = dispatcher;
             _eventBus = eventBus;
-            dispatcher.RegisterStruct<S2CPlayerStatePacket>(OnPlayerStateReceived);
-            eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
-            eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
+        }
+
+        void IStartable.Start()
+        {
+            _dispatcher.RegisterStruct<S2CPlayerStatePacket>(OnPlayerStateReceived);
+            _eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
+            _eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
         }
 
         public void Send(PlayerState state)
@@ -51,7 +58,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
             _networkClient.Send(packet, DeliveryMethod.Unreliable);
         }
 
-        private void OnPlayerStateReceived(S2CPlayerStatePacket packet, NetPeer _)
+        private void OnPlayerStateReceived(S2CPlayerStatePacket packet, PacketSender _)
         {
             uint lastSequence;
             if (_lastReceivedSequences.TryGetValue(packet.PlayerId, out lastSequence) &&

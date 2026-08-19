@@ -1,11 +1,9 @@
 ﻿using System;
 using Autofac;
 using GOILauncher.Multiplayer.Client.Extensions;
-using GOILauncher.Multiplayer.Client.Synchronization;
 using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Extensions;
-using GOILauncher.Multiplayer.Server.Synchronization;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -45,12 +43,10 @@ namespace GOILauncher.Multiplayer.Unity
 
             _container = builder.Build();
             _container.Resolve<CoreManager>();
+            // Unity 适配层由工厂注册创建 GameObject，必须在初始化时显式实例化。
+            // 纯 C# 的网络 Module 实现 IStartable，由容器在 Build() 时自动激活。
             _container.Resolve<IGameManager>();
-            // PlayerManager 是事件驱动服务，必须立即实例化以完成事件订阅（懒注册不会被自动 Resolve）
             _container.Resolve<IPlayerManager>();
-            // 网络包处理 Module 通过构造函数注册回调，必须显式激活。
-            _container.Resolve<ClientPlayerStateSync>();
-            _container.Resolve<PlayerStateRelay>();
             _container.Resolve<PlayerStateSynchronizer>();
             return _container;
         }

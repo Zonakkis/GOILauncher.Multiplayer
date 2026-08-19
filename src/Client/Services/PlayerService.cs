@@ -1,4 +1,5 @@
-﻿using GOILauncher.Multiplayer.Client.Events;
+﻿using Autofac;
+using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Extensions;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Models;
@@ -12,29 +13,35 @@ using System.Linq;
 
 namespace GOILauncher.Multiplayer.Client.Services
 {
-    public class PlayerService : IPlayerService
+    public class PlayerService : IPlayerService, IStartable
     {
         private readonly INetworkClient _networkClient;
+        private readonly IClientPacketDispatcher _dispatcher;
         private readonly IEventBus _eventBus;
         private readonly ILogger<PlayerService> _logger;
         public PlayerInfo LocalPlayer { get; private set; } = new PlayerInfo(0, null, Platform.Unknown, false);
         public Dictionary<int, PlayerInfo> Players { get; } = new Dictionary<int, PlayerInfo>();
 
         public PlayerService(INetworkClient networkClient,
-            IPacketDispatcher dispatcher,
+            IClientPacketDispatcher dispatcher,
             IEventBus eventBus,
             ILogger<PlayerService> logger)
         {
             _networkClient = networkClient;
+            _dispatcher = dispatcher;
             _eventBus = eventBus;
             _logger = logger;
-            dispatcher.RegisterClass<S2CPlayerListPacket>(OnPlayerList);
-            dispatcher.RegisterStruct<S2CPlayerJoinedPacket>(OnPlayerJoined);
-            dispatcher.RegisterStruct<S2CPlayerLeftPacket>(OnPlayerLeft);
-            dispatcher.RegisterStruct<S2CIsInGameUpdatePacket>(OnIsInGameUpdate);
+        }
+
+        void IStartable.Start()
+        {
+            _dispatcher.RegisterClass<S2CPlayerListPacket>(OnPlayerList);
+            _dispatcher.RegisterStruct<S2CPlayerJoinedPacket>(OnPlayerJoined);
+            _dispatcher.RegisterStruct<S2CPlayerLeftPacket>(OnPlayerLeft);
+            _dispatcher.RegisterStruct<S2CIsInGameUpdatePacket>(OnIsInGameUpdate);
             // Set local player when handshake is successful
-            eventBus.Subscribe<ServerHandshakeEvent>(OnServerHandshake);
-            eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
+            _eventBus.Subscribe<ServerHandshakeEvent>(OnServerHandshake);
+            _eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
         }
 
         public void SetLocalPlayerInfo(PlayerInfo info)
@@ -74,7 +81,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             _eventBus.Publish(new PlayerListUpdatedEvent(GetPlayers()));
         }
 
-        private void OnPlayerList(S2CPlayerListPacket packet, NetPeer _)
+        private void OnPlayerList(S2CPlayerListPacket packet, PacketSender _)
         {
             Players.Clear();
             Players.Add(LocalPlayer.Id, LocalPlayer);
@@ -85,7 +92,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             _eventBus.Publish(new PlayerListUpdatedEvent(GetPlayers()));
         }
 
-        private void OnPlayerJoined(S2CPlayerJoinedPacket packet, NetPeer _)
+        private void OnPlayerJoined(S2CPlayerJoinedPacket packet, PacketSender _)
         {
             var playerId = packet.PlayerId;
             var playerName = packet.PlayerName;
@@ -98,7 +105,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             _eventBus.Publish(new PlayerListUpdatedEvent(GetPlayers()));
         }
 
-        private void OnPlayerLeft(S2CPlayerLeftPacket packet, NetPeer _)
+        private void OnPlayerLeft(S2CPlayerLeftPacket packet, PacketSender _)
         {
             var playerId = packet.PlayerId;
             if (Players.TryGetValue(playerId, out var player))
@@ -114,7 +121,7 @@ namespace GOILauncher.Multiplayer.Client.Services
             }
         }
 
-        private void OnIsInGameUpdate(S2CIsInGameUpdatePacket packet, NetPeer _)
+        private void OnIsInGameUpdate(S2CIsInGameUpdatePacket packet, PacketSender _)
         {
             var playerId = packet.PlayerId;
             if (Players.TryGetValue(playerId, out var player))

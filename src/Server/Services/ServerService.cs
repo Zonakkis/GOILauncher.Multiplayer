@@ -1,20 +1,27 @@
-﻿using GOILauncher.Multiplayer.Core.Data.Packets;
+﻿using Autofac;
+using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Network;
 using LiteNetLib;
 
 namespace GOILauncher.Multiplayer.Server.Services
 {
-    public class ServerService : IServerService
+    public class ServerService : IServerService, IStartable
     {
         public bool IsRunning => _networkServer.IsRunning;
         private readonly INetworkServer _networkServer;
+        private readonly IEventBus _eventBus;
 
         public ServerService(INetworkServer networkServer,
             IEventBus eventBus)
         {
             _networkServer = networkServer;
-            eventBus.Subscribe<ClientConnectedEvent>(OnClientConnected);
+            _eventBus = eventBus;
+        }
+
+        void IStartable.Start()
+        {
+            _eventBus.Subscribe<ClientConnectedEvent>(OnClientConnected);
         }
 
         public void Dispose()

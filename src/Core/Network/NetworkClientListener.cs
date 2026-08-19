@@ -9,11 +9,11 @@ namespace GOILauncher.Multiplayer.Core.Network
 {
     public class NetworkClientListener : INetEventListener
     {
-        private readonly IPacketDispatcher _dispatcher;
+        private readonly IClientPacketDispatcher _dispatcher;
         private readonly IEventBus _eventBus;
         private readonly ILogger<NetworkClientListener> _logger;
 
-        public NetworkClientListener(IPacketDispatcher dispatcher,
+        public NetworkClientListener(IClientPacketDispatcher dispatcher,
             IEventBus eventBus,
             ILogger<NetworkClientListener> logger)
         {
@@ -41,7 +41,7 @@ namespace GOILauncher.Multiplayer.Core.Network
             NetPacketReader reader,
             DeliveryMethod deliveryMethod)
         {
-            _dispatcher.Dispatch(peer, reader);
+            _dispatcher.Dispatch(new PacketSender(peer.Id), reader);
             reader.Recycle();
         }
 

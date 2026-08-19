@@ -1,8 +1,8 @@
 ﻿using Autofac;
 using GOILauncher.Multiplayer.Core;
+using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Extensions;
 using GOILauncher.Multiplayer.Server.Services;
-using GOILauncher.Multiplayer.Server.Synchronization;
 using System;
 using System.Configuration;
 using System.Threading;
@@ -21,7 +21,6 @@ namespace ConsoleServer
             using (var container = Register())
             {
                 var serverService = container.Resolve<IServerService>();
-                container.Resolve<PlayerStateRelay>();
 
                 var port = Convert.ToInt32(ConfigurationManager.AppSettings["Port"]);
                 serverService.Start(port);
@@ -46,7 +45,9 @@ namespace ConsoleServer
         {
             var builder = new ContainerBuilder();
 
-            builder.WithServer();
+            // RegisterMultiplayerCore supplies CoreManager, ILogger<> and IEventBus;
+            // WithServer only registers the server role on top of them.
+            builder.RegisterMultiplayerCore().WithServer();
 
             var container = builder.Build();
 
