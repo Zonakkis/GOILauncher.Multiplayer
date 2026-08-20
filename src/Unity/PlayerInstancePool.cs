@@ -3,6 +3,7 @@ using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Unity.Models;
 using UnityEngine;
+using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
 
 namespace GOILauncher.Multiplayer.Unity
@@ -159,6 +160,7 @@ namespace GOILauncher.Multiplayer.Unity
             {
                 instance = go.AddComponent<RemotePlayer>();
             }
+            instance.LocalPlayer = _gameManager.Player;
             go.SetActive(false);
             _all.Add(instance);
             return instance;

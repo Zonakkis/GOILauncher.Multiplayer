@@ -10,6 +10,7 @@ namespace GOILauncher.Multiplayer.Unity.Models
 
         public int Id { get; set; }
         public string Name { get; set; }
+        public Platform Platform { get; set; }
 
         protected bool TryGetStateTransforms(out Transform slider, out Transform nestedHandle)
         {
@@ -45,12 +46,14 @@ namespace GOILauncher.Multiplayer.Unity.Models
             }
             Id = info.Id;
             Name = info.Name;
+            Platform = info.Platform;
         }
 
         public virtual void Reset()
         {
             Id = 0;
             Name = null;
+            Platform = Platform.Unknown;
             _slider = null;
             _nestedHandle = null;
         }
