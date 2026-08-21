@@ -189,14 +189,14 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             Text playerNameHeader = UIFactory.CreateLabel(tableHeader, "PlayerNameHeader", "玩家", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(playerNameHeader.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
 
-            Text distanceHeader = UIFactory.CreateLabel(tableHeader, "PlayerDistanceHeader", "距离", TextAnchor.MiddleCenter);
-            UIFactory.SetLayoutElement(distanceHeader.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
-
             Text detailHeader = UIFactory.CreateLabel(tableHeader, "PlayerDetailHeader", "信息", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(detailHeader.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
             Text statusHeader = UIFactory.CreateLabel(tableHeader, "PlayerStatusHeader", "状态", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(statusHeader.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+
+            Text distanceHeader = UIFactory.CreateLabel(tableHeader, "PlayerDistanceHeader", "距离", TextAnchor.MiddleCenter);
+            UIFactory.SetLayoutElement(distanceHeader.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
 
         private PlayerRow CreatePlayerRow(int playerId)
@@ -218,14 +218,14 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             Text nameText = UIFactory.CreateLabel(row, "PlayerName", string.Empty, TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(nameText.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
 
-            Text distanceText = UIFactory.CreateLabel(row, "PlayerDistance", NoDistanceText, TextAnchor.MiddleCenter);
-            UIFactory.SetLayoutElement(distanceText.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
-
             Text detailText = UIFactory.CreateLabel(row, "PlayerDetail", string.Empty, TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(detailText.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
             Text statusText = UIFactory.CreateLabel(row, "PlayerStatus", string.Empty, TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(statusText.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+
+            Text distanceText = UIFactory.CreateLabel(row, "PlayerDistance", NoDistanceText, TextAnchor.MiddleCenter);
+            UIFactory.SetLayoutElement(distanceText.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
             return new PlayerRow
             {
