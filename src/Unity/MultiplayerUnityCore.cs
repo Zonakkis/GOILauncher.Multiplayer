@@ -4,6 +4,8 @@ using GOILauncher.Multiplayer.Client.Extensions;
 using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Extensions;
+using GOILauncher.Multiplayer.Unity.Config;
+using GOILauncher.Multiplayer.Unity.Player;
 using UnityEngine;
 using Object = UnityEngine.Object;
 

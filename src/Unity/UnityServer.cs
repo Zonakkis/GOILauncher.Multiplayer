@@ -1,4 +1,5 @@
 ﻿using GOILauncher.Multiplayer.Server.Services;
+using GOILauncher.Multiplayer.Unity.Config;
 using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Unity

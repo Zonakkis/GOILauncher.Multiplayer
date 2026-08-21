@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Unity.Models;
 
-namespace GOILauncher.Multiplayer.Unity
+namespace GOILauncher.Multiplayer.Unity.Player
 {
     public interface IPlayerManager
     {

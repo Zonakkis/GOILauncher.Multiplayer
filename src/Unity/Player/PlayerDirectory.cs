@@ -7,7 +7,7 @@ using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Unity.Models;
 
-namespace GOILauncher.Multiplayer.Unity
+namespace GOILauncher.Multiplayer.Unity.Player
 {
     public class PlayerDirectory : IPlayerDirectory, IStartable, IDisposable
     {

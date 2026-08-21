@@ -1,4 +1,4 @@
-namespace GOILauncher.Multiplayer.Unity
+namespace GOILauncher.Multiplayer.Unity.Config
 {
     /// <summary>
     /// Provides the current availability of the multiplayer module to Unity runtime services.

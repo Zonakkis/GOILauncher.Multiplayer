@@ -5,7 +5,7 @@ using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Unity.Models;
 using UnityEngine;
 
-namespace GOILauncher.Multiplayer.Unity
+namespace GOILauncher.Multiplayer.Unity.Player
 {
     /// <summary>
     /// Unity adapter for the player-state sync Module. It samples the local Player in

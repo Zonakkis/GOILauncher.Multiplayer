@@ -1,4 +1,4 @@
-namespace GOILauncher.Multiplayer.Unity
+namespace GOILauncher.Multiplayer.Unity.Config
 {
     internal sealed class AlwaysEnabledMultiplayerState : IMultiplayerState
     {

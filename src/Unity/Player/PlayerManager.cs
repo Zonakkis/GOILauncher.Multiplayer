@@ -9,7 +9,7 @@ using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Unity.Events;
 using GOILauncher.Multiplayer.Unity.Models;
 
-namespace GOILauncher.Multiplayer.Unity
+namespace GOILauncher.Multiplayer.Unity.Player
 {
     /// <summary>
     /// 只负责远端玩家的 Unity 实例生命周期。名单本身不在这里维护——身份、名字和

@@ -2,6 +2,7 @@ using System;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using GOILauncher.Multiplayer.Unity;
+using GOILauncher.Multiplayer.Unity.Config;
 
 namespace GOILauncher.Multiplayer
 {

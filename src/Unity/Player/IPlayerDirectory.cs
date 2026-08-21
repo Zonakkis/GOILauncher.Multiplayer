@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Core.Data.Models;
 
-namespace GOILauncher.Multiplayer.Unity
+namespace GOILauncher.Multiplayer.Unity.Player
 {
     /// <summary>
     /// 玩家列表 UI 的读模型：把两类互不重叠的事实组合起来，让 UI 只依赖一个接口，
