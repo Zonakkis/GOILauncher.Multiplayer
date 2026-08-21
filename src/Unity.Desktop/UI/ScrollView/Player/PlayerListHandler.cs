@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Core.Data.Models;
+using GOILauncher.Multiplayer.Unity;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
@@ -7,11 +8,28 @@ using UniverseLib.UI.Widgets;
 
 namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 {
+    /// <summary>
+    /// 玩家列表的行渲染。刷新分两种节奏，不要混在一起：
+    ///
+    /// - <see cref="SetPlayers"/> 是结构刷新，只在名单变化时调用，会增删行；
+    /// - <see cref="RefreshDistances"/> 是数值刷新，面板可见时按帧调用，只改已有行上的文本。
+    ///
+    /// 距离每帧都在变，如果沿用"清空重建全部行"的做法，按住 Tab 期间每帧都要
+    /// Destroy + Instantiate + 重建布局。
+    /// </summary>
     public class PlayerListHandler
     {
         private const int ContentPadding = 4;
         private const int RowHorizontalPadding = 6;
         private const int HeaderHorizontalPadding = ContentPadding + RowHorizontalPadding;
+        private const string NoDistanceText = "-";
+
+        // 变化小于这个值就不重写 Text：每帧写字符串会持续产生垃圾并触发布局重建。
+        private const float DistanceEpsilon = 0.05f;
+
+        private readonly Dictionary<int, PlayerRow> _rows = new Dictionary<int, PlayerRow>();
+        private readonly List<int> _staleIds = new List<int>();
+        private readonly List<PlayerInfo> _ordered = new List<PlayerInfo>();
 
         private GameObject playerListContent;
         private AutoSliderScrollbar playerListScrollbar;
@@ -54,32 +72,104 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 TextAnchor.UpperLeft);
         }
 
-        public void Update(IEnumerable<PlayerInfo> players)
+        /// <summary>
+        /// 按玩家 Id 复用已有行：只增删变化的部分，其余行原地更新文本。
+        /// </summary>
+        public void SetPlayers(IEnumerable<PlayerInfo> players, int localPlayerId)
         {
             if (playerListContent == null)
                 return;
 
-            ClearRows();
-            if (players == null)
-                return;
-
-            int rowIndex = 0;
-            foreach (PlayerInfo player in players)
+            _ordered.Clear();
+            if (players != null)
             {
-                CreatePlayerRow(player, rowIndex);
-                rowIndex++;
+                foreach (PlayerInfo player in players)
+                {
+                    if (player != null)
+                        _ordered.Add(player);
+                }
             }
+
+            // 本地玩家置顶，其余按 Id 排；否则行的先后会随字典内部顺序漂移。
+            _ordered.Sort((left, right) =>
+            {
+                bool leftIsLocal = left.Id == localPlayerId;
+                bool rightIsLocal = right.Id == localPlayerId;
+                if (leftIsLocal != rightIsLocal)
+                    return leftIsLocal ? -1 : 1;
+                return left.Id.CompareTo(right.Id);
+            });
+
+            _staleIds.Clear();
+            foreach (KeyValuePair<int, PlayerRow> pair in _rows)
+                _staleIds.Add(pair.Key);
+
+            for (int i = 0; i < _ordered.Count; i++)
+            {
+                PlayerInfo player = _ordered[i];
+                _staleIds.Remove(player.Id);
+
+                PlayerRow row;
+                if (!_rows.TryGetValue(player.Id, out row))
+                {
+                    row = CreatePlayerRow(player.Id);
+                    _rows[player.Id] = row;
+                }
+
+                row.Name.text = GetPlayerName(player);
+                row.Detail.text = player.Platform.ToString();
+                row.Status.text = player.IsInGame ? "游戏中" : "大厅";
+                row.Root.transform.SetSiblingIndex(i);
+            }
+
+            for (int i = 0; i < _staleIds.Count; i++)
+                RemoveRow(_staleIds[i]);
 
             if (playerListScrollbar != null)
                 playerListScrollbar.UpdateSliderHandle();
         }
 
-        private void ClearRows()
+        /// <summary>
+        /// 只更新距离列。没有场景实例的玩家（大厅里、实例池已满、首个状态包未到）
+        /// 显示占位符，这是正常状态而不是错误。
+        /// </summary>
+        public void RefreshDistances(IPlayerDirectory directory)
         {
-            for (int i = playerListContent.transform.childCount - 1; i >= 0; i--)
+            if (directory == null)
+                return;
+
+            foreach (KeyValuePair<int, PlayerRow> pair in _rows)
             {
-                Object.Destroy(playerListContent.transform.GetChild(i).gameObject);
+                PlayerRow row = pair.Value;
+                float meters;
+                if (!directory.TryGetDistance(pair.Key, out meters))
+                {
+                    if (row.HasDistance)
+                    {
+                        row.Distance.text = NoDistanceText;
+                        row.HasDistance = false;
+                    }
+                    continue;
+                }
+
+                if (row.HasDistance && Mathf.Abs(meters - row.LastDistance) < DistanceEpsilon)
+                    continue;
+
+                row.Distance.text = meters.ToString("0.0") + "m";
+                row.LastDistance = meters;
+                row.HasDistance = true;
             }
+        }
+
+        private void RemoveRow(int playerId)
+        {
+            PlayerRow row;
+            if (!_rows.TryGetValue(playerId, out row))
+                return;
+
+            _rows.Remove(playerId);
+            if (row.Root != null)
+                Object.Destroy(row.Root);
         }
 
         private static void CreateTableHeader(GameObject parent, Color backgroundColor)
@@ -99,6 +189,9 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             Text playerNameHeader = UIFactory.CreateLabel(tableHeader, "PlayerNameHeader", "玩家", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(playerNameHeader.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
 
+            Text distanceHeader = UIFactory.CreateLabel(tableHeader, "PlayerDistanceHeader", "距离", TextAnchor.MiddleCenter);
+            UIFactory.SetLayoutElement(distanceHeader.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+
             Text detailHeader = UIFactory.CreateLabel(tableHeader, "PlayerDetailHeader", "信息", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(detailHeader.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
@@ -106,12 +199,12 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             UIFactory.SetLayoutElement(statusHeader.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
 
-        private void CreatePlayerRow(PlayerInfo player, int rowIndex)
+        private PlayerRow CreatePlayerRow(int playerId)
         {
             GameObject row = UIFactory.CreateHorizontalGroup(
                 playerListContent,
-                "PlayerRow_" + rowIndex,
-                false,                          
+                "PlayerRow_" + playerId,
+                false,
                 false,
                 true,
                 true,
@@ -122,14 +215,26 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             UIFactory.SetLayoutElement(row, minHeight: 26, flexibleHeight: 0, flexibleWidth: 9999);
             ImageUtility.MakeTransparent(row);
 
-            Text nameText = UIFactory.CreateLabel(row, "PlayerName", GetPlayerName(player), TextAnchor.MiddleLeft);
+            Text nameText = UIFactory.CreateLabel(row, "PlayerName", string.Empty, TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(nameText.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
 
-            Text detailText = UIFactory.CreateLabel(row, "PlayerDetail", player.Platform.ToString(), TextAnchor.MiddleCenter);
+            Text distanceText = UIFactory.CreateLabel(row, "PlayerDistance", NoDistanceText, TextAnchor.MiddleCenter);
+            UIFactory.SetLayoutElement(distanceText.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+
+            Text detailText = UIFactory.CreateLabel(row, "PlayerDetail", string.Empty, TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(detailText.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
-            Text statusText = UIFactory.CreateLabel(row, "PlayerStatus", player.IsInGame ? "游戏中" : "大厅", TextAnchor.MiddleCenter);
+            Text statusText = UIFactory.CreateLabel(row, "PlayerStatus", string.Empty, TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(statusText.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+
+            return new PlayerRow
+            {
+                Root = row,
+                Name = nameText,
+                Distance = distanceText,
+                Detail = detailText,
+                Status = statusText
+            };
         }
 
         private static string GetPlayerName(PlayerInfo player)
@@ -148,6 +253,17 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 return;
 
             viewport.offsetMax = Vector2.zero;
+        }
+
+        private sealed class PlayerRow
+        {
+            public GameObject Root;
+            public Text Name;
+            public Text Distance;
+            public Text Detail;
+            public Text Status;
+            public float LastDistance;
+            public bool HasDistance;
         }
     }
 }

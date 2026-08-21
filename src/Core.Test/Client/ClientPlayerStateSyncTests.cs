@@ -1,17 +1,12 @@
-using System;
-using System.Collections.Generic;
 using Autofac;
 using FluentAssertions;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Synchronization;
-using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
-using GOILauncher.Multiplayer.Network;
 using LiteNetLib;
-using LiteNetLib.Utils;
 using Moq;
 using NUnit.Framework;
 
@@ -20,7 +15,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Client
     [TestFixture]
     public class ClientPlayerStateSyncTests
     {
-        private CapturingDispatcher _dispatcher;
+        private RecordingClientDispatcher _dispatcher;
         private FakeNetworkClient _networkClient;
         private EventBus _eventBus;
         private ClientPlayerStateSync _sync;
@@ -28,7 +23,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Client
         [SetUp]
         public void Setup()
         {
-            _dispatcher = new CapturingDispatcher();
+            _dispatcher = new RecordingClientDispatcher();
             _networkClient = new FakeNetworkClient();
             _eventBus = new EventBus(new Mock<ILogger<EventBus>>().Object);
             _sync = new ClientPlayerStateSync(_networkClient, _dispatcher, _eventBus);
@@ -71,62 +66,6 @@ namespace GOILauncher.Multiplayer.Core.Test.Client
             _dispatcher.Receive(new S2CPlayerStatePacket { PlayerId = 4, Sequence = 0 });
 
             received.Should().Be(2);
-        }
-
-        private sealed class CapturingDispatcher : IClientPacketDispatcher
-        {
-            private Action<S2CPlayerStatePacket, PacketSender> _handler;
-
-            public void RegisterStruct<TPacket>(Action<TPacket, PacketSender> onReceive)
-                where TPacket : struct, INetSerializable
-            {
-                if (typeof(TPacket) == typeof(S2CPlayerStatePacket))
-                {
-                    _handler = (Action<S2CPlayerStatePacket, PacketSender>)(object)onReceive;
-                }
-            }
-
-            public void RegisterClass<TPacket>(Action<TPacket, PacketSender> onReceive)
-                where TPacket : class, INetSerializable, new()
-            {
-            }
-
-            public void Dispatch(PacketSender sender, NetDataReader reader)
-            {
-            }
-
-            public void Receive(S2CPlayerStatePacket packet)
-            {
-                _handler(packet, default(PacketSender));
-            }
-        }
-
-        private sealed class FakeNetworkClient : INetworkClient
-        {
-            public bool IsConnected { get; set; } = true;
-            public List<SentPacket> Sent { get; } = new List<SentPacket>();
-
-            public void Connect(string host, int port) { }
-            public void Disconnect() { }
-            public void Poll() { }
-            public void Dispose() { }
-
-            public void Send(INetSerializable packet, DeliveryMethod method)
-            {
-                Sent.Add(new SentPacket(packet, method));
-            }
-        }
-
-        private sealed class SentPacket
-        {
-            public INetSerializable Packet { get; private set; }
-            public DeliveryMethod Method { get; private set; }
-
-            public SentPacket(INetSerializable packet, DeliveryMethod method)
-            {
-                Packet = packet;
-                Method = method;
-            }
         }
     }
 }

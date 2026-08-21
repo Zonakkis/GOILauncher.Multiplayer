@@ -51,6 +51,8 @@
     <Compile Include="Events\PlayerQuitGameEvent.cs" />
     <Compile Include="Events\PlayerJoinedEvent.cs" />
     <Compile Include="Events\PlayerListUpdatedEvent.cs" />
+    <Compile Include="Events\PlayerRosterReceivedEvent.cs" />
+    <Compile Include="Events\LocalPlayerReadyEvent.cs" />
     <Compile Include="Events\ServerHandshakeEvent.cs" />
     <Compile Include="Events\PlayerStateReceivedEvent.cs" />
     <Compile Include="Extensions\AutofacExtensions.cs" />

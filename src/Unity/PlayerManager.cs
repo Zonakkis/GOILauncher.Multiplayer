@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using Autofac;
 using GOILauncher.Multiplayer.Client.Events;
+using GOILauncher.Multiplayer.Client.Services;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
@@ -9,20 +11,23 @@ using GOILauncher.Multiplayer.Unity.Models;
 
 namespace GOILauncher.Multiplayer.Unity
 {
-    public class PlayerManager : IPlayerManager, IDisposable
+    /// <summary>
+    /// 只负责远端玩家的 Unity 实例生命周期。名单本身不在这里维护——身份、名字和
+    /// IsInGame 一律从 IPlayerService 读取，本类只保存"哪个玩家当前有实例"。
+    /// </summary>
+    public class PlayerManager : IPlayerManager, IStartable, IDisposable
     {
         private const int DefaultInstanceWarmUpCount = 4;
 
         private readonly IEventBus _eventBus;
         private readonly IGameManager _gameManager;
+        private readonly IPlayerService _playerService;
         private readonly IPlayerInstancePool _instancePool;
         private readonly ILogger<PlayerManager> _logger;
 
         private readonly Dictionary<int, PlayerBase> _players = new Dictionary<int, PlayerBase>();
-        private readonly Dictionary<int, PlayerInfo> _knownPlayers = new Dictionary<int, PlayerInfo>();
         private readonly List<IDisposable> _subscriptions = new List<IDisposable>();
 
-        private int _localPlayerId;
         private LocalPlayer _localPlayer;
 
         public LocalPlayer LocalPlayer
@@ -32,11 +37,13 @@ namespace GOILauncher.Multiplayer.Unity
 
         public PlayerManager(IEventBus eventBus,
             IGameManager gameManager,
+            IPlayerService playerService,
             IPlayerInstancePool instancePool,
             ILogger<PlayerManager> logger)
         {
             _eventBus = eventBus;
             _gameManager = gameManager;
+            _playerService = playerService;
             _instancePool = instancePool;
             _logger = logger;
         }
@@ -52,13 +59,16 @@ namespace GOILauncher.Multiplayer.Unity
             get { return _players.Values; }
         }
 
-        public void Init()
+        void IStartable.Start()
         {
-            _subscriptions.Add(_eventBus.Subscribe<ServerHandshakeEvent>(OnServerHandshakeEvent));
+            // 订阅的都是"发生了什么"的事件。PlayerListUpdatedEvent 只是 UI 刷新信号，
+            // 拿它驱动实例增删会让同一次变化走两条路径。
+            _subscriptions.Add(_eventBus.Subscribe<LocalPlayerReadyEvent>(OnLocalPlayerReadyEvent));
+            _subscriptions.Add(_eventBus.Subscribe<PlayerRosterReceivedEvent>(OnPlayerRosterReceivedEvent));
             _subscriptions.Add(_eventBus.Subscribe<GameStartedEvent>(OnGameStartedEvent));
             _subscriptions.Add(_eventBus.Subscribe<GameRestartedEvent>(OnGameRestartedEvent));
             _subscriptions.Add(_eventBus.Subscribe<GameQuitEvent>(OnGameQuitEvent));
-            _subscriptions.Add(_eventBus.Subscribe<PlayerListUpdatedEvent>(OnPlayerListUpdatedEvent));
+            _subscriptions.Add(_eventBus.Subscribe<PlayerJoinedEvent>(OnPlayerJoinedEvent));
             _subscriptions.Add(_eventBus.Subscribe<PlayerEnteredGameEvent>(OnPlayerEnteredGameEvent));
             _subscriptions.Add(_eventBus.Subscribe<PlayerQuitGameEvent>(OnPlayerQuitGameEvent));
             _subscriptions.Add(_eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeftEvent));
@@ -74,15 +84,32 @@ namespace GOILauncher.Multiplayer.Unity
             _subscriptions.Clear();
         }
 
-        private void OnServerHandshakeEvent(ServerHandshakeEvent e)
+        private int LocalPlayerId
         {
-            _localPlayerId = e.PlayerId;
-            _logger.Info("Handshake completed, local player id: {PlayerId}", e.PlayerId);
+            get
+            {
+                var local = _playerService.LocalPlayer;
+                return local == null ? 0 : local.Id;
+            }
+        }
+
+        private void OnLocalPlayerReadyEvent(LocalPlayerReadyEvent e)
+        {
+            _logger.Info("Handshake completed, local player id: {PlayerId}", LocalPlayerId);
 
             if (_gameManager.IsInGame)
             {
                 InitializeGamePlayers();
             }
+        }
+
+        /// <summary>
+        /// 加入一个已经有人的服务器时，这些玩家不会再产生 PlayerJoinedEvent，
+        /// 只能靠这一次名单快照补齐实例。
+        /// </summary>
+        private void OnPlayerRosterReceivedEvent(PlayerRosterReceivedEvent e)
+        {
+            SyncRemotePlayers();
         }
 
         private void OnGameStartedEvent(GameStartedEvent e)
@@ -105,36 +132,19 @@ namespace GOILauncher.Multiplayer.Unity
             _instancePool.Clear();
         }
 
-        private void OnPlayerListUpdatedEvent(PlayerListUpdatedEvent e)
+        private void OnPlayerJoinedEvent(PlayerJoinedEvent e)
         {
-            _knownPlayers.Clear();
-            foreach (var player in e.Players)
+            // PlayerService 先写名单再发事件，这里一定读得到。
+            PlayerInfo info;
+            if (_playerService.TryGetPlayer(e.PlayerId, out info))
             {
-                if (player != null)
-                {
-                    _knownPlayers[player.Id] = player;
-                }
+                EnsureRemoteInstance(info);
             }
-
-            SyncRemotePlayers();
         }
 
         private void OnPlayerEnteredGameEvent(PlayerEnteredGameEvent e)
         {
-            var info = e.Player;
-            if (info == null || info.Id == _localPlayerId || !_gameManager.IsInGame)
-            {
-                return;
-            }
-
-            PlayerBase existing;
-            if (_players.TryGetValue(info.Id, out existing))
-            {
-                existing.Name = info.Name;
-                return;
-            }
-
-            CreateInstance(info);
+            EnsureRemoteInstance(e.Player);
         }
 
         private void OnPlayerQuitGameEvent(PlayerQuitGameEvent e)
@@ -145,38 +155,18 @@ namespace GOILauncher.Multiplayer.Unity
                 return;
             }
 
-            PlayerBase player;
-            if (!_players.TryGetValue(info.Id, out player))
+            if (ReleaseRemoteInstance(info.Id))
             {
-                return;
+                _logger.Info("Player {PlayerName} ({PlayerId}) quit the game.", info.Name, info.Id);
             }
-
-            _players.Remove(info.Id);
-            var remote = player as RemotePlayer;
-            if (remote != null)
-            {
-                _instancePool.Return(remote);
-            }
-            _logger.Info("Player {PlayerName} ({PlayerId}) quit the game.", info.Name, info.Id);
         }
 
         private void OnPlayerLeftEvent(PlayerLeftEvent e)
         {
-            _knownPlayers.Remove(e.PlayerId);
-
-            PlayerBase player;
-            if (!_players.TryGetValue(e.PlayerId, out player))
+            if (ReleaseRemoteInstance(e.PlayerId))
             {
-                return;
+                _logger.Info("Player {PlayerName} ({PlayerId}) removed.", e.PlayerName, e.PlayerId);
             }
-
-            _players.Remove(e.PlayerId);
-            var remote = player as RemotePlayer;
-            if (remote != null)
-            {
-                _instancePool.Return(remote);
-            }
-            _logger.Info("Player {PlayerName} ({PlayerId}) removed.", e.PlayerName, e.PlayerId);
         }
 
         private void OnServerDisconnectedEvent(ServerDisconnectedEvent e)
@@ -184,8 +174,6 @@ namespace GOILauncher.Multiplayer.Unity
             RemoveAllRemotePlayers();
             ReleaseLocalPlayer();
             _instancePool.Clear();
-            _knownPlayers.Clear();
-            _localPlayerId = 0;
         }
 
         private void SyncRemotePlayers()
@@ -195,15 +183,19 @@ namespace GOILauncher.Multiplayer.Unity
                 return;
             }
 
-            foreach (var pair in _knownPlayers)
+            foreach (var info in _playerService.Players)
             {
-                SyncPlayer(pair.Value);
+                EnsureRemoteInstance(info);
             }
         }
 
-        private void SyncPlayer(PlayerInfo info)
+        /// <summary>
+        /// 远端玩家出现的唯一入口：名单快照、中途加入、中途进入游戏都走这里，
+        /// 避免同一段创建逻辑散在多个事件处理器里。
+        /// </summary>
+        private void EnsureRemoteInstance(PlayerInfo info)
         {
-            if (info == null || info.Id == _localPlayerId || !info.IsInGame)
+            if (info == null || info.Id == LocalPlayerId || !info.IsInGame || !_gameManager.IsInGame)
             {
                 return;
             }
@@ -215,17 +207,29 @@ namespace GOILauncher.Multiplayer.Unity
                 return;
             }
 
-            CreateInstance(info);
-        }
-
-        private void CreateInstance(PlayerInfo info)
-        {
             var instance = _instancePool.Rent(info);
             if (instance != null)
             {
                 _players[info.Id] = instance;
                 _logger.Info("Instance created for remote player {PlayerName} ({PlayerId}).", info.Name, info.Id);
             }
+        }
+
+        private bool ReleaseRemoteInstance(int playerId)
+        {
+            PlayerBase player;
+            if (!_players.TryGetValue(playerId, out player))
+            {
+                return false;
+            }
+
+            _players.Remove(playerId);
+            var remote = player as RemotePlayer;
+            if (remote != null)
+            {
+                _instancePool.Return(remote);
+            }
+            return true;
         }
 
         private void InitializeGamePlayers()
@@ -263,18 +267,24 @@ namespace GOILauncher.Multiplayer.Unity
         {
             _players.Remove(localPlayer.Id);
 
+            var localId = LocalPlayerId;
             PlayerInfo self;
-            string name = _knownPlayers.TryGetValue(_localPlayerId, out self)
+            var name = _playerService.TryGetPlayer(localId, out self) && self != null
                 ? self.Name
                 : localPlayer.Name;
-            localPlayer.Init(new PlayerInfo(_localPlayerId, name, Platform.PC, false));
+            localPlayer.Init(new PlayerInfo(localId, name, Platform.PC, false));
             _localPlayer = localPlayer;
-            _players[_localPlayerId] = localPlayer;
+            _players[localId] = localPlayer;
         }
 
         private void ReleaseLocalPlayer()
         {
-            _players.Remove(_localPlayerId);
+            // 用实例上记录的 Id 而不是当前 LocalPlayerId：断线时 PlayerService 会先把
+            // 本地身份重置为 0，那时再去查 Id 就删不掉这条记录了。
+            if (_localPlayer != null)
+            {
+                _players.Remove(_localPlayer.Id);
+            }
             _localPlayer = null;
             // 场景重载后 Unity 对象可能已销毁，但仍需清除托管引用。
         }

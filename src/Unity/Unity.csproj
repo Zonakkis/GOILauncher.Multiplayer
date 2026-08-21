@@ -65,7 +65,6 @@
     <Compile Include="Events\GameRestartedEvent.cs" />
     <Compile Include="Events\GameQuitEvent.cs" />
     <Compile Include="Events\GameStartedEvent.cs" />
-    <Compile Include="Events\PlayerListUpdatedEventArgs.cs" />
     <Compile Include="Extensions\Vector3Extensions.cs" />
     <Compile Include="Extensions\PlatformExtensions.cs" />
     <Compile Include="AlwaysEnabledMultiplayerState.cs" />
@@ -74,6 +73,8 @@
     <Compile Include="IMultiplayerState.cs" />
     <Compile Include="IGameManager.cs" />
     <Compile Include="IPlayerManager.cs" />
+    <Compile Include="IPlayerDirectory.cs" />
+    <Compile Include="PlayerDirectory.cs" />
     <Compile Include="PlayerInstancePool.cs" />
     <Compile Include="PlayerManager.cs" />
     <Compile Include="PlayerStateSynchronizer.cs" />

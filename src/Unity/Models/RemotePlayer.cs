@@ -13,6 +13,20 @@ namespace GOILauncher.Multiplayer.Unity.Models
         public GameObject LocalPlayer { get; set; }
         private Renderer[] _renderers;
 
+        /// <summary>
+        /// 到本地玩家的直线距离（米）。头顶标签和玩家列表共用这一处定义，
+        /// 换度量方式（比如改成高度差）时只改这里。
+        /// </summary>
+        public float DistanceToLocalPlayer
+        {
+            get
+            {
+                return LocalPlayer == null
+                    ? 0f
+                    : Vector3.Distance(transform.position, LocalPlayer.transform.position);
+            }
+        }
+
         private PlayerState _fromState;
         private PlayerState _targetState;
         private float _interpolationElapsed;
@@ -162,7 +176,7 @@ namespace GOILauncher.Multiplayer.Unity.Models
             var label = new GUIContent(
                 _isInCamera ? $"[{Id}][{Platform.ToReadableString()}]{Name}" :
                 $"[{Id}][{Platform.ToReadableString()}]{Name}" +
-                $"（{Vector3.Distance(transform.position, LocalPlayer.transform.position):0.0}m）");
+                $"（{DistanceToLocalPlayer:0.0}m）");
             var labelSize = _labelStyle.CalcSize(label);
             Vector2 labelScreenPosition = _camera.WorldToScreenPoint(transform.position + transform.up * 1.5f);
             labelScreenPosition.y = Screen.height - labelScreenPosition.y;

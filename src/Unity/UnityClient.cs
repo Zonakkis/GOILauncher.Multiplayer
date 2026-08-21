@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Client.Services;
 using GOILauncher.Multiplayer.Core.Data.Models;
@@ -18,7 +15,6 @@ namespace GOILauncher.Multiplayer.Unity
         private bool _initialized;
 
         public bool IsConnected => IsMultiplayerEnabled && ClientService.IsConnected;
-        public IList<PlayerInfo> Players { get; private set; } = new List<PlayerInfo>();
         public ReadOnlyCollection<Message> ChatMessages => ChatService.Messages;
         public IClientService ClientService { get; set; }
         public IPlayerService PlayerService { get; set; }
@@ -27,15 +23,12 @@ namespace GOILauncher.Multiplayer.Unity
         public IGameManager GameManager { get; set; }
         public IMultiplayerState MultiplayerState { get; set; }
 
-        public event EventHandler<PlayerListUpdatedEventArgs> PlayerListUpdated;
-
         public void Init()
         {
             if (_initialized)
                 return;
 
             _initialized = true;
-            EventBus.Subscribe<PlayerListUpdatedEvent>(OnPlayerListUpdatedEvent);
             EventBus.Subscribe<GameStartedEvent>(OnGameStartedEvent);
             EventBus.Subscribe<GameQuitEvent>(OnGameQuitEvent);
         }
@@ -72,12 +65,6 @@ namespace GOILauncher.Multiplayer.Unity
         private bool IsMultiplayerEnabled
         {
             get { return MultiplayerState == null || MultiplayerState.Enabled; }
-        }
-
-        private void OnPlayerListUpdatedEvent(PlayerListUpdatedEvent @event)
-        {
-            Players = @event.Players;
-            PlayerListUpdated?.Invoke(this, new PlayerListUpdatedEventArgs(Players));
         }
 
         private void OnGameStartedEvent(GameStartedEvent @event)

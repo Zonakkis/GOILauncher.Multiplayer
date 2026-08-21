@@ -164,7 +164,9 @@
   <ItemGroup>
     <Compile Include="Data\PacketDispatcherTests.cs" />
     <Compile Include="Data\PlayerStatePacketTests.cs" />
+    <Compile Include="Client\ClientTestDoubles.cs" />
     <Compile Include="Client\ClientPlayerStateSyncTests.cs" />
+    <Compile Include="Client\ClientPlayerServiceTests.cs" />
     <Compile Include="Server\ServerTestDoubles.cs" />
     <Compile Include="Server\PlayerStateRelayTests.cs" />
     <Compile Include="Server\ServerPlayerServiceTests.cs" />

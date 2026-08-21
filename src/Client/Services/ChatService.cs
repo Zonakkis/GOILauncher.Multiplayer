@@ -96,7 +96,7 @@ namespace GOILauncher.Multiplayer.Client.Services
         {
             var playerId = packet.PlayerId;
             var dateTime = DateTimeUtils.FromUnixTimeSeconds(packet.Timestamp);
-            if (_playerService.Players.TryGetValue(playerId, out var player))
+            if (_playerService.TryGetPlayer(playerId, out var player))
             {
                 var message = new Message(MessageType.Player, player.Name, packet.Content, dateTime);
                 AddMessage(message);
