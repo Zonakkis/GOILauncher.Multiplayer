@@ -1,0 +1,35 @@
+# UI Facade
+
+UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三个门面访问联机功能：
+
+- `MultiplayerUnityCore` — 初始化容器，取到下面两个门面；
+- `IUnityClient` — 客户端的一切；
+- `IUnityServer` — 内嵌服务端的一切。
+
+这条约束是为了让写 UI 的人只需要学三个入口，不用先读懂 `Client` / `Server` / `Unity` 三层的分工。
+
+## Rules
+
+- **UI 层向下只能依赖这三个类型。** 不要让 UI 直接依赖 `IPlayerService`、`IPlayerManager`、`IChatService`、`IEventBus` 等下层类型。
+- **新增能力挂在已有门面下面，不要新开一个根接口。** "玩家名单该由谁提供"这类问题的答案永远是 `IUnityClient`，哪怕实现要组合好几个下层服务——组合工作在 `UnityClient` 里做。
+- **`IMultiplayerState` 不算门面**（`GOILauncher.Multiplayer.Unity.Config`）。它是反方向的：UI 实现它（`MultiplayerStateCoordinator` 把 BepInEx 配置暴露出来），Unity 层调用它。反向接口不受这条约束限制。
+
+单一数据源和这条约束不冲突：单一数据源约束的是**谁能写、有没有人存副本**，不是成员声明在哪个接口上。只要门面上的成员是读透（read-through）的、不缓存，把它放在 `IUnityClient` 上和放在一个独立接口上完全等价。`UnityClient.Players` 每次枚举现场构造 `PlayerView`，名单的唯一所有者仍然是 `Client/Services/IPlayerService`。
+
+## PlayerView
+
+`GOILauncher.Multiplayer.Unity.Player.PlayerView` 是"UI 看到的一名玩家"。它只记 `Id` 和两个权威来源，每次读属性都回去取，所以可以存在列表行上跨帧复用。
+
+**派生显示值放 `PlayerView`，命令放门面。** 读的东西会随着列增长（距离，以后可能的高度差、进度、速度），每加一个就往 `IUnityClient` 上加一个方法的话，门面很快就不是"三个入口"了；命令的数量是有限的（传送、踢人），放门面上不会失控。
+
+也不要把派生值加进 `PlayerInfo`：那是协议模型（`S2CPlayerListPacket` 逐字段序列化），服务端也在用。
+
+三类事实的归属：
+
+| 事实 | 来源 | 例子 |
+|---|---|---|
+| 名单事实 | `IPlayerService`（网络权威） | `Id` / `Name` / `Platform` / `IsInGame` |
+| 实例事实 | `IPlayerManager` → `RemotePlayer`（只在场景里） | 有没有远端实例、世界坐标 |
+| 派生显示值 | 读时现算，任何地方都不存 | `Distance` |
+
+`PlayerView.Distance` 为 `null` 表示这名玩家当前没有远端实例——在大厅、实例池已满、首个状态包还没到都属于正常情况，本地玩家自己也是 `null`。这个判据同时就是"能不能传送过去"：没有实例就没有目标位置，所以传送不需要额外的成员来表达可用性。传送本身是命令，放在 `IUnityClient` 上。

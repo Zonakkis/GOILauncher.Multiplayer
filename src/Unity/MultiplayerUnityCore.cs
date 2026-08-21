@@ -39,7 +39,6 @@ namespace GOILauncher.Multiplayer.Unity
             .RegisterMultiplayerState()
             .RegisterPlayerInstancePool()
             .RegisterPlayerManager()
-            .RegisterPlayerDirectory()
             .RegisterPlayerStateSynchronizer();
 
             configure?.Invoke(builder);
@@ -119,15 +118,6 @@ namespace GOILauncher.Multiplayer.Unity
         {
             builder.RegisterType<PlayerManager>().
             As<IPlayerManager>().
-            As<IStartable>().
-            SingleInstance();
-            return builder;
-        }
-
-        private static ContainerBuilder RegisterPlayerDirectory(this ContainerBuilder builder)
-        {
-            builder.RegisterType<PlayerDirectory>().
-            As<IPlayerDirectory>().
             As<IStartable>().
             SingleInstance();
             return builder;

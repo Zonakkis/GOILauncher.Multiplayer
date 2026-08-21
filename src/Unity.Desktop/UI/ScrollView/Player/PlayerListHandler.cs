@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Unity.Player;
 using UnityEngine;
 using UnityEngine.UI;
@@ -29,7 +28,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 
         private readonly Dictionary<int, PlayerRow> _rows = new Dictionary<int, PlayerRow>();
         private readonly List<int> _staleIds = new List<int>();
-        private readonly List<PlayerInfo> _ordered = new List<PlayerInfo>();
+        private readonly List<PlayerView> _ordered = new List<PlayerView>();
 
         private GameObject playerListContent;
         private AutoSliderScrollbar playerListScrollbar;
@@ -75,7 +74,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
         /// <summary>
         /// 按玩家 Id 复用已有行：只增删变化的部分，其余行原地更新文本。
         /// </summary>
-        public void SetPlayers(IEnumerable<PlayerInfo> players, int localPlayerId)
+        public void SetPlayers(IEnumerable<PlayerView> players)
         {
             if (playerListContent == null)
                 return;
@@ -83,20 +82,15 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             _ordered.Clear();
             if (players != null)
             {
-                foreach (PlayerInfo player in players)
-                {
-                    if (player != null)
-                        _ordered.Add(player);
-                }
+                foreach (PlayerView player in players)
+                    _ordered.Add(player);
             }
 
             // 本地玩家置顶，其余按 Id 排；否则行的先后会随字典内部顺序漂移。
             _ordered.Sort((left, right) =>
             {
-                bool leftIsLocal = left.Id == localPlayerId;
-                bool rightIsLocal = right.Id == localPlayerId;
-                if (leftIsLocal != rightIsLocal)
-                    return leftIsLocal ? -1 : 1;
+                if (left.IsLocal != right.IsLocal)
+                    return left.IsLocal ? -1 : 1;
                 return left.Id.CompareTo(right.Id);
             });
 
@@ -106,7 +100,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 
             for (int i = 0; i < _ordered.Count; i++)
             {
-                PlayerInfo player = _ordered[i];
+                PlayerView player = _ordered[i];
                 _staleIds.Remove(player.Id);
 
                 PlayerRow row;
@@ -116,6 +110,8 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                     _rows[player.Id] = row;
                 }
 
+                // 行上存的是读透视图而不是快照，距离刷新时直接从它取值。
+                row.View = player;
                 row.Name.text = GetPlayerName(player);
                 row.Detail.text = player.Platform.ToString();
                 row.Status.text = player.IsInGame ? "游戏中" : "大厅";
@@ -133,16 +129,13 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
         /// 只更新距离列。没有场景实例的玩家（大厅里、实例池已满、首个状态包未到）
         /// 显示占位符，这是正常状态而不是错误。
         /// </summary>
-        public void RefreshDistances(IPlayerDirectory directory)
+        public void RefreshDistances()
         {
-            if (directory == null)
-                return;
-
             foreach (KeyValuePair<int, PlayerRow> pair in _rows)
             {
                 PlayerRow row = pair.Value;
-                float meters;
-                if (!directory.TryGetDistance(pair.Key, out meters))
+                float? distance = row.View.Distance;
+                if (!distance.HasValue)
                 {
                     if (row.HasDistance)
                     {
@@ -152,6 +145,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                     continue;
                 }
 
+                float meters = distance.Value;
                 if (row.HasDistance && Mathf.Abs(meters - row.LastDistance) < DistanceEpsilon)
                     continue;
 
@@ -237,7 +231,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             };
         }
 
-        private static string GetPlayerName(PlayerInfo player)
+        private static string GetPlayerName(PlayerView player)
         {
             return string.IsNullOrEmpty(player.Name) ? "Player " + player.Id : player.Name;
         }
@@ -262,6 +256,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             public Text Distance;
             public Text Detail;
             public Text Status;
+            public PlayerView View;
             public float LastDistance;
             public bool HasDistance;
         }

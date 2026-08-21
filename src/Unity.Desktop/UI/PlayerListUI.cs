@@ -4,7 +4,7 @@ using UniverseLib.UI;
 using UniverseLib.UI.Panels;
 using UnityEngine;
 using UnityEngine.UI;
-using GOILauncher.Multiplayer.Unity.Player;
+using GOILauncher.Multiplayer.Unity;
 
 namespace GOILauncher.Multiplayer.UI
 {
@@ -17,15 +17,15 @@ namespace GOILauncher.Multiplayer.UI
         private const float DistanceRefreshInterval = 0.1f;
 
         private readonly PlayerListHandler playerListHandler;
-        private readonly IPlayerDirectory playerDirectory;
+        private readonly IUnityClient client;
 
         private float _distanceTimer;
 
-        public PlayerListUI(UIBase owner, PlayerListHandler playerListHandler, IPlayerDirectory playerDirectory) : base(owner)
+        public PlayerListUI(UIBase owner, PlayerListHandler playerListHandler, IUnityClient client) : base(owner)
         {
             this.playerListHandler = playerListHandler;
-            this.playerDirectory = playerDirectory;
-            this.playerDirectory.RosterChanged += OnRosterChanged;
+            this.client = client;
+            this.client.PlayerListUpdated += OnPlayerListUpdated;
             ImageUtility.MakeTransparent(UIRoot);
             ImageUtility.MakeTransparent(ContentRoot);
             this.playerListHandler.Setup(ContentRoot, PanelBackgroundColor, HeaderBackgroundColor);
@@ -55,13 +55,13 @@ namespace GOILauncher.Multiplayer.UI
                 return;
 
             RefreshPlayers();
-            playerListHandler.RefreshDistances(playerDirectory);
+            playerListHandler.RefreshDistances();
             _distanceTimer = 0f;
         }
 
         public override void Update()
         {
-            if (!Enabled || playerListHandler == null || playerDirectory == null)
+            if (!Enabled || playerListHandler == null)
                 return;
 
             _distanceTimer += Time.unscaledDeltaTime;
@@ -69,22 +69,22 @@ namespace GOILauncher.Multiplayer.UI
                 return;
 
             _distanceTimer = 0f;
-            playerListHandler.RefreshDistances(playerDirectory);
+            playerListHandler.RefreshDistances();
         }
 
         public void RefreshPlayers()
         {
-            if (playerListHandler == null || playerDirectory == null)
+            if (playerListHandler == null || client == null)
                 return;
 
-            playerListHandler.SetPlayers(playerDirectory.Players, playerDirectory.LocalPlayerId);
+            playerListHandler.SetPlayers(client.Players);
         }
 
         protected override void ConstructPanelContent()
         {
         }
 
-        private void OnRosterChanged(object sender, EventArgs e)
+        private void OnPlayerListUpdated(object sender, EventArgs e)
         {
             if (!Enabled)
                 return;

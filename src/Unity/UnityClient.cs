@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Client.Services;
 using GOILauncher.Multiplayer.Core.Data.Models;
@@ -6,6 +9,7 @@ using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Unity.Config;
 using GOILauncher.Multiplayer.Unity.Events;
 using GOILauncher.Multiplayer.Unity.Extensions;
+using GOILauncher.Multiplayer.Unity.Player;
 using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Unity
@@ -22,7 +26,35 @@ namespace GOILauncher.Multiplayer.Unity
         public IChatService ChatService { get; set; }
         public IEventBus EventBus { get; set; }
         public IGameManager GameManager { get; set; }
+        public IPlayerManager PlayerManager { get; set; }
         public IMultiplayerState MultiplayerState { get; set; }
+
+        public event EventHandler PlayerListUpdated;
+
+        /// <summary>
+        /// 每次枚举都现场造 PlayerView，不留副本：名单的唯一所有者是 PlayerService。
+        /// </summary>
+        public IEnumerable<PlayerView> Players
+        {
+            get
+            {
+                foreach (PlayerInfo info in PlayerService.Players)
+                    yield return new PlayerView(info.Id, PlayerService, PlayerManager);
+            }
+        }
+
+        public bool TryGetPlayer(int playerId, out PlayerView player)
+        {
+            PlayerInfo info;
+            if (!PlayerService.TryGetPlayer(playerId, out info))
+            {
+                player = default(PlayerView);
+                return false;
+            }
+
+            player = new PlayerView(info.Id, PlayerService, PlayerManager);
+            return true;
+        }
 
         public void Init()
         {
@@ -32,6 +64,7 @@ namespace GOILauncher.Multiplayer.Unity
             _initialized = true;
             EventBus.Subscribe<GameStartedEvent>(OnGameStartedEvent);
             EventBus.Subscribe<GameQuitEvent>(OnGameQuitEvent);
+            EventBus.Subscribe<PlayerListUpdatedEvent>(OnPlayerListUpdatedEvent);
         }
 
         private void Update()
@@ -76,6 +109,13 @@ namespace GOILauncher.Multiplayer.Unity
         private void OnGameQuitEvent(GameQuitEvent @event)
         {
             PlayerService.SetIsInGame(false);
+        }
+
+        private void OnPlayerListUpdatedEvent(PlayerListUpdatedEvent @event)
+        {
+            EventHandler handler = PlayerListUpdated;
+            if (handler != null)
+                handler(this, EventArgs.Empty);
         }
     }
 }

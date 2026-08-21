@@ -73,11 +73,10 @@
     <Compile Include="Config\IMultiplayerState.cs" />
     <Compile Include="IGameManager.cs" />
     <Compile Include="Player\IPlayerManager.cs" />
-    <Compile Include="Player\IPlayerDirectory.cs" />
-    <Compile Include="Player\PlayerDirectory.cs" />
     <Compile Include="Player\PlayerInstancePool.cs" />
     <Compile Include="Player\PlayerManager.cs" />
     <Compile Include="Player\PlayerStateSynchronizer.cs" />
+    <Compile Include="Player\PlayerView.cs" />
     <Compile Include="Models\PlayerBase.cs" />
     <Compile Include="Models\LocalPlayer.cs" />
     <Compile Include="Models\RemotePlayer.cs" />

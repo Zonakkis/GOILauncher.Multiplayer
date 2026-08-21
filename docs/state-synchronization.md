@@ -72,7 +72,7 @@ Mian LateUpdate
   - `PlayerRosterReceivedEvent`：收到完整名单快照。服务端只在握手时发一次 `S2CPlayerListPacket`，所以这是加入一个已有玩家的服务器时，唯一能得知这些玩家存在的时机——他们不会再产生 `PlayerJoinedEvent`。
   - `PlayerListUpdatedEvent`：只是给 UI 的"有变化"信号，不携带名单，也不驱动实例增删。用它驱动生命周期会让同一次变化走两条路径。
 - 远端实例出现的唯一入口是 `PlayerManager.EnsureRemoteInstance`；名单快照、中途加入、中途进入游戏都走这一条。
-- Unity 层的 `IPlayerDirectory` 是 UI 读模型：把名单事实（`IPlayerService`）和实例事实（`IPlayerManager` → `RemotePlayer`）组合起来，UI 只依赖它一个，且不保存副本。距离由 `RemotePlayer.DistanceToLocalPlayer` 单点定义，头顶标签和玩家列表共用。
+- UI 通过 `IUnityClient.Players` 读名单，拿到的是 `PlayerView`：只记 `Id` 和两个权威来源（`IPlayerService` / `IPlayerManager`），每次读属性都回去取，不保存副本。距离由 `RemotePlayer.DistanceToLocalPlayer` 单点定义，头顶标签和玩家列表共用。UI 只依赖三个门面，约定见 `docs/ui-facade.md`。
 - 玩家列表 UI 分两种刷新节奏：名单变化时增删行（事件驱动），距离按帧节流刷新已有行的文本（可见时拉取）。距离每帧都在变，沿用"清空重建全部行"会在按住 Tab 期间每帧 `Destroy` + `Instantiate` + 重建布局。
 
 ## Validation Workflow
