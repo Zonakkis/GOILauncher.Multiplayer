@@ -2,12 +2,12 @@
 using BepInEx;
 using BepInEx.Logging;
 using GOILauncher.Multiplayer.UI;
-using GOILauncher.Multiplayer.UI.Components;
 using GOILauncher.Multiplayer.UI.Pages;
 using GOILauncher.Multiplayer.UI.ScrollView.Message;
 using GOILauncher.Multiplayer.UI.ScrollView.Player;
 using GOILauncher.Multiplayer.UI.Theme;
 using GOILauncher.Multiplayer.Unity;
+using GOILauncher.Multiplayer.Unity.Config;
 using NLog;
 using NLog.Targets;
 using System.Collections.Generic;

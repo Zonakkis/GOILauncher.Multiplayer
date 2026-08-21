@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Core.Data.Models;
-using GOILauncher.Multiplayer.Unity;
+using GOILauncher.Multiplayer.Unity.Player;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;

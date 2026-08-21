@@ -1,10 +1,10 @@
 using System;
 using GOILauncher.Multiplayer.UI.ScrollView.Player;
-using GOILauncher.Multiplayer.Unity;
 using UniverseLib.UI;
 using UniverseLib.UI.Panels;
 using UnityEngine;
 using UnityEngine.UI;
+using GOILauncher.Multiplayer.Unity.Player;
 
 namespace GOILauncher.Multiplayer.UI
 {

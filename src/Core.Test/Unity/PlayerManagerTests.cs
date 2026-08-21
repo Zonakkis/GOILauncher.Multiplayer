@@ -6,6 +6,7 @@ using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Unity;
+using GOILauncher.Multiplayer.Unity.Player;
 using Moq;
 using NUnit.Framework;
 
