@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer;
-using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.UI.Components;
@@ -34,7 +33,6 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private readonly IUnityClient _client;
         private readonly MultiplayerStateCoordinator _multiplayerState;
-        private readonly IEventBus _eventBus;
         private readonly ILogger<ClientPage> _logger;
         private readonly Toast _toast;
         private readonly ITheme _theme = Plugin.Theme;
@@ -56,17 +54,15 @@ namespace GOILauncher.Multiplayer.UI.Pages
         public ClientPage(
             IUnityClient unityClient,
             MultiplayerStateCoordinator multiplayerState,
-            IEventBus eventBus,
             ILogger<ClientPage> logger,
             Toast toast)
         {
             _client = unityClient;
             _multiplayerState = multiplayerState;
-            _eventBus = eventBus;
             _logger = logger;
             _toast = toast;
-            _eventBus.Subscribe<ServerConnectedEvent>(OnServerConnected);
-            _eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
+            _client.Connected += OnServerConnected;
+            _client.Disconnected += OnServerDisconnected;
             _multiplayerState.EnabledChanged += OnMultiplayerEnabledChanged;
         }
 
@@ -382,7 +378,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             }
         }
 
-        private void OnServerConnected(ServerConnectedEvent connectedEvent)
+        private void OnServerConnected()
         {
             if (!IsMultiplayerEnabled)
             {
@@ -397,7 +393,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             RefreshClientState();
         }
 
-        private void OnServerDisconnected(ServerDisconnectedEvent disconnectedEvent)
+        private void OnServerDisconnected(string reason)
         {
             bool wasConnecting = isConnecting;
             bool wasDisconnectRequested = disconnectRequested;
@@ -407,9 +403,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
             if (wasDisconnectRequested)
                 _toast.Show("\u5df2\u65ad\u5f00\u8fde\u63a5");
             else if (wasConnecting)
-                _toast.Show($"\u8fde\u63a5\u5931\u8d25: {disconnectedEvent.Reason}");
+                _toast.Show($"\u8fde\u63a5\u5931\u8d25: {reason}");
             else
-                _toast.Show($"\u8fde\u63a5\u5df2\u65ad\u5f00: {disconnectedEvent.Reason}");
+                _toast.Show($"\u8fde\u63a5\u5df2\u65ad\u5f00: {reason}");
 
             RefreshClientState();
         }

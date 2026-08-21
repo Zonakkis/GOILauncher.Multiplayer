@@ -1,4 +1,3 @@
-using System;
 using GOILauncher.Multiplayer.UI.ScrollView.Player;
 using UniverseLib.UI;
 using UniverseLib.UI.Panels;
@@ -84,7 +83,7 @@ namespace GOILauncher.Multiplayer.UI
         {
         }
 
-        private void OnPlayerListUpdated(object sender, EventArgs e)
+        private void OnPlayerListUpdated()
         {
             if (!Enabled)
                 return;

@@ -29,7 +29,10 @@ namespace GOILauncher.Multiplayer.Unity
         public IPlayerManager PlayerManager { get; set; }
         public IMultiplayerState MultiplayerState { get; set; }
 
-        public event EventHandler PlayerListUpdated;
+        public event Action Connected;
+        public event Action<string> Disconnected;
+        public event Action<Message> ChatMessageReceived;
+        public event Action PlayerListUpdated;
 
         /// <summary>
         /// 每次枚举都现场造 PlayerView，不留副本：名单的唯一所有者是 PlayerService。
@@ -65,6 +68,11 @@ namespace GOILauncher.Multiplayer.Unity
             EventBus.Subscribe<GameStartedEvent>(OnGameStartedEvent);
             EventBus.Subscribe<GameQuitEvent>(OnGameQuitEvent);
             EventBus.Subscribe<PlayerListUpdatedEvent>(OnPlayerListUpdatedEvent);
+            // 门面把下层事件转成自己的事件，UI 不需要认识 EventBus 上的事件类型，
+            // 也不会看到服务端角色的事件（两个角色共用一条总线）。
+            EventBus.Subscribe<ServerConnectedEvent>(OnServerConnectedEvent);
+            EventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnectedEvent);
+            EventBus.Subscribe<ChatMessageEvent>(OnChatMessageEvent);
         }
 
         private void Update()
@@ -113,9 +121,22 @@ namespace GOILauncher.Multiplayer.Unity
 
         private void OnPlayerListUpdatedEvent(PlayerListUpdatedEvent @event)
         {
-            EventHandler handler = PlayerListUpdated;
-            if (handler != null)
-                handler(this, EventArgs.Empty);
+            PlayerListUpdated?.Invoke();
+        }
+
+        private void OnServerConnectedEvent(ServerConnectedEvent @event)
+        {
+            Connected?.Invoke();
+        }
+
+        private void OnServerDisconnectedEvent(ServerDisconnectedEvent @event)
+        {
+            Disconnected?.Invoke(@event.Reason);
+        }
+
+        private void OnChatMessageEvent(ChatMessageEvent @event)
+        {
+            ChatMessageReceived?.Invoke(@event.Message);
         }
     }
 }

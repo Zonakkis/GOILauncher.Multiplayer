@@ -12,9 +12,38 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三�
 
 - **UI 层向下只能依赖这三个类型。** 不要让 UI 直接依赖 `IPlayerService`、`IPlayerManager`、`IChatService`、`IEventBus` 等下层类型。
 - **新增能力挂在已有门面下面，不要新开一个根接口。** "玩家名单该由谁提供"这类问题的答案永远是 `IUnityClient`，哪怕实现要组合好几个下层服务——组合工作在 `UnityClient` 里做。
+- **UI 不订阅 `IEventBus`，事件由门面转发。** 见下面 Events 一节。
 - **`IMultiplayerState` 不算门面**（`GOILauncher.Multiplayer.Unity.Config`）。它是反方向的：UI 实现它（`MultiplayerStateCoordinator` 把 BepInEx 配置暴露出来），Unity 层调用它。反向接口不受这条约束限制。
 
 单一数据源和这条约束不冲突：单一数据源约束的是**谁能写、有没有人存副本**，不是成员声明在哪个接口上。只要门面上的成员是读透（read-through）的、不缓存，把它放在 `IUnityClient` 上和放在一个独立接口上完全等价。`UnityClient.Players` 每次枚举现场构造 `PlayerView`，名单的唯一所有者仍然是 `Client/Services/IPlayerService`。
+
+## Events
+
+`IEventBus` 是下层的总线，UI 不订阅它。`UnityClient` 订阅需要的总线事件，再以自己的 `event` 转发出去：
+
+| 门面事件 | 转发自 |
+|---|---|
+| `IUnityClient.Connected` | `Core.Event.ServerConnectedEvent` |
+| `IUnityClient.Disconnected(reason)` | `Core.Event.ServerDisconnectedEvent` |
+| `IUnityClient.ChatMessageReceived(message)` | `Client.Events.ChatMessageEvent` |
+| `IUnityClient.PlayerListUpdated` | `Client.Events.PlayerListUpdatedEvent` |
+
+这样做的原因：
+
+- 客户端和服务端**共用一条 `IEventBus`**，隔离只靠事件类型名不相交维持（见 `docs/state-synchronization.md`）。UI 直接订阅总线，就得自己知道 `ServerConnectedEvent` 是"我连上了服务器"而不是"有客户端连上我了"——这正是不该让 UI 层背的知识。
+- 总线上的事件类型属于 `Core` / `Client`，UI 一订阅就得 `using` 下层命名空间，三门面的约定名存实亡。
+- 门面事件的参数按 UI 需不需要来定，不是照抄总线事件。`Disconnected` 只给 `reason`，`ChatMessageReceived` 给消息本体（见下），`PlayerListUpdated` 什么都不给——名单从 `Players` 读。
+
+签名用 `Action` / `Action<T>` 而不是 `EventHandler`：订阅方一个都没用到 `sender`，`Action` 还能让参数一致的方法直接 `+=` 上去。
+
+### ChatMessageReceived 为什么带消息本体
+
+带上 `Message` 是为了让 UI 有两条路可走：
+
+- **要完整聊天记录**：忽略参数，从 `ChatMessages` 读全量重绘。`ChatHudUI` 走这条——展示的就是全部消息，从唯一来源读比自己维护追加逻辑简单。
+- **只要特定类型的消息**：读参数的 `Type` 过滤（系统提示、私聊、队伍消息……），自攒一份记录。这条路不用每次事件都扫一遍 `ChatMessages` 去找新增的那条。
+
+名单没有"只要一部分"这种用法（UI 拿到的永远是当前快照），所以 `PlayerListUpdated` 不带参数。
 
 ## PlayerView
 

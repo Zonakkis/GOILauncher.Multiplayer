@@ -1,8 +1,5 @@
 using System;
-using GOILauncher.Multiplayer.Client;
-using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
-using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.UI.ScrollView.Message;
 using UniverseLib.UI;
 using UniverseLib.UI.Models;
@@ -26,7 +23,7 @@ namespace GOILauncher.Multiplayer.UI
         private bool isActiveMode;
         private float lastPassiveActivityTime;
 
-        public ChatHudUI(UIBase owner, MessageHandler messageHandler, IUnityClient client, IEventBus eventBus) : base(owner)
+        public ChatHudUI(UIBase owner, MessageHandler messageHandler, IUnityClient client) : base(owner)
         {
             ImageUtility.MakeTransparent(UIRoot);
             ImageUtility.MakeTransparent(ContentRoot);
@@ -38,7 +35,7 @@ namespace GOILauncher.Multiplayer.UI
             _messageHandler.MessagesUpdated += OnMessagesUpdated;
             _messageHandler.Setup(ContentRoot);
             CreateInputRow();
-            eventBus.Subscribe<ChatMessageEvent>(OnChatMessage);
+            _client.ChatMessageReceived += OnChatMessageReceived;
             RefreshMessages();
             SetActiveMode(false);
             LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
@@ -163,12 +160,13 @@ namespace GOILauncher.Multiplayer.UI
             FocusInput();
         }
 
-        private void OnChatMessage(ChatMessageEvent e)
+        private void OnChatMessageReceived(Message message)
         {
-            if (_messageHandler == null || e == null)
+            if (_messageHandler == null)
                 return;
 
-            // 事件只做通知（单条消息），全量重绘从数据源读取，避免事件携带全量列表的双通道困惑
+            // 这里用不到 message：聊天面板展示的是完整记录，直接从 ChatMessages 全量重绘。
+            // 只关心某几类消息的宿主可以反过来只读 message、自己攒一份记录。
             _messageHandler.Update(_client.ChatMessages, ShouldAutoScrollMessages());
         }
 
