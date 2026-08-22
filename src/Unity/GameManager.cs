@@ -1,4 +1,5 @@
-﻿using GOILauncher.Multiplayer.Core.Event;
+﻿using System.Collections;
+using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Unity.Events;
 using GOILauncher.Multiplayer.Unity.Models;
@@ -17,6 +18,7 @@ namespace GOILauncher.Multiplayer.Unity
         public bool IsInGame => _currentSceneName == GOIScene.Mian.ToString();
         public GameObject Player { get; private set; }
         public GameObject PlayerPrefab { get; private set; }
+        private Coroutine _refreshRoutine;
 
         public void Awake()
         {
@@ -30,8 +32,7 @@ namespace GOILauncher.Multiplayer.Unity
             // 插件可能在 Mian 已经加载完成后才初始化，此时收不到当前场景的 sceneLoaded 事件。
             if (IsInGame && Player == null)
             {
-                OnGameStarted();
-                EventBus.Publish(new GameStartedEvent());
+                BeginRefreshGameResources(false);
             }
 
             // Start 在属性注入（InjectProperties）之后执行，Logger 此时可用；Awake 里打日志会因 Logger 未注入而抛异常
@@ -51,32 +52,14 @@ namespace GOILauncher.Multiplayer.Unity
             Logger.Info("Scene loaded: {SceneName}, wasInGame: {WasInGame}, isInGame: {IsInGame}", scene.name, wasInGame, IsInGame);
             if (IsInGame)
             {
-                if (!wasInGame)
-                {
-                    OnGameStarted();
-                    EventBus.Publish(new GameStartedEvent());
-                }
-                else
-                {
-                    OnGameRestarted();
-                    EventBus.Publish(new GameRestartedEvent());
-                }
+                BeginRefreshGameResources(wasInGame);
             }
             else if (wasInGame)
             {
+                StopRefreshGameResources();
                 OnGameQuit();
                 EventBus.Publish(new GameQuitEvent());
             }
-        }
-
-        private void OnGameStarted()
-        {
-            RefreshGameResources();
-        }
-
-        private void OnGameRestarted()
-        {
-            RefreshGameResources();
         }
 
         private void OnGameQuit()
@@ -84,10 +67,45 @@ namespace GOILauncher.Multiplayer.Unity
             Player = null;
         }
 
-        private void RefreshGameResources()
+        /// <summary>
+        /// 刷新游戏资源，并把 PlayerPrefab 的公布和进入游戏事件推迟一帧。
+        /// Destroy 组件是延迟到本帧末才真正生效的，同一帧就把模板交出去的话，
+        /// PlayerInstancePool 预热克隆到的还是没删干净的副本（进游戏看着像只是被禁用），
+        /// 所以要等一帧让 Destroy 落地后再放出模板、广播事件。
+        /// </summary>
+        private void BeginRefreshGameResources(bool wasInGame)
+        {
+            StopRefreshGameResources();
+            _refreshRoutine = StartCoroutine(RefreshGameResources(wasInGame));
+        }
+
+        private void StopRefreshGameResources()
+        {
+            if (_refreshRoutine != null)
+            {
+                StopCoroutine(_refreshRoutine);
+                _refreshRoutine = null;
+            }
+        }
+
+        private IEnumerator RefreshGameResources(bool wasInGame)
         {
             Player = GameObject.Find("Player");
-            PlayerPrefab = CreatePlayerPrefab();
+            var playerPrefab = CreatePlayerPrefab();
+
+            // 等一帧，让 CreatePlayerPrefab 里排队的 Destroy 在帧末真正执行完
+            yield return null;
+
+            _refreshRoutine = null;
+            PlayerPrefab = playerPrefab;
+            if (wasInGame)
+            {
+                EventBus.Publish(new GameRestartedEvent());
+            }
+            else
+            {
+                EventBus.Publish(new GameStartedEvent());
+            }
         }
 
         private GameObject CreatePlayerPrefab()
