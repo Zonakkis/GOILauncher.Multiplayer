@@ -25,6 +25,8 @@ namespace GOILauncher.Multiplayer.UI
             this.playerListHandler = playerListHandler;
             this.client = client;
             this.client.PlayerListUpdated += OnPlayerListUpdated;
+            // 行上的按钮只发 Id，接到门面上这一步由这里做：PlayerListHandler 因此不用认识 IUnityClient。
+            this.playerListHandler.TeleportRequested += this.client.TeleportTo;
             ImageUtility.MakeTransparent(UIRoot);
             ImageUtility.MakeTransparent(ContentRoot);
             this.playerListHandler.Setup(ContentRoot, PanelBackgroundColor, HeaderBackgroundColor);
@@ -34,7 +36,9 @@ namespace GOILauncher.Multiplayer.UI
 
         public override string Name => "GOILauncher.PlayerList";
 
-        public override int MinWidth => 320;
+        // 够放下"玩家 / 信息 / 状态 / 距离 / 操作"五列：后四列是固定宽度，
+        // 加起来已经占掉约 330，剩下的才归玩家名那列（flexibleWidth）。
+        public override int MinWidth => 420;
 
         public override int MinHeight => 180;
 

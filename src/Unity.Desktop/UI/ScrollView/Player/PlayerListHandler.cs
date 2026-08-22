@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Unity.Player;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
+using UniverseLib.UI.Models;
 using UniverseLib.UI.Widgets;
 
 namespace GOILauncher.Multiplayer.UI.ScrollView.Player
@@ -15,6 +17,9 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
     ///
     /// 距离每帧都在变，如果沿用"清空重建全部行"的做法，按住 Tab 期间每帧都要
     /// Destroy + Instantiate + 重建布局。
+    ///
+    /// 传送按钮不直接调门面：点击只发 <see cref="TeleportRequested"/>，由 PlayerListUI
+    /// 接到 IUnityClient.TeleportTo 上，本类因此仍然只是个视图，不认识任何门面类型。
     /// </summary>
     public class PlayerListHandler
     {
@@ -32,6 +37,11 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 
         private GameObject playerListContent;
         private AutoSliderScrollbar playerListScrollbar;
+
+        /// <summary>
+        /// 某一行的传送按钮被点击，参数是那名玩家的 Id。
+        /// </summary>
+        public event Action<int> TeleportRequested;
 
         public void Setup(GameObject parent, Color backgroundColor, Color headerBackgroundColor)
         {
@@ -115,6 +125,8 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 row.Name.text = GetPlayerName(player);
                 row.Detail.text = player.Platform.ToString();
                 row.Status.text = player.IsInGame ? "游戏中" : "大厅";
+                // 自己那行不给传送按钮；外层格子留着，所以列不会错位（见 CreatePlayerRow）。
+                row.Teleport.Component.gameObject.SetActive(!player.IsLocal);
                 row.Root.transform.SetSiblingIndex(i);
             }
 
@@ -126,8 +138,8 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
         }
 
         /// <summary>
-        /// 只更新距离列。没有场景实例的玩家（大厅里、实例池已满、首个状态包未到）
-        /// 显示占位符，这是正常状态而不是错误。
+        /// 只更新距离列和传送按钮的可用性。没有场景实例的玩家（大厅里、实例池已满、
+        /// 首个状态包未到）显示占位符，这是正常状态而不是错误。
         /// </summary>
         public void RefreshDistances()
         {
@@ -135,6 +147,11 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             {
                 PlayerRow row = pair.Value;
                 float? distance = row.View.Distance;
+
+                // 有距离 == 有远端实例 == 能传送过去，判据只此一处（见 docs/ui-facade.md）。
+                // 自己那行的按钮由 SetPlayers 直接隐藏，这里写不写它都无所谓。
+                SetTeleportEnabled(row, distance.HasValue);
+
                 if (!distance.HasValue)
                 {
                     if (row.HasDistance)
@@ -163,7 +180,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 
             _rows.Remove(playerId);
             if (row.Root != null)
-                Object.Destroy(row.Root);
+                UnityEngine.Object.Destroy(row.Root);
         }
 
         private static void CreateTableHeader(GameObject parent, Color backgroundColor)
@@ -191,6 +208,11 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 
             Text distanceHeader = UIFactory.CreateLabel(tableHeader, "PlayerDistanceHeader", "距离", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(distanceHeader.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+
+            // 这一格不写字（"操作"没什么信息量），但格子必须留着：撤掉它表头就少一列，
+            // 玩家名那列的 flexibleWidth 会吃掉空位，表头和行就对不齐了。
+            Text actionHeader = UIFactory.CreateLabel(tableHeader, "PlayerActionHeader", string.Empty, TextAnchor.MiddleCenter);
+            UIFactory.SetLayoutElement(actionHeader.gameObject, minWidth: 56, preferredWidth: 64, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
         }
 
         private PlayerRow CreatePlayerRow(int playerId)
@@ -221,14 +243,52 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             Text distanceText = UIFactory.CreateLabel(row, "PlayerDistance", NoDistanceText, TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(distanceText.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
+            // 按钮外面套一格固定宽度的容器：自己那行会把按钮整个隐藏，但格子得留着，
+            // 否则那一行少一列，玩家名那列的 flexibleWidth 会吃掉空位，后面几列就和别人对不齐了。
+            GameObject actionCell = UIFactory.CreateHorizontalGroup(
+                row,
+                "PlayerActionCell",
+                true,
+                true,
+                true,
+                true,
+                0,
+                new Vector4(0, 0, 0, 0),
+                Color.clear);
+            UIFactory.SetLayoutElement(actionCell, minWidth: 56, preferredWidth: 64, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+            ImageUtility.MakeTransparent(actionCell);
+
+            ButtonRef teleportButton = UIFactory.CreateButton(actionCell, "PlayerTeleport", "传送");
+            UIFactory.SetLayoutElement(teleportButton.Component.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
+            teleportButton.Component.interactable = false;
+            // 行按 Id 建、也按 Id 销毁，所以闭包捕获 playerId 不会串到别人身上。
+            teleportButton.OnClick += () => OnTeleportClicked(playerId);
+
             return new PlayerRow
             {
                 Root = row,
                 Name = nameText,
                 Distance = distanceText,
                 Detail = detailText,
-                Status = statusText
+                Status = statusText,
+                Teleport = teleportButton
             };
+        }
+
+        private void OnTeleportClicked(int playerId)
+        {
+            TeleportRequested?.Invoke(playerId);
+        }
+
+        private static void SetTeleportEnabled(PlayerRow row, bool enabled)
+        {
+            // 和 DistanceEpsilon 同一个理由：写 interactable 会触发按钮的状态过渡，
+            // 10 Hz 无条件重写没必要。
+            if (row.CanTeleport == enabled)
+                return;
+
+            row.CanTeleport = enabled;
+            row.Teleport.Component.interactable = enabled;
         }
 
         private static string GetPlayerName(PlayerView player)
@@ -256,9 +316,11 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             public Text Distance;
             public Text Detail;
             public Text Status;
+            public ButtonRef Teleport;
             public PlayerView View;
             public float LastDistance;
             public bool HasDistance;
+            public bool CanTeleport;
         }
     }
 }

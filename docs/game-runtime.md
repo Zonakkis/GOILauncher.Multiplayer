@@ -38,6 +38,37 @@ Player
 
 更深层级和对象上的组件暂未完整记录。后续只在它们与多人状态、视觉表现、物理行为或生命周期有关时补充。
 
+## Player Prefab
+
+远端实例的模板 `PlayerPrefab` 是 `GameManager.CreatePlayerPrefab` 对场景里的 `Player` 做 `Instantiate` 得到的克隆，创建后 `SetActive(false)`。克隆上被移除或改写的部分：
+
+- 删组件：`Saviour`、`Screener`、`MipmapBias`、`PlayerControl`、`PotSounds`、`PlayerSounds`、`HammerCollisions`、所有 `Camera`、所有 `Collider2D`；
+- 删物体：`PotCollider/Sensor`；
+- 所有 `Rigidbody2D` 改为 `isKinematic = true`。
+
+**没有任何 `Rigidbody2D` 组件被删除。** 因此克隆和本地 `Player` 的刚体集合一致，`GetComponentsInChildren<Rigidbody2D>()` 在两边返回相同长度、相同顺序——`LocalPlayer.TeleportTo` 靠下标逐个配对两边的刚体，依赖的就是这一点（实机已验证长度一致）。以后要在 `CreatePlayerPrefab` 里再删物体、删刚体，或往本地 `Player` 上加带刚体的子物体，必须同时改 `TeleportTo` 的配对方式，否则那里的长度检查会让传送静默失效。
+
+这些组件只在克隆上被删掉，场景里真正的 `Player` 一直保留着它们（`Saviour` 等在本地玩家上始终存在）。
+
+## Local Player Component Lifecycle
+
+`LocalPlayer` 组件每次进入游戏都是新的，它上面的缓存字段不会指向上一个场景的对象：
+
+- `GameStartedEvent` 和 `GameRestartedEvent` 只从 `GameManager.OnSceneLoaded`（以及插件在 `Mian` 中途初始化时 `GameManager.Start` 的那次补发）发布，所以"游戏内重开"必然是一次真正的场景重载，不存在原地重置的路径。
+- 两处发布之前都先跑 `RefreshGameResources()`，`GameManager.Player` 因此一定已经指向新场景的 `Player`。
+- `PlayerManager.OnGameRestartedEvent` 先 `ReleaseLocalPlayer()` 把引用清掉，再 `EnsureLocalPlayer()` 在新的 `Player` 上 `AddComponent<LocalPlayer>()`。
+
+结论：`LocalPlayer` 上按需缓存 Unity 对象（`Saviour`、`Rigidbody2D[]`）不需要失效逻辑，也不需要防"缓存指向已销毁对象"的空检查——那种检查在这里是恒不成立的死代码。唯一复用已有组件的路径是同一场景内断线重连（`EnsureLocalPlayer` 的 `GetComponent<LocalPlayer>()` 分支），那时缓存指向的还是同一个场景里的对象，同样有效。
+
+## Teleport
+
+`LocalPlayer.TeleportTo(Transform target)` 把本地玩家搬到目标玩家的远端实例处。除刚体配对（见 Player Prefab）外，它还用到本地 `Player` 上的 `Saviour`：
+
+- `Saviour.pc.fakeCursor` 与 `Saviour.hammer` 是两个 `Transform`，搬完后把前者的位置对齐到后者；
+- `Saviour.slider`、`Saviour.hinge`、`Saviour.hubJoint` 是三个带 `JointMotor2D motor` 的关节，可用于把马达清零。
+
+搬运期间物理模拟被关掉再恢复。`Physics2D.autoSimulation`（旧版 Unity）和 `Physics2D.simulationMode`（新版 Unity）是同一件事的两种 API，游戏可能是任一版本，所以由 `Unity/Helpers/Physics2DHelper` 用反射二选一；只有这两种情况。
+
 ## State Synchronization Runtime Behavior
 
 - `LocalPlayer` 挂载在 `Player` 根对象上，从 `Player`、`Player/Hub/Slider` 和 `Player/Hub/Slider/Handle` 读取世界位置与世界旋转。
@@ -58,7 +89,8 @@ Player
 - F2 始终切换 `MultiplayerUI`（“连接配置”）窗口，不受联机开关影响，因此关闭联机后仍可进入“设置”页重新启用。
 - 关闭联机开关时，协调器立即请求 `IUnityClient.Disconnect()` 和 `IUnityServer.Stop()`；Unity 客户端和服务端适配器也会拒绝后续的连接或启动请求。
 - 关闭联机时 `ChatHudUI` 被隐藏并退出输入激活状态，`PlayerListUI` 被隐藏，Plugin 不再响应 Tab 来显示玩家列表。
-- Tab 玩家列表的列为：玩家 / 信息 / 状态 / 距离。距离读的是远端实例到本地玩家的直线距离，玩家没有场景实例时（在大厅、实例池已满、首个状态包未到）显示 `-`。
+- Tab 玩家列表的列为：玩家 / 信息 / 状态 / 距离 / 操作。距离读的是远端实例到本地玩家的直线距离，玩家没有场景实例时（在大厅、实例池已满、首个状态包未到）显示 `-`。
+- 操作列是每行的“传送”按钮，只在该玩家有距离（即有远端实例）时可点；本地玩家自己那行不显示按钮，但格子留着以保持列对齐。
 - 重新启用联机时聊天窗口恢复为可用面板；客户端连接按钮、服务端启动按钮和对应输入控件会在页面激活或状态变更时刷新，Tab 玩家列表在下一次按键时恢复。
 
 ## Documentation Rules

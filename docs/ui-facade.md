@@ -61,4 +61,8 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三�
 | 实例事实 | `IPlayerManager` → `RemotePlayer`（只在场景里） | 有没有远端实例、世界坐标 |
 | 派生显示值 | 读时现算，任何地方都不存 | `Distance` |
 
-`PlayerView.Distance` 为 `null` 表示这名玩家当前没有远端实例——在大厅、实例池已满、首个状态包还没到都属于正常情况，本地玩家自己也是 `null`。这个判据同时就是"能不能传送过去"：没有实例就没有目标位置，所以传送不需要额外的成员来表达可用性。传送本身是命令，放在 `IUnityClient` 上。
+`PlayerView.Distance` 为 `null` 表示这名玩家当前没有远端实例——在大厅、实例池已满、首个状态包还没到都属于正常情况，本地玩家自己也是 `null`。这个判据同时就是"能不能传送过去"：没有实例就没有目标位置，所以 `IUnityClient.TeleportTo(playerId)` 不用再配一个 `CanTeleportTo`，UI 直接按 `Distance.HasValue` 决定按钮的可用性。传送本身是命令，所以放门面上而不是 `PlayerView` 上。
+
+传送这条链是：`IUnityClient.TeleportTo(playerId)` → `UnityClient` 从 `IPlayerManager` 取出本地玩家和目标实例 → `LocalPlayer.TeleportTo(Transform target)`。搬运逻辑落在最后一环，那里本地玩家（`this`）和目标（`target`）两边的层级都在手上——它靠逐个配对两边的 `Rigidbody2D` 来搬，所以依赖"远端实例和本地玩家出自同一个 `PlayerPrefab`、刚体结构一致"这个前提（见 `docs/game-runtime.md`）。
+
+UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerListHandler.TeleportRequested(playerId)`，由 `PlayerListUI`（它本来就持有 `IUnityClient`）接到 `TeleportTo` 上。行渲染类因此仍然只认识 `PlayerView`，不引用任何门面类型——**纯视图类不必自己去拿门面，让持有门面的那一层把事件接过去**，这条对以后的踢人、私聊按钮同样适用。

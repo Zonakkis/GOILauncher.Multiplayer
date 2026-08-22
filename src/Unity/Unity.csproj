@@ -87,6 +87,7 @@
     <Compile Include="UnityClient.cs" />
     <Compile Include="MultiplayerUnityCore.cs" />
     <Compile Include="UnityServer.cs" />
+    <Compile Include="Helpers\Physics2DHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Client\Client.csproj">

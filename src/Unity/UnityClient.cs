@@ -9,6 +9,7 @@ using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Unity.Config;
 using GOILauncher.Multiplayer.Unity.Events;
 using GOILauncher.Multiplayer.Unity.Extensions;
+using GOILauncher.Multiplayer.Unity.Models;
 using GOILauncher.Multiplayer.Unity.Player;
 using UnityEngine;
 
@@ -102,6 +103,25 @@ namespace GOILauncher.Multiplayer.Unity
                 return;
 
             ChatService.SendMessage(type, message);
+        }
+
+        /// <summary>
+        /// 门面只做取件：拿到本地玩家和目标实例两个对象，具体怎么搬在 LocalPlayer.TeleportTo。
+        /// </summary>
+        public void TeleportTo(int playerId)
+        {
+            if (!IsMultiplayerEnabled)
+                return;
+
+            // 本地不在游戏里时 PlayerManager.LocalPlayer 为 null；
+            // 传自己的 Id 时 GetPlayer 返回的是 LocalPlayer，as RemotePlayer 自然落空，
+            // 所以"能不能传"这两种情况都不用单独判。
+            LocalPlayer local = PlayerManager.LocalPlayer;
+            RemotePlayer target = PlayerManager.GetPlayer(playerId) as RemotePlayer;
+            if (local == null || target == null)
+                return;
+
+            local.TeleportTo(target.transform);
         }
 
         private bool IsMultiplayerEnabled

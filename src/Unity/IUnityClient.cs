@@ -51,5 +51,12 @@ namespace GOILauncher.Multiplayer.Unity
         void Connect(string host, int port, string playerName);
         void Disconnect();
         void SendMessage(MessageType type, string message);
+
+        /// <summary>
+        /// 把本地玩家传送到指定玩家处。对方当前没有远端实例（在大厅、实例池已满、
+        /// 本地自己不在游戏里）或传的是自己的 Id 时什么都不做。
+        /// PlayerView.Distance 有值即"能传送过去"，UI 按它决定按钮的可用性。
+        /// </summary>
+        void TeleportTo(int playerId);
     }
 }

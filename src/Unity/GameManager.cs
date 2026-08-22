@@ -111,6 +111,8 @@ namespace GOILauncher.Multiplayer.Unity
             Destroy(playerPrefab.transform.Find("PotCollider/Sensor").gameObject);
             foreach (var camera in playerPrefab.GetComponentsInChildren<Camera>())
                 Destroy(camera);
+            // 刚体只改成运动学，一个都不能删：LocalPlayer.TeleportTo 靠下标配对本地玩家和
+            // 远端实例两边的 Rigidbody2D，删掉任何一个（或删掉带刚体的子物体）传送就会静默失效。
             foreach (var rigidBody2D in playerPrefab.GetComponentsInChildren<Rigidbody2D>())
                 rigidBody2D.isKinematic = true;
             foreach (var collider in playerPrefab.GetComponentsInChildren<Collider2D>())
