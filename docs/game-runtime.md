@@ -19,24 +19,46 @@ Loader -> Mian -> Reward Loader / Reward Loader Offline -> Loader
 
 玩家实体对应的 Unity 根对象名为 `Player`。
 
-已确认的直接子物体：
+已确认的直接子物体，以及锤子那条链的完整层级：
 
 ```text
 Player
-|-- handle
+|-- handle                      (Camera, Directional Light, Mesh)
 |-- Hub
 |   `-- Slider
-|       `-- Handle
-|-- Pot
-|-- dude
+|       |-- Handle
+|       |   |-- PoleMiddle
+|       |   |   |-- climbinghammer_remap -> RetopoGroup1 -> Shadow
+|       |   |   `-- Tip          (Sparks, Debris, Dust)
+|       |   |-- GripCenterRight -> RightTarget -> GhostRightHand (inactive)
+|       |   `-- GripCenterLeft  -> LeftTarget  -> GhostLeftHand  (inactive)
+|       `-- Ghostpoles (inactive)  八个方向，每个下面若干 inactive 的 ghost handle
+|-- Pot                         (Camera, Directional Light, Mesh -> Reflection Probe, PotSplash)
+|-- dude                        (Body, Camera, Eyelashes, Directional Light, Eyes,
+|                                mixamorig:Hips 整套骨架, leftCenter, rightCenter, LookTarget)
 `-- PotCollider
+    |-- Sensor (inactive)
+    `-- Sides
 ```
 
-`Hub/Slider` 对应当前 `PlayerState` 中的 `SliderPosition` 和 `SliderRotation` 所描述的对象。
-`Hub/Slider/Handle` 对应当前 `PlayerState` 中的 `HandlePosition` 和 `HandleRotation` 所描述的对象。
 `Player/handle` 是锤柄，与 `Player/Hub/Slider/Handle` 是两个不同对象，必须使用完整路径和准确大小写区分。
 
-更深层级和对象上的组件暂未完整记录。后续只在它们与多人状态、视觉表现、物理行为或生命周期有关时补充。
+更深层级的组件暂未完整记录。后续只在它们与多人状态、视觉表现、物理行为或生命周期有关时补充。
+
+### Rigidbody2D 集合与顺序
+
+`Player` 子树里恰好有 6 个 `Rigidbody2D`，`GetComponentsInChildren<Rigidbody2D>()` 返回的顺序是（已实机确认）：
+
+| 下标 | 刚体 | 相对 `Player` 根的路径 |
+| --- | --- | --- |
+| 0 | `Player` | （根自己） |
+| 1 | `Hub` | `Hub` |
+| 2 | `Slider` | `Hub/Slider` |
+| 3 | `Handle` | `Hub/Slider/Handle` |
+| 4 | `PoleMiddle` | `Hub/Slider/Handle/PoleMiddle` |
+| 5 | `Tip` | `Hub/Slider/Handle/PoleMiddle/Tip` |
+
+`Player` 的其他直接子物体（`handle`、`Pot`、`dude`、`PotCollider`）都不带刚体。
 
 ## Player Prefab
 
@@ -46,7 +68,7 @@ Player
 - 删物体：`PotCollider/Sensor`；
 - 所有 `Rigidbody2D` 改为 `isKinematic = true`。
 
-**没有任何 `Rigidbody2D` 组件被删除。** 因此克隆和本地 `Player` 的刚体集合一致，`GetComponentsInChildren<Rigidbody2D>()` 在两边返回相同长度、相同顺序——`LocalPlayer.TeleportTo` 靠下标逐个配对两边的刚体，依赖的就是这一点（实机已验证长度一致）。以后要在 `CreatePlayerPrefab` 里再删物体、删刚体，或往本地 `Player` 上加带刚体的子物体，必须同时改 `TeleportTo` 的配对方式，否则那里的长度检查会让传送静默失效。
+**没有任何 `Rigidbody2D` 组件被删除。** 因此克隆和本地 `Player` 的刚体集合一致，`GetComponentsInChildren<Rigidbody2D>()` 在两边返回相同长度、相同顺序——`LocalPlayer.TeleportTo` 靠下标逐个配对两边的刚体，依赖的就是这一点（实机已验证长度一致，且打印顺序确为 `Player → Hub → Slider → Handle → PoleMiddle → Tip`）。以后要在 `CreatePlayerPrefab` 里再删物体、删刚体，或往本地 `Player` 上加带刚体的子物体，必须同时改 `TeleportTo` 的配对方式，否则那里的长度检查会让传送静默失效。
 
 这些组件只在克隆上被删掉，场景里真正的 `Player` 一直保留着它们（`Saviour` 等在本地玩家上始终存在）。
 
