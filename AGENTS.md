@@ -7,6 +7,11 @@ Use `scripts\build.ps1` for all repository builds and test runs. Do not invoke `
 - Build: `.\scripts\build.ps1 -Configuration Debug -SkipRestore`
 - Build and test: `.\scripts\build.ps1 -Configuration Debug -SkipRestore -RunTests`
 
+`-RunTests` is a hard gate: missing test tooling, a missing test assembly, or a run that
+executed zero tests all fail the build. If it reports missing NuGet packages, re-run without
+`-SkipRestore`. Test projects are discovered by convention — a directory ending in `.Test` or
+`.Tests` under `src\` or `tests\`, whose assembly name matches the directory name.
+
 ## Collaboration Guidelines
 
 When encountering something you do not understand or cannot resolve, ask clarifying questions instead of repeatedly guessing and experimenting.
