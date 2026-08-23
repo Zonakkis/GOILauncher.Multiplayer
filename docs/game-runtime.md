@@ -112,7 +112,18 @@ Player
 - 落盘由 `ISettingsStore` 承担，当前唯一实现是 `FileSettingsStore`，写到 `Application.persistentDataPath` 下的 `GOILauncher.Multiplayer.cfg`。这个目录三个平台都可写且不需要权限：Windows 在 `%USERPROFILE%\AppData\LocalLow\<company>\<product>`，Android 在应用私有目录，iOS 在沙盒内。
 - 文件是 `key=value` 纯文本，按键名 Ordinal 排序后整体重写，所以行序稳定、可 diff；`#` 开头是注释，但手写的注释在下次保存时不会保留。值里的 `\`、换行和回车做转义。
 - 每次 `SetXxx` 立即写盘（写临时文件再 `File.Move` 覆盖），崩溃不会丢已经改过的设置。文件缺失、读不出来或某行格式不对都只记日志并退回默认值，不阻塞插件加载。
-- 目前只有一项：`Multiplayer.Enabled`，默认 `true`。
+- 目前有四项：
+
+  | 键 | 类型 | 默认 | 说明 |
+  |---|---|---|---|
+  | `Multiplayer.Enabled` | bool | `true` | 联机总开关，见下面“关闭联机保证什么” |
+  | `Multiplayer.Client.DefaultHost` | string | `127.0.0.1` | 客户端页“服务器IP”输入框的初值 |
+  | `Multiplayer.Client.DefaultPort` | int | `9027` | 客户端页“端口”输入框的初值 |
+  | `Multiplayer.Server.DefaultPort` | int | `9027` | 服务端页“启动端口”输入框的初值 |
+
+- 后三项存的是**默认值，不回写**：客户端页 / 服务端页拿它们填输入框初值，玩家在那儿临时改成别的地址只影响那一次连接。设置页是唯一的写入方。改了默认值时，处于空闲状态（未连接 / 未开服）的页面输入框会立刻跟着更新；连接中或已开服时不动，那时输入框显示的是这条连接的实际目标。
+- 端口的合法范围是 `MultiplayerSettings.MinPort`–`MaxPort`（1–65535），判据是 `MultiplayerSettings.IsValidPort`，读侧和 UI 校验共用它，所以 UI 不会写进一个下次加载会被判为非法的值。端口的落盘和解析都走 `CultureInfo.InvariantCulture`：文件是机器写的，换个系统区域也要读回同一个值。
+- 读到解析不出来或越界的端口、空白的主机名，都只 `Warn` 一行并退回默认值；`SetClientPort` / `SetServerPort` 收到越界值则抛 `ArgumentOutOfRangeException`——校验玩家输入是 UI 的事，走到这里就是 bug。`SetClientHost` 做 trim，空白按“清空即恢复默认”处理。
 - BepInEx 的 `ConfigFile` 不再参与联机设置——它只存在于 PC 宿主，而这套设置要给三个平台共用。
 
 ### 关闭联机保证什么
@@ -138,6 +149,7 @@ Player
 ## Multiplayer UI Lifecycle
 
 - 联机开关是 `MultiplayerSettings.Enabled`，`SettingsPage` 的勾选框读写它，`Plugin`、`ClientPage`、`ServerPage` 订阅 `EnabledChanged` 刷新自己。
+- “设置”页除了开关还管三项默认地址，按“客户端设置”（默认主机 + 默认端口同一行）和“服务端设置”（默认端口）两段排：`ClientPage` 和 `ServerPage` 从它们取输入框初值，并订阅对应的变更事件，在空闲时跟着更新（见上面 Multiplayer Settings）。这三个输入框不随联机开关变灰——关着联机也要能先把默认值配好。落盘发生在编辑结束（`InputField.onEndEdit`）和离开设置页时，不是每敲一个字符就写一次：每次写都要整份重写配置文件。端口填了非法值会弹提示并把输入框回填成当前设置值；主机清空则归一化回默认值。
 - F2 始终切换 `MultiplayerUI`（“连接配置”）窗口，不受联机开关影响，因此关闭联机后仍可进入“设置”页重新启用。
 - 关闭联机开关时，`MultiplayerLifecycleController`（`src/Unity`）立即请求 `IUnityClient.Disconnect()` 和 `IUnityServer.Stop()`；Unity 客户端和服务端适配器也会拒绝后续的连接或启动请求。它在容器初始化末尾被显式解析一次，构造时就按持久化的值补做一遍，所以上次退出时是关闭状态的话，这次启动不会先起服务再关掉。玩家实例那一半不在它身上，见上面“关闭联机保证什么”。
 - 因为关开关也算一次主动断开，`ClientPage` 的提示按当前开关状态分支（“联机已关闭，连接已断开”），不靠标志位——设置在通知任何监听者之前就已写好，谁先收到通知都不影响读到的值。

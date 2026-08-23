@@ -19,8 +19,6 @@ namespace GOILauncher.Multiplayer.UI.Pages
     public class ClientPage : IPage
     {
         private const string DefaultPlayerName = "\u73a9\u5bb6";
-        private const string DefaultServerHost = "127.0.0.1";
-        private const int DefaultServerPort = 9027;
 
         private static readonly RoomListItemViewData[] MockRoomItems = new RoomListItemViewData[]
         {
@@ -49,8 +47,8 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private ButtonRef refreshButton;
         private bool isConnecting;
         private bool disconnectRequested;
-        private string lastServerHost = DefaultServerHost;
-        private int lastServerPort = DefaultServerPort;
+        private string lastServerHost;
+        private int lastServerPort;
 
         public ClientPage(
             IUnityClient unityClient,
@@ -62,9 +60,13 @@ namespace GOILauncher.Multiplayer.UI.Pages
             _settings = settings;
             _logger = logger;
             _toast = toast;
+            lastServerHost = DefaultServerHost;
+            lastServerPort = DefaultServerPort;
             _client.Connected += OnServerConnected;
             _client.Disconnected += OnServerDisconnected;
             _settings.EnabledChanged += OnMultiplayerEnabledChanged;
+            _settings.ClientHostChanged += OnDefaultHostChanged;
+            _settings.ClientPortChanged += OnDefaultPortChanged;
         }
 
         public GameObject Root { get; private set; }
@@ -186,7 +188,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             Text portLabel = UIFactory.CreateLabel(addressRow, "ServerPortLabel", "\u7aef\u53e3", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(portLabel.gameObject, minWidth: 40, preferredWidth: 44, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
 
-            serverPortInput = UIFactory.CreateInputField(addressRow, "ServerPortInput", DefaultServerPort.ToString());
+            serverPortInput = UIFactory.CreateInputField(addressRow, "ServerPortInput", InputFieldExtensions.FormatPort(DefaultServerPort));
             serverPortInput.Component.contentType = InputField.ContentType.IntegerNumber;
             UIFactory.SetLayoutElement(serverPortInput.GameObject, minWidth: 90, preferredWidth: 110, minHeight: 24, flexibleHeight: 0, flexibleWidth: 0);
 
@@ -422,6 +424,20 @@ namespace GOILauncher.Multiplayer.UI.Pages
             RefreshClientState();
         }
 
+        // The settings page owns the defaults. Overwrite the fields only while the connection is idle:
+        // during one they show where this connection is actually going, and they are not editable anyway.
+        private void OnDefaultHostChanged(string host)
+        {
+            if (serverHostInput != null && IsConnectionIdle)
+                serverHostInput.Text = host;
+        }
+
+        private void OnDefaultPortChanged(int port)
+        {
+            if (serverPortInput != null && IsConnectionIdle)
+                serverPortInput.Text = InputFieldExtensions.FormatPort(port);
+        }
+
         private void RefreshClientState()
         {
             if (connectButton == null || disconnectButton == null)
@@ -452,7 +468,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 serverHostInput.Text = DefaultServerHost;
 
             if (string.IsNullOrEmpty(serverPortInput.Text))
-                serverPortInput.Text = DefaultServerPort.ToString();
+                serverPortInput.Text = InputFieldExtensions.FormatPort(DefaultServerPort);
         }
 
         private string GetPlayerName()
@@ -481,17 +497,29 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private bool TryGetServerPort(out int serverPort)
         {
-            serverPort = DefaultServerPort;
+            if (serverPortInput.TryReadPort(out serverPort))
+                return true;
 
-            string text = serverPortInput == null ? string.Empty : serverPortInput.Text?.Trim();
-            if (!int.TryParse(text, out serverPort) || serverPort < 1 || serverPort > 65535)
-            {
-                _toast.Show("\u7aef\u53e3\u5fc5\u987b\u662f 1-65535 \u4e4b\u95f4\u7684\u6570\u5b57");
-                return false;
-            }
+            _toast.Show(InputFieldExtensions.InvalidPortMessage);
+            return false;
+        }
 
-            serverPortInput.Text = serverPort.ToString();
-            return true;
+        /// <summary>The host the page connects to when nothing else was typed, owned by the settings page.</summary>
+        private string DefaultServerHost
+        {
+            get { return _settings == null ? MultiplayerSettings.DefaultClientHost : _settings.ClientHost; }
+        }
+
+        /// <summary>The port the page connects to when nothing else was typed, owned by the settings page.</summary>
+        private int DefaultServerPort
+        {
+            get { return _settings == null ? MultiplayerSettings.DefaultClientPort : _settings.ClientPort; }
+        }
+
+        // Nothing is in flight, so the address fields describe an intent rather than a live connection.
+        private bool IsConnectionIdle
+        {
+            get { return !isConnecting && (_client == null || !_client.IsConnected); }
         }
 
         private static void SetInputInteractable(InputFieldRef input, bool interactable)

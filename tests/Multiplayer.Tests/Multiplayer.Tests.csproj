@@ -195,6 +195,7 @@
     <Compile Include="Server\ServerPlayerServiceTests.cs" />
     <Compile Include="Server\ServerCompositionRootTests.cs" />
     <Compile Include="Unity\PlayerManagerTests.cs" />
+    <Compile Include="Unity\MultiplayerSettingsTests.cs" />
     <Compile Include="Event\EventBusTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

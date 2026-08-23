@@ -71,6 +71,8 @@ UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerLis
 
 `GOILauncher.Multiplayer.Unity.Config.MultiplayerSettings` 是持久化设置的唯一所有者。UI 用构造注入拿到它，读属性、调 `SetXxx`、订阅变更事件，不自己存副本——和 `PlayerView` 是同一类东西：**约束限制的是"UI 要认识几个入口"，不是"UI 能出现几个类名"。**
 
+除了联机开关，它还有三项默认地址（`ClientHost` / `ClientPort` / `ServerPort`）。这三项是读透的**初值来源**：`SettingsPage` 是唯一写入方，`ClientPage` / `ServerPage` 只在填输入框和兜底时读它，并订阅 `ClientHostChanged` / `ClientPortChanged` / `ServerPortChanged` 在空闲时更新输入框——页面上改地址只影响那一次连接，不回写（见 `docs/game-runtime.md` 的 Multiplayer Settings）。
+
 这条以前是反方向的：`IMultiplayerState` 由 UI 宿主实现（`MultiplayerStateCoordinator` 把 BepInEx 的 `ConfigEntry` 包一层暴露出来），Unity 层调用。搬到 `src/Unity` 之后方向反了过来，存储归 Unity 层、UI 只是消费者，所以"反向接口不受约束"这条理由不再成立，改按 `PlayerView` 的先例走。
 
 搬下来的原因是 **BepInEx 只存在于 PC 宿主**。Android / iOS 宿主没有 `ConfigFile`，要读的设置却是同一套；留在 UI 层就得每个宿主各写一遍键名、类型、默认值和变更通知。现在这些都在平台无关的 `src/Unity` 里，只把"字节落到哪"抽成 `ISettingsStore`（见 `docs/game-runtime.md` 的 Multiplayer Settings）。

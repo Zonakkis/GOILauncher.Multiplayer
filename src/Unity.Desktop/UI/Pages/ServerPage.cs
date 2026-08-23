@@ -12,8 +12,6 @@ namespace GOILauncher.Multiplayer.UI.Pages
 {
     public class ServerPage : IPage
     {
-        private const int DefaultPort = 9027;
-
         private readonly IUnityServer _server;
         private readonly MultiplayerSettings _settings;
         private readonly ILogger<ServerPage> _logger;
@@ -23,7 +21,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private InputFieldRef portInput;
         private ButtonRef _startButton;
         private ButtonRef _stopButton;
-        private int _lastListenPort = DefaultPort;
+        private int _lastListenPort;
 
         public ServerPage(
             IUnityServer unityServer,
@@ -35,7 +33,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
             _settings = settings;
             _logger = logger;
             _toast = toast;
+            _lastListenPort = DefaultPort;
             _settings.EnabledChanged += OnMultiplayerEnabledChanged;
+            _settings.ServerPortChanged += OnDefaultPortChanged;
         }
 
         public GameObject Root { get; private set; }
@@ -93,9 +93,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
             Text portLabel = UIFactory.CreateLabel(portRow, "PortLabel", "\u542f\u52a8\u7aef\u53e3", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(portLabel.gameObject, minWidth: 72, preferredWidth: 80, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
 
-            portInput = UIFactory.CreateInputField(portRow, "ServerPortInput", DefaultPort.ToString());
+            portInput = UIFactory.CreateInputField(portRow, "ServerPortInput", InputFieldExtensions.FormatPort(DefaultPort));
             portInput.Component.contentType = InputField.ContentType.IntegerNumber;
-            portInput.Component.text = DefaultPort.ToString();
+            portInput.Text = InputFieldExtensions.FormatPort(DefaultPort);
             UIFactory.SetLayoutElement(portInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
             GameObject actionRow = UIFactory.CreateHorizontalGroup(
@@ -197,19 +197,29 @@ namespace GOILauncher.Multiplayer.UI.Pages
             RefreshServerState();
         }
 
+        // The settings page owns the default. Overwrite the field only while the server is idle: once it
+        // is running the field shows the port it is actually listening on, and it is not editable anyway.
+        private void OnDefaultPortChanged(int port)
+        {
+            if (portInput == null || _server.IsRunning)
+                return;
+
+            portInput.Text = InputFieldExtensions.FormatPort(port);
+        }
+
         private bool TryGetListenPort(out int port)
         {
-            port = DefaultPort;
+            if (portInput.TryReadPort(out port))
+                return true;
 
-            string text = portInput == null ? string.Empty : portInput.Text?.Trim();
-            if (!int.TryParse(text, out port) || port < 1 || port > 65535)
-            {
-                _toast.Show("\u7aef\u53e3\u5fc5\u987b\u662f 1-65535 \u4e4b\u95f4\u7684\u6570\u5b57");
-                return false;
-            }
+            _toast.Show(InputFieldExtensions.InvalidPortMessage);
+            return false;
+        }
 
-            portInput.Text = port.ToString();
-            return true;
+        /// <summary>The listen port the page starts from, owned by the settings page.</summary>
+        private int DefaultPort
+        {
+            get { return _settings == null ? MultiplayerSettings.DefaultServerPort : _settings.ServerPort; }
         }
 
         private bool IsMultiplayerEnabled
