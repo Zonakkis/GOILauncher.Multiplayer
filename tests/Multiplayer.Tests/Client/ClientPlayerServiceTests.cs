@@ -11,7 +11,7 @@ using GOILauncher.Multiplayer.Core.Log;
 using Moq;
 using NUnit.Framework;
 
-namespace GOILauncher.Multiplayer.Core.Test.Client
+namespace GOILauncher.Multiplayer.Tests.Client
 {
     /// <summary>
     /// PlayerService is the single authoritative roster on the client. These tests pin

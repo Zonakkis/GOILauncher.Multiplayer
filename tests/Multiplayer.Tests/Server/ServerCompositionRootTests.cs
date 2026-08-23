@@ -8,7 +8,7 @@ using GOILauncher.Multiplayer.Server.Services;
 using GOILauncher.Multiplayer.Server.Synchronization;
 using NUnit.Framework;
 
-namespace GOILauncher.Multiplayer.Core.Test.Server
+namespace GOILauncher.Multiplayer.Tests.Server
 {
     /// <summary>
     /// Guards the composition root itself: every server module registers its packet

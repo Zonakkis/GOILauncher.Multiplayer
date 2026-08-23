@@ -10,7 +10,7 @@ using LiteNetLib;
 using Moq;
 using NUnit.Framework;
 
-namespace GOILauncher.Multiplayer.Core.Test.Client
+namespace GOILauncher.Multiplayer.Tests.Client
 {
     [TestFixture]
     public class ClientPlayerStateSyncTests

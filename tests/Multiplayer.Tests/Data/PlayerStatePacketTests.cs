@@ -5,7 +5,7 @@ using GOILauncher.Multiplayer.Core.Utils;
 using LiteNetLib.Utils;
 using NUnit.Framework;
 
-namespace GOILauncher.Multiplayer.Core.Test.Data
+namespace GOILauncher.Multiplayer.Tests.Data
 {
     [TestFixture]
     public class PlayerStatePacketTests

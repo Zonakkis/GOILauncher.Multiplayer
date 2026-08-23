@@ -13,7 +13,7 @@ using GOILauncher.Multiplayer.Unity.Player;
 using Moq;
 using NUnit.Framework;
 
-namespace GOILauncher.Multiplayer.Core.Test.Unity
+namespace GOILauncher.Multiplayer.Tests.Unity
 {
     /// <summary>
     /// PlayerManager owns remote instance lifecycle only; the roster it reads belongs to

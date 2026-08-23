@@ -6,7 +6,7 @@ using GOILauncher.Multiplayer.Core.Log;
 using Moq;
 using NUnit.Framework;
 
-namespace GOILauncher.Multiplayer.Core.Test.Event
+namespace GOILauncher.Multiplayer.Tests.Event
 {
     [TestFixture]
     public class EventBusTests

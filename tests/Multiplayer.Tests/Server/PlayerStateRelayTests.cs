@@ -8,7 +8,7 @@ using LiteNetLib;
 using NUnit.Framework;
 using System.Linq;
 
-namespace GOILauncher.Multiplayer.Core.Test.Server
+namespace GOILauncher.Multiplayer.Tests.Server
 {
     [TestFixture]
     public class PlayerStateRelayTests

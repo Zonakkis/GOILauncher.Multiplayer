@@ -12,8 +12,8 @@
     <ProjectGuid>{01B310AC-BE8B-46D7-A8A6-C361C7C6998F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Core.Test</RootNamespace>
-    <AssemblyName>Core.Test</AssemblyName>
+    <RootNamespace>GOILauncher.Multiplayer.Tests</RootNamespace>
+    <AssemblyName>Multiplayer.Tests</AssemblyName>
     <!--
       Note: This test project intentionally targets .NET Framework 4.8.1, while the Core project targets .NET Framework 3.5.
       The higher framework version is required by the test tooling and adapters referenced in this project (e.g., NUnit,
@@ -162,25 +162,25 @@
       test project needs its own copy-local references.
     -->
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\UnityLibraries\Android\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\src\UnityLibraries\Android\Assembly-CSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\UnityLibraries\Android\UnityEngine.dll</HintPath>
+      <HintPath>..\..\src\UnityLibraries\Android\UnityEngine.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\UnityLibraries\Android\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\src\UnityLibraries\Android\UnityEngine.CoreModule.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\UnityLibraries\Android\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>..\..\src\UnityLibraries\Android\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="UnityEngine.Physics2DModule">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\UnityLibraries\Android\UnityEngine.Physics2DModule.dll</HintPath>
+      <HintPath>..\..\src\UnityLibraries\Android\UnityEngine.Physics2DModule.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>
@@ -199,24 +199,23 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj">
+    <ProjectReference Include="..\..\src\Core\Core.csproj">
       <Project>{908cf820-b1ab-40a3-a504-96dfc6bc3b40}</Project>
       <Name>Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Client\Client.csproj">
+    <ProjectReference Include="..\..\src\Client\Client.csproj">
       <Project>{fe614c55-a3f2-4315-82e1-a3a293ca89d1}</Project>
       <Name>Client</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Server\Server.csproj">
+    <ProjectReference Include="..\..\src\Server\Server.csproj">
       <Project>{9d509add-ec76-4072-99c7-907624c222cf}</Project>
       <Name>Server</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Unity\Unity.csproj">
+    <ProjectReference Include="..\..\src\Unity\Unity.csproj">
       <Project>{125c7a1a-0023-4e64-a620-e808ae58d966}</Project>
       <Name>Unity</Name>
     </ProjectReference>
-    <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj">
-      <Project>{cd19dc5d-b660-02ac-3533-05551bf84ace}</Project>
+    <ProjectReference Include="..\..\src\LiteNetLib\LiteNetLib.csproj">
       <Name>LiteNetLib</Name>
     </ProjectReference>
   </ItemGroup>

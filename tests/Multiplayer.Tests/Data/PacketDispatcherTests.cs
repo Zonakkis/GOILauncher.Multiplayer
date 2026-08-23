@@ -4,7 +4,7 @@ using LiteNetLib.Utils;
 using NUnit.Framework;
 using System.Reflection;
 
-namespace GOILauncher.Multiplayer.Core.Test.Data
+namespace GOILauncher.Multiplayer.Tests.Data
 {
     [TestFixture]
     public class PacketDispatcherTests

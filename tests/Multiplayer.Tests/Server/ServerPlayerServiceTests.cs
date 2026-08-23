@@ -10,7 +10,7 @@ using LiteNetLib;
 using Moq;
 using NUnit.Framework;
 
-namespace GOILauncher.Multiplayer.Core.Test.Server
+namespace GOILauncher.Multiplayer.Tests.Server
 {
     [TestFixture]
     public class ServerPlayerServiceTests
