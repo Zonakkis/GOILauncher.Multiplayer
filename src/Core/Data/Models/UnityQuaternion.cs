@@ -13,16 +13,20 @@ namespace GOILauncher.Multiplayer.Core.Data.Models
         
         public void Serialize(NetDataWriter writer)
         {
-            writer.Put(X);
-            writer.Put(Y);
+            // 同步包中的Quaternion的X、Y都为0，不传输
+            // writer.Put(X);
+            // writer.Put(Y);
             writer.Put(Z);
             writer.Put(W);
         }
 
         public void Deserialize(NetDataReader reader)
         {
-            X = reader.GetFloat();
-            Y = reader.GetFloat();
+            // 同步包中的Quaternion的X、Y都为0，不传输
+            // X = reader.GetFloat();
+            // Y = reader.GetFloat();
+            X = 0;
+            Y = 0;
             Z = reader.GetFloat();
             W = reader.GetFloat();
         }
