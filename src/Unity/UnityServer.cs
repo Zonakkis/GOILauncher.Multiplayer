@@ -11,7 +11,10 @@ namespace GOILauncher.Multiplayer.Unity
         public ChatService ChatService { get; set; }
         public IMultiplayerState MultiplayerState { get; set; }
 
-        public bool IsRunning => IsMultiplayerEnabled && ServerService.IsRunning;
+        /// <summary>
+        /// 读透服务端在不在跑，不掺开关状态；理由同 <see cref="UnityClient.IsConnected"/>。
+        /// </summary>
+        public bool IsRunning => ServerService.IsRunning;
 
         public void Start()
         {

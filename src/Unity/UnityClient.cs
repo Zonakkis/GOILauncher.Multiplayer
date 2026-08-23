@@ -20,7 +20,11 @@ namespace GOILauncher.Multiplayer.Unity
     {
         private bool _initialized;
 
-        public bool IsConnected => IsMultiplayerEnabled && ClientService.IsConnected;
+        /// <summary>
+        /// 读透当前有没有连接，不掺开关状态。关闭联机会真的断开（<see cref="MultiplayerLifecycleController"/>），
+        /// 所以不需要再 AND 一次开关——那样只会在断开失败时报出一个假的"没连接"。
+        /// </summary>
+        public bool IsConnected => ClientService.IsConnected;
         public ReadOnlyCollection<Message> ChatMessages => ChatService.Messages;
         public IClientService ClientService { get; set; }
         public IPlayerService PlayerService { get; set; }

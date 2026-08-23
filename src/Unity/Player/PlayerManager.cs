@@ -6,6 +6,7 @@ using GOILauncher.Multiplayer.Client.Services;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
+using GOILauncher.Multiplayer.Unity.Config;
 using GOILauncher.Multiplayer.Unity.Events;
 using GOILauncher.Multiplayer.Unity.Models;
 
@@ -23,6 +24,7 @@ namespace GOILauncher.Multiplayer.Unity.Player
         private readonly IGameManager _gameManager;
         private readonly IPlayerService _playerService;
         private readonly IPlayerInstancePool _instancePool;
+        private readonly IMultiplayerState _multiplayerState;
         private readonly ILogger<PlayerManager> _logger;
 
         private readonly Dictionary<int, PlayerBase> _players = new Dictionary<int, PlayerBase>();
@@ -39,12 +41,14 @@ namespace GOILauncher.Multiplayer.Unity.Player
             IGameManager gameManager,
             IPlayerService playerService,
             IPlayerInstancePool instancePool,
+            IMultiplayerState multiplayerState,
             ILogger<PlayerManager> logger)
         {
             _eventBus = eventBus;
             _gameManager = gameManager;
             _playerService = playerService;
             _instancePool = instancePool;
+            _multiplayerState = multiplayerState;
             _logger = logger;
         }
 
@@ -73,10 +77,13 @@ namespace GOILauncher.Multiplayer.Unity.Player
             _subscriptions.Add(_eventBus.Subscribe<PlayerQuitGameEvent>(OnPlayerQuitGameEvent));
             _subscriptions.Add(_eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeftEvent));
             _subscriptions.Add(_eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnectedEvent));
+            // 联机开关和上面那些是同一类输入——"发生了什么"，所以在同一处接。
+            _multiplayerState.EnabledChanged += OnMultiplayerEnabledChanged;
         }
 
         public void Dispose()
         {
+            _multiplayerState.EnabledChanged -= OnMultiplayerEnabledChanged;
             foreach (var subscription in _subscriptions)
             {
                 subscription.Dispose();
@@ -119,17 +126,13 @@ namespace GOILauncher.Multiplayer.Unity.Player
 
         private void OnGameRestartedEvent(GameRestartedEvent e)
         {
-            RemoveAllRemotePlayers();
-            ReleaseLocalPlayer();
-            _instancePool.Clear();
+            ReleaseGamePlayers();
             InitializeGamePlayers();
         }
 
         private void OnGameQuitEvent(GameQuitEvent e)
         {
-            RemoveAllRemotePlayers();
-            ReleaseLocalPlayer();
-            _instancePool.Clear();
+            ReleaseGamePlayers();
         }
 
         private void OnPlayerJoinedEvent(PlayerJoinedEvent e)
@@ -171,9 +174,26 @@ namespace GOILauncher.Multiplayer.Unity.Player
 
         private void OnServerDisconnectedEvent(ServerDisconnectedEvent e)
         {
-            RemoveAllRemotePlayers();
-            ReleaseLocalPlayer();
-            _instancePool.Clear();
+            ReleaseGamePlayers();
+        }
+
+        /// <summary>
+        /// 关掉联机就把这一局已经建起来的实例撤干净，打开则在已经身处 Mian 时补做初始化，
+        /// 不用退出关卡再进。撤除用的是和"退出游戏""断线"完全相同的一套动作——
+        /// 对本类来说这三件事的后果没有区别。
+        /// </summary>
+        private void OnMultiplayerEnabledChanged(bool enabled)
+        {
+            if (!enabled)
+            {
+                ReleaseGamePlayers();
+                return;
+            }
+
+            if (_gameManager.IsInGame)
+            {
+                InitializeGamePlayers();
+            }
         }
 
         private void SyncRemotePlayers()
@@ -195,6 +215,13 @@ namespace GOILauncher.Multiplayer.Unity.Player
         /// </summary>
         private void EnsureRemoteInstance(PlayerInfo info)
         {
+            // 关闭联机后断开是下一次 Poll 才真正生效的，这中间到达的包仍会走到这里，
+            // 所以创建实例的唯一入口必须自己挡一道，不能只靠"关了就连不上"。
+            if (!_multiplayerState.Enabled)
+            {
+                return;
+            }
+
             if (info == null || info.Id == LocalPlayerId || !info.IsInGame || !_gameManager.IsInGame)
             {
                 return;
@@ -234,9 +261,23 @@ namespace GOILauncher.Multiplayer.Unity.Player
 
         private void InitializeGamePlayers()
         {
+            // 关着联机时一个 Player 克隆都不该造，也不该往场景里真正的 Player 上挂组件。
+            // 这正是"关闭"和"没连上"的区别：没连上只是没有远端玩家，关闭是整套不参与。
+            if (!_multiplayerState.Enabled)
+            {
+                return;
+            }
+
             EnsureLocalPlayer();
             _instancePool.WarmUp(DefaultInstanceWarmUpCount);
             SyncRemotePlayers();
+        }
+
+        private void ReleaseGamePlayers()
+        {
+            RemoveAllRemotePlayers();
+            ReleaseLocalPlayer();
+            _instancePool.Clear();
         }
 
         private void EnsureLocalPlayer()

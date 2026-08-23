@@ -75,4 +75,4 @@ UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerLis
 
 搬下来的原因是 **BepInEx 只存在于 PC 宿主**。Android / iOS 宿主没有 `ConfigFile`，要读的设置却是同一套；留在 UI 层就得每个宿主各写一遍键名、类型、默认值和变更通知。现在这些都在平台无关的 `src/Unity` 里，只把"字节落到哪"抽成 `ISettingsStore`（见 `docs/game-runtime.md` 的 Multiplayer Settings）。
 
-`IMultiplayerState` 还在，但已经退成 Unity 层内部的只读端口：`UnityClient` / `UnityServer` 属性注入它，用来拒绝关闭联机后的连接和启动请求。UI 不再碰它。
+`IMultiplayerState` 还在，但已经退成 Unity 层内部的端口，UI 不再碰它。它同时提供 `Enabled` 和 `EnabledChanged`，因为下层要的是同一件事的两半：`UnityClient` / `UnityServer` 读它来拒绝关闭后的连接和启动请求，`MultiplayerLifecycleController` 和 `PlayerManager` 订阅它来撤掉已经建立的连接和玩家实例（见 `docs/game-runtime.md` 的“关闭联机保证什么”）。只写 `SetXxx` 的那一面留在 `MultiplayerSettings` 上，所以下层拿不到写权限。

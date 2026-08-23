@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Autofac;
 using GOILauncher.Multiplayer.Client.Events;
@@ -6,6 +7,8 @@ using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Unity;
+using GOILauncher.Multiplayer.Unity.Config;
+using GOILauncher.Multiplayer.Unity.Events;
 using GOILauncher.Multiplayer.Unity.Player;
 using Moq;
 using NUnit.Framework;
@@ -27,6 +30,7 @@ namespace GOILauncher.Multiplayer.Core.Test.Unity
         private Mock<IGameManager> _gameManager;
         private Mock<IPlayerInstancePool> _instancePool;
         private FakePlayerService _playerService;
+        private FakeMultiplayerState _multiplayerState;
         private PlayerManager _playerManager;
 
         [SetUp]
@@ -39,14 +43,17 @@ namespace GOILauncher.Multiplayer.Core.Test.Unity
             _playerService = new FakePlayerService();
             _playerService.SetLocalPlayerInfo(new PlayerInfo(LocalPlayerId, "me", Platform.PC, true));
             _playerService.Add(_playerService.LocalPlayer);
+            _multiplayerState = new FakeMultiplayerState();
 
             _playerManager = new PlayerManager(
                 _eventBus,
                 _gameManager.Object,
                 _playerService,
                 _instancePool.Object,
+                _multiplayerState,
                 new Mock<ILogger<PlayerManager>>().Object);
-            ((IStartable)_playerManager).Start();        }
+            ((IStartable)_playerManager).Start();
+        }
 
         [Test]
         public void HandshakeWhileAlreadyInGame_InitializesGamePlayerLifecycle()
@@ -143,6 +150,94 @@ namespace GOILauncher.Multiplayer.Core.Test.Unity
             _eventBus.Publish(new PlayerListUpdatedEvent());
 
             _instancePool.Verify(pool => pool.Rent(It.IsAny<PlayerInfo>()), Times.Never);
+        }
+
+        /// <summary>
+        /// Disabled multiplayer must not clone a single Player. Entering the level used to warm the
+        /// pool regardless of the switch, which made "off" mean "connects to nobody" rather than
+        /// "does not take part".
+        /// </summary>
+        [Test]
+        public void MultiplayerDisabled_EnteringGame_TouchesNothing()
+        {
+            _multiplayerState.SetEnabled(false);
+
+            _eventBus.Publish(new GameStartedEvent());
+
+            _instancePool.Verify(pool => pool.WarmUp(It.IsAny<int>()), Times.Never);
+            _instancePool.Verify(pool => pool.Rent(It.IsAny<PlayerInfo>()), Times.Never);
+        }
+
+        /// <summary>
+        /// The disconnect a disable triggers only lands on the next poll, so packets that arrive in
+        /// between still reach the create path. It has to refuse on its own.
+        /// </summary>
+        [Test]
+        public void MultiplayerDisabled_RosterStillArriving_RentsNothing()
+        {
+            _multiplayerState.SetEnabled(false);
+            _playerService.Add(new PlayerInfo(2, "alice", Platform.PC, true));
+
+            _eventBus.Publish(new PlayerRosterReceivedEvent());
+            _eventBus.Publish(new PlayerJoinedEvent(2, "alice", Platform.PC, true));
+
+            _instancePool.Verify(pool => pool.Rent(It.IsAny<PlayerInfo>()), Times.Never);
+        }
+
+        [Test]
+        public void DisablingMultiplayerWhileInGame_ReleasesWhatWasBuilt()
+        {
+            _eventBus.Publish(new GameStartedEvent());
+
+            _multiplayerState.SetEnabled(false);
+
+            _instancePool.Verify(pool => pool.Clear(), Times.Once);
+        }
+
+        /// <summary>
+        /// Re-enabling mid level has to initialize on the spot; requiring a level reload would make the
+        /// switch feel broken.
+        /// </summary>
+        [Test]
+        public void ReEnablingMultiplayerWhileInGame_InitializesGamePlayers()
+        {
+            _multiplayerState.SetEnabled(false);
+            _eventBus.Publish(new GameStartedEvent());
+
+            _multiplayerState.SetEnabled(true);
+
+            _instancePool.Verify(pool => pool.WarmUp(4), Times.Once);
+        }
+
+        [Test]
+        public void ReEnablingMultiplayerOutsideGame_TouchesNothing()
+        {
+            _multiplayerState.SetEnabled(false);
+            _gameManager.SetupGet(m => m.IsInGame).Returns(false);
+
+            _multiplayerState.SetEnabled(true);
+
+            _instancePool.Verify(pool => pool.WarmUp(It.IsAny<int>()), Times.Never);
+        }
+
+        private sealed class FakeMultiplayerState : IMultiplayerState
+        {
+            public bool Enabled { get; private set; } = true;
+
+            public event Action<bool> EnabledChanged;
+
+            public void SetEnabled(bool enabled)
+            {
+                if (Enabled == enabled)
+                    return;
+
+                // Same order as MultiplayerSettings: the value is current before anyone is told,
+                // so listeners may read it instead of trusting the argument.
+                Enabled = enabled;
+                Action<bool> handler = EnabledChanged;
+                if (handler != null)
+                    handler(enabled);
+            }
         }
 
         private sealed class FakePlayerService : IPlayerService

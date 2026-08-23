@@ -34,6 +34,11 @@ namespace GOILauncher.Multiplayer.Network
 
         public void Stop()
         {
+            // NetManager.Stop 对没在跑的实例是空操作，日志不该跟着空跑一趟：
+            // 上次退出时联机是关闭状态的话，启动就会走一次 Stop，那时什么都没停下来。
+            if (!_netManager.IsRunning)
+                return;
+
             _netManager.Stop();
             _logger.Info("Server stopped.");
         }

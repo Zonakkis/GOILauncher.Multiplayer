@@ -401,7 +401,13 @@ namespace GOILauncher.Multiplayer.UI.Pages
             isConnecting = false;
             disconnectRequested = false;
 
-            if (wasDisconnectRequested)
+            // Turning the switch off is a deliberate disconnect too; the request just came from
+            // MultiplayerLifecycleController instead of this page. Read the switch rather than keep a
+            // flag: the setting is written before any listener is told, so this is always the current
+            // value and it does not depend on who is notified first.
+            if (!IsMultiplayerEnabled)
+                _toast.Show("\u8054\u673a\u5df2\u5173\u95ed\uff0c\u8fde\u63a5\u5df2\u65ad\u5f00");
+            else if (wasDisconnectRequested)
                 _toast.Show("\u5df2\u65ad\u5f00\u8fde\u63a5");
             else if (wasConnecting)
                 _toast.Show($"\u8fde\u63a5\u5931\u8d25: {reason}");

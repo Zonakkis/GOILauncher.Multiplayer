@@ -114,11 +114,32 @@ Player
 - 目前只有一项：`Multiplayer.Enabled`，默认 `true`。
 - BepInEx 的 `ConfigFile` 不再参与联机设置——它只存在于 PC 宿主，而这套设置要给三个平台共用。
 
+### 关闭联机保证什么
+
+判据只有 `IMultiplayerState` 一个来源（`Enabled` 读当前值，`EnabledChanged` 等它变），两个订阅者各管一半：
+
+- **网络那一半**归 `MultiplayerLifecycleController`：断开当前连接、停掉内嵌服务端，并拒绝之后的连接与开服请求。
+- **玩家实例那一半**归 `PlayerManager`，它把开关当成和 `GameStartedEvent` 同类的输入：
+  - 关着联机进 `Mian` 不挂 `LocalPlayer`、不预热实例池，一个 `Player` 克隆都不造；
+  - 关闭那一刻按和“退出游戏”“断线”完全相同的一套动作（`ReleaseGamePlayers`）撤掉已经建起来的实例；
+  - 重新打开时如果已经在 `Mian` 里就地补做初始化，不需要退出关卡再进。
+- **UI 那一半**归 `Plugin` 和各 `IPage`：藏掉聊天窗口和玩家列表（见下面 Multiplayer UI Lifecycle）。
+
+`PlayerManager.EnsureRemoteInstance` 除了上面的初始化入口，自己也查一次开关：关闭触发的断开要到下一次 `Poll` 才真正生效，这中间到达的包仍会走到创建实例那条路上。
+
+两件**故意不做**的事，改之前先看这里：
+
+- `GameManager.CreatePlayerPrefab` 不看开关。`GameManager` 是场景权威，只回答“什么场景、`Player` 在哪”，掺进联机开关会让它多背一个概念；代价是关着联机进游戏仍有 1 个 inactive、无碰撞的克隆（之前是 5 个），换来的是重新打开联机时 `PlayerPrefab` 已经就绪，不用重新准备。
+- 网络层的 socket 不关。`NetworkClient` 是 `IStartable`，容器 `Build()` 时就 `NetManager.Start()`，关闭联机后仍每帧 `PollEvents`。延迟开 socket 会把“现在能不能连”变成一个状态机，代价大于一次空轮询。
+
+`UnityClient.IsConnected` 和 `UnityServer.IsRunning` 都只读真实状态，不再 AND 一次开关：既然关闭会真的断开，再掺一层只会在断开失败时报出一个假的“没连接”，而 `PlayerStateSynchronizer` 那边看的是真 socket，两边就会各说一套。
+
 ## Multiplayer UI Lifecycle
 
 - 联机开关是 `MultiplayerSettings.Enabled`，`SettingsPage` 的勾选框读写它，`Plugin`、`ClientPage`、`ServerPage` 订阅 `EnabledChanged` 刷新自己。
 - F2 始终切换 `MultiplayerUI`（“连接配置”）窗口，不受联机开关影响，因此关闭联机后仍可进入“设置”页重新启用。
-- 关闭联机开关时，`MultiplayerLifecycleController`（`src/Unity`）立即请求 `IUnityClient.Disconnect()` 和 `IUnityServer.Stop()`；Unity 客户端和服务端适配器也会拒绝后续的连接或启动请求。它在容器初始化末尾被显式解析一次，构造时就按持久化的值补做一遍，所以上次退出时是关闭状态的话，这次启动不会先起服务再关掉。
+- 关闭联机开关时，`MultiplayerLifecycleController`（`src/Unity`）立即请求 `IUnityClient.Disconnect()` 和 `IUnityServer.Stop()`；Unity 客户端和服务端适配器也会拒绝后续的连接或启动请求。它在容器初始化末尾被显式解析一次，构造时就按持久化的值补做一遍，所以上次退出时是关闭状态的话，这次启动不会先起服务再关掉。玩家实例那一半不在它身上，见上面“关闭联机保证什么”。
+- 因为关开关也算一次主动断开，`ClientPage` 的提示按当前开关状态分支（“联机已关闭，连接已断开”），不靠标志位——设置在通知任何监听者之前就已写好，谁先收到通知都不影响读到的值。
 - 关闭联机时 `ChatHudUI` 被隐藏并退出输入激活状态，`PlayerListUI` 被隐藏，Plugin 不再响应 Tab 来显示玩家列表。
 - Tab 玩家列表的列为：玩家 / 信息 / 状态 / 距离 / 操作。距离读的是远端实例到本地玩家的直线距离，玩家没有场景实例时（在大厅、实例池已满、首个状态包未到）显示 `-`。
 - 操作列是每行的“传送”按钮，只在该玩家有距离（即有远端实例）时可点；本地玩家自己那行不显示按钮，但格子留着以保持列对齐。
