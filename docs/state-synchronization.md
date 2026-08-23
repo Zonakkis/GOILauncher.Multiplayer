@@ -60,6 +60,13 @@ Mian LateUpdate
 - 当前 `PlayerStateRelay` 将状态发给所有其他 `IsInGame` 玩家；未来加入 `Room` 后，接收者筛选应在该 Module 内改为房间成员与房间交互设置，不扩散到 Unity 采样或协议模型。
 - 远端实例尚未创建时收到的状态可以丢弃；服务端按约 60 Hz 发送，实例创建后会继续收到后续状态。
 
+### 线上格式只写一遍
+
+- **每个模型的线上格式只存在于它自己的 `Serialize` / `Deserialize`。** 读一律 `reader.Get<T>()`，不再给模型另配 `NetDataReaderExtensions.GetXxx`。曾经有过 `GetVector3` / `GetQuaternion`，于是同一份格式有两个实现；`UnityQuaternion` 改成只传 Z/W 时只改了 `Serialize`，扩展方法继续按 4 个 float 读，`PlayerState` 里那个四元数之后的每个字段都跟着错位。`NetDataReaderExtensions` 现在只剩 `GetPlatform`——enum 没法实现 `INetSerializable`，只有它必须留在外面。
+- `NetDataWriter.Put<T>` 和 `NetDataReader.Get<T>` 都对 `INetSerializable` 泛型约束，`UnityVector3` / `UnityQuaternion` 这些 struct 走它们不装箱，60 Hz 这条路上没有额外分配。
+- `UnityQuaternion` 只传 `Z` 和 `W`，`X` / `Y` 在收端写 0：这三个 Transform 只绕 Z 轴转（见 `docs/game-runtime.md`）。所以这个类型对状态同步是**有意有损**的，`X` / `Y` 写进去会被丢掉。
+- 整个 `PlayerState` 因此是 3×3 + 3×2 = 15 个 float、60 字节。`PlayerStatePacketTests` 有一条直接断言这个字节数——读写两边再不对称，会先炸在那里，而不是变成 reader 深处一个 `ArgumentOutOfRangeException`。
+
 ## Player Roster Ownership
 
 远端实例的创建时机取决于名单，所以名单的归属规则和同步方案绑定在一起。

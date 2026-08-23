@@ -94,6 +94,7 @@ Player
 ## State Synchronization Runtime Behavior
 
 - `LocalPlayer` 挂载在 `Player` 根对象上，从 `Player`、`Player/Hub/Slider` 和 `Player/Hub/Slider/Handle` 读取世界位置与世界旋转。
+- 这三个对象只绕 Z 轴转，**世界旋转的 `X`、`Y` 恒为 0**（已实机确认）。状态包因此只传 `Z` 和 `W`，收端把 `X` / `Y` 写回 0；`RemotePlayer` 用 `(0, 0, z, w)` 重建出来的仍是单位四元数，插值也照常。以后要同步会绕 X / Y 转的对象，得先改 `UnityQuaternion` 的读写——格式只在那一处（见 `docs/state-synchronization.md` 的“线上格式只写一遍”）。
 - `PlayerStateSynchronizer` 挂载在持久化的 `MultiplayerUnityCore` 子对象上，在 `LateUpdate` 以 60 Hz 采样本地 `Player`，仅在 `Mian` 且连接有效时发送。
 - `RemotePlayer` 使用相同的完整路径写入世界位置与世界旋转。首次收到状态时直接定位，后续状态在约一个 60 Hz 间隔内插值。
 - 远端实例由 `PlayerInstancePool` 创建的 `PlayerPrefab` 派生，并继续使用现有的无碰撞远端对象处理，因此当前不会与本地 `Player` 产生交互。

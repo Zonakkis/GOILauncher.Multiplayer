@@ -1,5 +1,4 @@
-﻿using GOILauncher.Multiplayer.Core.Extensions;
-using LiteNetLib.Utils;
+﻿using LiteNetLib.Utils;
 
 namespace GOILauncher.Multiplayer.Core.Data.Models
 {
@@ -24,12 +23,14 @@ namespace GOILauncher.Multiplayer.Core.Data.Models
 
         public void Deserialize(NetDataReader reader)
         {
-            PlayerPosition = reader.GetVector3();
-            PlayerRotation = reader.GetQuaternion();
-            HandlePosition = reader.GetVector3();
-            HandleRotation = reader.GetQuaternion();
-            SliderPosition = reader.GetVector3();
-            SliderRotation = reader.GetQuaternion();
+            // 和 Serialize 的 Put 对称：读写都走模型自己的 INetSerializable，
+            // 所以格式改了不用来这里跟着改（UnityQuaternion 就只传 Z/W）。
+            PlayerPosition = reader.Get<UnityVector3>();
+            PlayerRotation = reader.Get<UnityQuaternion>();
+            HandlePosition = reader.Get<UnityVector3>();
+            HandleRotation = reader.Get<UnityQuaternion>();
+            SliderPosition = reader.Get<UnityVector3>();
+            SliderRotation = reader.Get<UnityQuaternion>();
         }
     }
 }
