@@ -27,10 +27,6 @@ namespace GOILauncher.Multiplayer.Unity.Models
             }
         }
 
-        private static readonly JointMotor2D _stillHingeMotor = new JointMotor2D { motorSpeed = 0, maxMotorTorque = 10000 };
-        private static readonly JointMotor2D _stillSliderMotor = new JointMotor2D { motorSpeed = 0, maxMotorTorque = 1000 };
-        private static readonly JointMotor2D _stillHubMotor = new JointMotor2D { motorSpeed = 0, maxMotorTorque = 100 };
-
         public bool TryCaptureState(out PlayerState state)
         {
             Transform slider;
@@ -67,30 +63,29 @@ namespace GOILauncher.Multiplayer.Unity.Models
             Physics2DHelper.SetAutoSimulation(false);
             try
             {
-                transform.position = target.position;
-                transform.rotation = target.rotation;
-                Physics2D.Simulate(Time.fixedDeltaTime * 0.01f);
-                for (var i = 0; i < Rigidbodies.Length; i++)
+                for (int count = 0; count < 20; count++)
                 {
-                    Rigidbodies[i].position = targetRigidBodies[i].position;
-                    Rigidbodies[i].rotation = targetRigidBodies[i].rotation;
-                    Rigidbodies[i].velocity = Vector2.zero;
-                    Rigidbodies[i].angularVelocity = 0;
+                    bool synced = true;
+                    for (var i = 0; i < Rigidbodies.Length; i++)
+                    {
+                        if (Vector2.Distance(Rigidbodies[i].position, targetRigidBodies[i].position) >= 0.01f)
+                            synced = false;
+                        Rigidbodies[i].position = targetRigidBodies[i].position;
+                        // Rigidbodies[i].transform.rotation = targetRigidBodies[i].transform.rotation;
+                        Rigidbodies[i].velocity = Vector2.zero;
+                        Rigidbodies[i].angularVelocity = 0;
+                    }
+                    Saviour.pc.fakeCursor.position = Saviour.hammer.position;
+                    Physics2D.Simulate(Time.fixedDeltaTime);
+
+                    if (synced)
+                        break;
                 }
-                Physics2D.Simulate(Time.fixedDeltaTime * 0.01f);
-                for (int i = 0; i < Rigidbodies.Length; i++)
-                {
-                    Rigidbodies[i].WakeUp();
-                }
-                Saviour.pc.fakeCursor.position = Saviour.hammer.position;
             }
             finally
             {
                 Physics2DHelper.SetAutoSimulation(true);
             }
-            // Saviour.slider.motor = _stillSliderMotor;
-            // Saviour.hinge.motor = _stillHingeMotor;
-            // Saviour.hubJoint.motor = _stillHubMotor;
         }
     }
 }
