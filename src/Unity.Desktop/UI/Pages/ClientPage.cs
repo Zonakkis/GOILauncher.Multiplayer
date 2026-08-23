@@ -6,6 +6,7 @@ using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.UI.Components;
 using GOILauncher.Multiplayer.UI.Theme;
 using GOILauncher.Multiplayer.Unity;
+using GOILauncher.Multiplayer.Unity.Config;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib;
@@ -32,7 +33,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         };
 
         private readonly IUnityClient _client;
-        private readonly MultiplayerStateCoordinator _multiplayerState;
+        private readonly MultiplayerSettings _settings;
         private readonly ILogger<ClientPage> _logger;
         private readonly Toast _toast;
         private readonly ITheme _theme = Plugin.Theme;
@@ -53,17 +54,17 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         public ClientPage(
             IUnityClient unityClient,
-            MultiplayerStateCoordinator multiplayerState,
+            MultiplayerSettings settings,
             ILogger<ClientPage> logger,
             Toast toast)
         {
             _client = unityClient;
-            _multiplayerState = multiplayerState;
+            _settings = settings;
             _logger = logger;
             _toast = toast;
             _client.Connected += OnServerConnected;
             _client.Disconnected += OnServerDisconnected;
-            _multiplayerState.EnabledChanged += OnMultiplayerEnabledChanged;
+            _settings.EnabledChanged += OnMultiplayerEnabledChanged;
         }
 
         public GameObject Root { get; private set; }
@@ -495,7 +496,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private bool IsMultiplayerEnabled
         {
-            get { return _multiplayerState == null || _multiplayerState.Enabled; }
+            get { return _settings == null || _settings.Enabled; }
         }
     }
 }

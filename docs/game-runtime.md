@@ -105,11 +105,20 @@ Player
 - 玩家之间是否允许交互将在未来房间系统中成为房间设置。
 - 当前限制不是永久规则，实现时应避免把“不允许玩家交互”固化为不可配置的领域假设。
 
+## Multiplayer Settings
+
+- 设置的所有者是 `MultiplayerSettings`（`src/Unity`，平台无关）：键名、类型、默认值和变更事件都在它身上，UI 只读它、调它、订阅它。
+- 落盘由 `ISettingsStore` 承担，当前唯一实现是 `FileSettingsStore`，写到 `Application.persistentDataPath` 下的 `GOILauncher.Multiplayer.cfg`。这个目录三个平台都可写且不需要权限：Windows 在 `%USERPROFILE%\AppData\LocalLow\<company>\<product>`，Android 在应用私有目录，iOS 在沙盒内。
+- 文件是 `key=value` 纯文本，按键名 Ordinal 排序后整体重写，所以行序稳定、可 diff；`#` 开头是注释，但手写的注释在下次保存时不会保留。值里的 `\`、换行和回车做转义。
+- 每次 `SetXxx` 立即写盘（写临时文件再 `File.Move` 覆盖），崩溃不会丢已经改过的设置。文件缺失、读不出来或某行格式不对都只记日志并退回默认值，不阻塞插件加载。
+- 目前只有一项：`Multiplayer.Enabled`，默认 `true`。
+- BepInEx 的 `ConfigFile` 不再参与联机设置——它只存在于 PC 宿主，而这套设置要给三个平台共用。
+
 ## Multiplayer UI Lifecycle
 
-- `Plugin` 使用 `MultiplayerStateCoordinator` 管理 BepInEx 配置中的 `[Multiplayer] Enabled`；默认值为 `true`。
+- 联机开关是 `MultiplayerSettings.Enabled`，`SettingsPage` 的勾选框读写它，`Plugin`、`ClientPage`、`ServerPage` 订阅 `EnabledChanged` 刷新自己。
 - F2 始终切换 `MultiplayerUI`（“连接配置”）窗口，不受联机开关影响，因此关闭联机后仍可进入“设置”页重新启用。
-- 关闭联机开关时，协调器立即请求 `IUnityClient.Disconnect()` 和 `IUnityServer.Stop()`；Unity 客户端和服务端适配器也会拒绝后续的连接或启动请求。
+- 关闭联机开关时，`MultiplayerLifecycleController`（`src/Unity`）立即请求 `IUnityClient.Disconnect()` 和 `IUnityServer.Stop()`；Unity 客户端和服务端适配器也会拒绝后续的连接或启动请求。它在容器初始化末尾被显式解析一次，构造时就按持久化的值补做一遍，所以上次退出时是关闭状态的话，这次启动不会先起服务再关掉。
 - 关闭联机时 `ChatHudUI` 被隐藏并退出输入激活状态，`PlayerListUI` 被隐藏，Plugin 不再响应 Tab 来显示玩家列表。
 - Tab 玩家列表的列为：玩家 / 信息 / 状态 / 距离 / 操作。距离读的是远端实例到本地玩家的直线距离，玩家没有场景实例时（在大厅、实例池已满、首个状态包未到）显示 `-`。
 - 操作列是每行的“传送”按钮，只在该玩家有距离（即有远端实例）时可点；本地玩家自己那行不显示按钮，但格子留着以保持列对齐。

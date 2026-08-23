@@ -31,7 +31,7 @@ public class Plugin : BaseUnityPlugin
     private static readonly MethodInfo UpdateCursorControlMethod = typeof(CursorUnlocker).GetMethod("UpdateCursorControl", BindingFlags.Static | BindingFlags.NonPublic);
 
     private MultiplayerUI _multiplayerUI;
-    private MultiplayerStateCoordinator _multiplayerState;
+    private MultiplayerSettings _settings;
     private ChatHudUI _chatHudUI;
     private PlayerListUI _playerListOverlayUI;
     private bool _hasAppliedCursorState;
@@ -57,11 +57,8 @@ public class Plugin : BaseUnityPlugin
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loading...");
         var container = MultiplayerUnityCore.Initialize(Configure);
 
-        _multiplayerState = container.Resolve<MultiplayerStateCoordinator>();
-        _multiplayerState.Attach(
-            container.Resolve<IUnityClient>(),
-            container.Resolve<IUnityServer>());
-        _multiplayerState.EnabledChanged += OnMultiplayerEnabledChanged;
+        _settings = container.Resolve<MultiplayerSettings>();
+        _settings.EnabledChanged += OnMultiplayerEnabledChanged;
 
         Theme = container.Resolve<ITheme>();
         UIBase = container.Resolve<UIBase>();
@@ -71,7 +68,7 @@ public class Plugin : BaseUnityPlugin
         _chatHudUI.ActiveModeChanged += OnChatActiveModeChanged;
         _multiplayerUI.SetActive(false);
         _playerListOverlayUI.SetActive(false);
-        ApplyMultiplayerUiState(_multiplayerState.Enabled);
+        ApplyMultiplayerUiState(_settings.Enabled);
         ApplyCursorState();
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loaded!");
     }
@@ -93,10 +90,6 @@ public class Plugin : BaseUnityPlugin
         .SingleInstance();
         builder.RegisterType<Toast>()
         .AsSelf()
-        .SingleInstance();
-        builder.Register(_ => new MultiplayerStateCoordinator(Config, Logger))
-        .AsSelf()
-        .As<IMultiplayerState>()
         .SingleInstance();
         builder.RegisterType<ClientPage>()
         .AsSelf()
@@ -152,7 +145,7 @@ public class Plugin : BaseUnityPlugin
             ApplyCursorState();
         }
 
-        if (_multiplayerState == null || !_multiplayerState.Enabled)
+        if (_settings == null || !_settings.Enabled)
         {
             if (_playerListOverlayUI.Enabled)
                 _playerListOverlayUI.SetActive(false);

@@ -67,7 +67,10 @@
     <Compile Include="Events\GameStartedEvent.cs" />
     <Compile Include="Extensions\Vector3Extensions.cs" />
     <Compile Include="Extensions\PlatformExtensions.cs" />
-    <Compile Include="Config\AlwaysEnabledMultiplayerState.cs" />
+    <Compile Include="Config\ISettingsStore.cs" />
+    <Compile Include="Config\FileSettingsStore.cs" />
+    <Compile Include="Config\MultiplayerSettings.cs" />
+    <Compile Include="MultiplayerLifecycleController.cs" />
     <Compile Include="IUnityClient.cs" />
     <Compile Include="IUnityServer.cs" />
     <Compile Include="Config\IMultiplayerState.cs" />

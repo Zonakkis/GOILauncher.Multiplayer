@@ -36,7 +36,7 @@ namespace GOILauncher.Multiplayer.Unity
             .RegisterGameManager()
             .RegisterUnityClient()
             .RegisterUnityServer()
-            .RegisterMultiplayerState()
+            .RegisterMultiplayerSettings()
             .RegisterPlayerInstancePool()
             .RegisterPlayerManager()
             .RegisterPlayerStateSynchronizer();
@@ -49,13 +49,22 @@ namespace GOILauncher.Multiplayer.Unity
             // 纯 C# 的 Module 实现 IStartable，由容器在 Build() 时自动激活。
             _container.Resolve<IGameManager>();
             _container.Resolve<PlayerStateSynchronizer>();
+            // 没有任何人依赖它，它靠构造时订阅设置变更生效，所以必须显式解析一次。
+            _container.Resolve<MultiplayerLifecycleController>();
             return _container;
         }
 
-        private static ContainerBuilder RegisterMultiplayerState(this ContainerBuilder builder)
+        private static ContainerBuilder RegisterMultiplayerSettings(this ContainerBuilder builder)
         {
-            builder.RegisterType<AlwaysEnabledMultiplayerState>()
+            builder.RegisterType<FileSettingsStore>()
+                .As<ISettingsStore>()
+                .SingleInstance();
+            builder.RegisterType<MultiplayerSettings>()
+                .AsSelf()
                 .As<IMultiplayerState>()
+                .SingleInstance();
+            builder.RegisterType<MultiplayerLifecycleController>()
+                .AsSelf()
                 .SingleInstance();
             return builder;
         }

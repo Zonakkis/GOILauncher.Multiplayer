@@ -13,7 +13,7 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三�
 - **UI 层向下只能依赖这三个类型。** 不要让 UI 直接依赖 `IPlayerService`、`IPlayerManager`、`IChatService`、`IEventBus` 等下层类型。
 - **新增能力挂在已有门面下面，不要新开一个根接口。** "玩家名单该由谁提供"这类问题的答案永远是 `IUnityClient`，哪怕实现要组合好几个下层服务——组合工作在 `UnityClient` 里做。
 - **UI 不订阅 `IEventBus`，事件由门面转发。** 见下面 Events 一节。
-- **`IMultiplayerState` 不算门面**（`GOILauncher.Multiplayer.Unity.Config`）。它是反方向的：UI 实现它（`MultiplayerStateCoordinator` 把 BepInEx 配置暴露出来），Unity 层调用它。反向接口不受这条约束限制。
+- **`MultiplayerSettings` 不算第四个根接口**（`GOILauncher.Multiplayer.Unity.Config`）。它和 `PlayerView` 一样，是从容器里取到的类型，不是新开的入口。见下面 MultiplayerSettings 一节。
 
 单一数据源和这条约束不冲突：单一数据源约束的是**谁能写、有没有人存副本**，不是成员声明在哪个接口上。只要门面上的成员是读透（read-through）的、不缓存，把它放在 `IUnityClient` 上和放在一个独立接口上完全等价。`UnityClient.Players` 每次枚举现场构造 `PlayerView`，名单的唯一所有者仍然是 `Client/Services/IPlayerService`。
 
@@ -66,3 +66,13 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三�
 传送这条链是：`IUnityClient.TeleportTo(playerId)` → `UnityClient` 从 `IPlayerManager` 取出本地玩家和目标实例 → `LocalPlayer.TeleportTo(Transform target)`。搬运逻辑落在最后一环，那里本地玩家（`this`）和目标（`target`）两边的层级都在手上——它靠逐个配对两边的 `Rigidbody2D` 来搬，所以依赖"远端实例和本地玩家出自同一个 `PlayerPrefab`、刚体结构一致"这个前提（见 `docs/game-runtime.md`）。
 
 UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerListHandler.TeleportRequested(playerId)`，由 `PlayerListUI`（它本来就持有 `IUnityClient`）接到 `TeleportTo` 上。行渲染类因此仍然只认识 `PlayerView`，不引用任何门面类型——**纯视图类不必自己去拿门面，让持有门面的那一层把事件接过去**，这条对以后的踢人、私聊按钮同样适用。
+
+## MultiplayerSettings
+
+`GOILauncher.Multiplayer.Unity.Config.MultiplayerSettings` 是持久化设置的唯一所有者。UI 用构造注入拿到它，读属性、调 `SetXxx`、订阅变更事件，不自己存副本——和 `PlayerView` 是同一类东西：**约束限制的是"UI 要认识几个入口"，不是"UI 能出现几个类名"。**
+
+这条以前是反方向的：`IMultiplayerState` 由 UI 宿主实现（`MultiplayerStateCoordinator` 把 BepInEx 的 `ConfigEntry` 包一层暴露出来），Unity 层调用。搬到 `src/Unity` 之后方向反了过来，存储归 Unity 层、UI 只是消费者，所以"反向接口不受约束"这条理由不再成立，改按 `PlayerView` 的先例走。
+
+搬下来的原因是 **BepInEx 只存在于 PC 宿主**。Android / iOS 宿主没有 `ConfigFile`，要读的设置却是同一套；留在 UI 层就得每个宿主各写一遍键名、类型、默认值和变更通知。现在这些都在平台无关的 `src/Unity` 里，只把"字节落到哪"抽成 `ISettingsStore`（见 `docs/game-runtime.md` 的 Multiplayer Settings）。
+
+`IMultiplayerState` 还在，但已经退成 Unity 层内部的只读端口：`UnityClient` / `UnityServer` 属性注入它，用来拒绝关闭联机后的连接和启动请求。UI 不再碰它。

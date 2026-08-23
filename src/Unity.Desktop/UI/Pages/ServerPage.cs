@@ -2,6 +2,7 @@
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.Unity;
+using GOILauncher.Multiplayer.Unity.Config;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
@@ -14,7 +15,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private const int DefaultPort = 9027;
 
         private readonly IUnityServer _server;
-        private readonly MultiplayerStateCoordinator _multiplayerState;
+        private readonly MultiplayerSettings _settings;
         private readonly ILogger<ServerPage> _logger;
         private readonly Toast _toast;
 
@@ -26,15 +27,15 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         public ServerPage(
             IUnityServer unityServer,
-            MultiplayerStateCoordinator multiplayerState,
+            MultiplayerSettings settings,
             ILogger<ServerPage> logger,
             Toast toast)
         {
             _server = unityServer;
-            _multiplayerState = multiplayerState;
+            _settings = settings;
             _logger = logger;
             _toast = toast;
-            _multiplayerState.EnabledChanged += OnMultiplayerEnabledChanged;
+            _settings.EnabledChanged += OnMultiplayerEnabledChanged;
         }
 
         public GameObject Root { get; private set; }
@@ -213,7 +214,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private bool IsMultiplayerEnabled
         {
-            get { return _multiplayerState == null || _multiplayerState.Enabled; }
+            get { return _settings == null || _settings.Enabled; }
         }
     }
 }

@@ -1,3 +1,4 @@
+using GOILauncher.Multiplayer.Unity.Config;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
@@ -6,13 +7,13 @@ namespace GOILauncher.Multiplayer.UI.Pages
 {
     public class SettingsPage : IPage
     {
-        private readonly MultiplayerStateCoordinator _multiplayerState;
+        private readonly MultiplayerSettings _settings;
         private Toggle _enabledToggle;
 
-        public SettingsPage(MultiplayerStateCoordinator multiplayerState)
+        public SettingsPage(MultiplayerSettings settings)
         {
-            _multiplayerState = multiplayerState;
-            _multiplayerState.EnabledChanged += OnEnabledChanged;
+            _settings = settings;
+            _settings.EnabledChanged += OnEnabledChanged;
         }
 
         public GameObject Root { get; private set; }
@@ -62,13 +63,13 @@ namespace GOILauncher.Multiplayer.UI.Pages
             UIFactory.SetLayoutElement(toggleObject, minHeight: 28, flexibleHeight: 0, flexibleWidth: 9999);
             toggleText.text = "\u542f\u7528\u8054\u673a";
 
-            _enabledToggle.isOn = _multiplayerState.Enabled;
+            _enabledToggle.isOn = _settings.Enabled;
             _enabledToggle.onValueChanged.AddListener(OnToggleChanged);
         }
 
         private void OnToggleChanged(bool enabled)
         {
-            _multiplayerState.SetEnabled(enabled);
+            _settings.SetEnabled(enabled);
             RefreshToggle();
         }
 
@@ -83,7 +84,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 return;
 
             _enabledToggle.onValueChanged.RemoveListener(OnToggleChanged);
-            _enabledToggle.isOn = _multiplayerState.Enabled;
+            _enabledToggle.isOn = _settings.Enabled;
             _enabledToggle.onValueChanged.AddListener(OnToggleChanged);
             _enabledToggle.interactable = true;
         }
