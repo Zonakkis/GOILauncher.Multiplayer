@@ -125,8 +125,11 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 row.Name.text = GetPlayerName(player);
                 row.Detail.text = player.Platform.ToString();
                 row.Status.text = player.IsInGame ? "游戏中" : "大厅";
-                // 自己那行不给传送按钮；外层格子留着，所以列不会错位（见 CreatePlayerRow）。
-                row.Teleport.Component.gameObject.SetActive(!player.IsLocal);
+                // 传送按钮只对"现在能传送过去"的玩家可见，判据和 RefreshDistances 是同一处
+                // （有距离 == 有远端实例 == 能传送过去，见 docs/ui-facade.md）。
+                // 本地玩家没有远端实例，Distance 恒为 null，所以自己那行也在这里被隐藏。
+                // 按钮藏在固定宽度的格子里而不是撤掉格子，列不会错位（见 CreatePlayerRow）。
+                SetTeleportVisible(row, player.Distance.HasValue);
                 row.Root.transform.SetSiblingIndex(i);
             }
 
@@ -138,7 +141,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
         }
 
         /// <summary>
-        /// 只更新距离列和传送按钮的可用性。没有场景实例的玩家（大厅里、实例池已满、
+        /// 只更新距离文本和传送按钮的可见性。没有场景实例的玩家（大厅里、实例池已满、
         /// 首个状态包未到）显示占位符，这是正常状态而不是错误。
         /// </summary>
         public void RefreshDistances()
@@ -148,9 +151,9 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 PlayerRow row = pair.Value;
                 float? distance = row.View.Distance;
 
-                // 有距离 == 有远端实例 == 能传送过去，判据只此一处（见 docs/ui-facade.md）。
-                // 自己那行的按钮由 SetPlayers 直接隐藏，这里写不写它都无所谓。
-                SetTeleportEnabled(row, distance.HasValue);
+                // 有距离 == 有远端实例 == 能传送过去，判据只此一处（见 docs/ui-facade.md）；
+                // 不想显示按钮的玩家也由它隐藏（含本地玩家，见 SetPlayers）。
+                SetTeleportVisible(row, distance.HasValue);
 
                 if (!distance.HasValue)
                 {
@@ -260,7 +263,8 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 
             ButtonRef teleportButton = UIFactory.CreateButton(actionCell, "PlayerTeleport", "传送");
             UIFactory.SetLayoutElement(teleportButton.Component.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
-            teleportButton.Component.interactable = false;
+            // 可见性交给 SetTeleportVisible 管：可见 == 能传送 == 可点，按钮默认就是 interactable，
+            // 不需要再维护一份置灰状态。
             // 行按 Id 建、也按 Id 销毁，所以闭包捕获 playerId 不会串到别人身上。
             teleportButton.OnClick += () => OnTeleportClicked(playerId);
 
@@ -280,15 +284,15 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             TeleportRequested?.Invoke(playerId);
         }
 
-        private static void SetTeleportEnabled(PlayerRow row, bool enabled)
+        private static void SetTeleportVisible(PlayerRow row, bool visible)
         {
-            // 和 DistanceEpsilon 同一个理由：写 interactable 会触发按钮的状态过渡，
-            // 10 Hz 无条件重写没必要。
-            if (row.CanTeleport == enabled)
+            // 和 DistanceEpsilon 同一个理由：SetActive 会触发 GameObject 的激活/失活
+            // 以及按钮的状态过渡，10 Hz 无条件重写没必要。
+            if (row.TeleportVisible == visible)
                 return;
 
-            row.CanTeleport = enabled;
-            row.Teleport.Component.interactable = enabled;
+            row.TeleportVisible = visible;
+            row.Teleport.Component.gameObject.SetActive(visible);
         }
 
         private static string GetPlayerName(PlayerView player)
@@ -320,7 +324,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             public PlayerView View;
             public float LastDistance;
             public bool HasDistance;
-            public bool CanTeleport;
+            public bool TeleportVisible;
         }
     }
 }
