@@ -169,9 +169,9 @@ namespace GOILauncher.Multiplayer.Unity.Models
             state = new PlayerState
             {
                 PlayerPosition = FromVector3(transform.position),
-                PlayerRotation = FromQuaternion(transform.rotation),
+                PlayerRotation = transform.rotation.eulerAngles.z,
                 SliderPosition = FromVector3(slider.position),
-                SliderRotation = FromQuaternion(slider.rotation),
+                SliderRotation = slider.rotation.eulerAngles.z,
                 HandlePosition = FromVector3(nestedHandle.position),
                 HandleRotation = FromQuaternion(nestedHandle.rotation)
             };
@@ -221,6 +221,11 @@ namespace GOILauncher.Multiplayer.Unity.Models
         private static Vector3 ToVector3(UnityVector3 value)
         {
             return new Vector3(value.X, value.Y, value.Z);
+        }
+
+        private static Quaternion ToQuaternion(float value)
+        {
+            return Quaternion.Euler(0, 0 , value);
         }
 
         private static Quaternion ToQuaternion(UnityQuaternion value)

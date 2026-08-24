@@ -40,9 +40,9 @@ namespace GOILauncher.Multiplayer.Unity.Models
             state = new PlayerState
             {
                 PlayerPosition = FromVector3(transform.position),
-                PlayerRotation = FromQuaternion(transform.rotation),
+                PlayerRotation = transform.rotation.eulerAngles.z,
                 SliderPosition = FromVector3(slider.position),
-                SliderRotation = FromQuaternion(slider.rotation),
+                SliderRotation = slider.rotation.eulerAngles.z,
                 HandlePosition = FromVector3(nestedHandle.position),
                 HandleRotation = FromQuaternion(nestedHandle.rotation)
             };

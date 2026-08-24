@@ -64,7 +64,7 @@ Mian LateUpdate
 
 - **每个模型的线上格式只存在于它自己的 `Serialize` / `Deserialize`。** 读一律 `reader.Get<T>()`，不再给模型另配 `NetDataReaderExtensions.GetXxx`。
 - `NetDataWriter.Put<T>` 和 `NetDataReader.Get<T>` 都对 `INetSerializable` 泛型约束，`UnityVector3` / `UnityQuaternion` 这些 struct 走它们不装箱，60 Hz 这条路上没有额外分配。
-- 整个 `PlayerState` 因此是 3×3 + 2×2 + 4 = 17 个 float、68 字节。`PlayerStatePacketTests` 有一条直接断言这个字节数——读写两边再不对称，会先炸在那里，而不是变成 reader 深处一个 `ArgumentOutOfRangeException`。
+- 整个 `PlayerState` 因此是 3×3 + 2 + 4 = 15 个 float、56 字节。`PlayerStatePacketTests` 有一条直接断言这个字节数——读写两边再不对称，会先炸在那里，而不是变成 reader 深处一个 `ArgumentOutOfRangeException`。
 
 ## Skin Synchronization
 
