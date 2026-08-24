@@ -14,5 +14,13 @@ namespace GOILauncher.Multiplayer.Network
         void Send(int clientId, INetSerializable packet, DeliveryMethod method);
         void Multicast(IEnumerable<int> clientIds, INetSerializable packet, DeliveryMethod method);
         void Broadcast(INetSerializable packet, DeliveryMethod method);
+        
+        /// <summary>
+        /// 指定 LiteNetLib 通道发送。通道号见
+        /// <see cref="Core.Data.Constants.NetworkChannels"/>。
+        /// </summary>
+        void Send(int clientId, INetSerializable packet, byte channel, DeliveryMethod method);
+
+        void Multicast(IEnumerable<int> clientIds, INetSerializable packet, byte channel, DeliveryMethod method);
     }
 }

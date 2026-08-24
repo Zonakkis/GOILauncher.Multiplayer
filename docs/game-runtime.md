@@ -100,6 +100,28 @@ Player
 - 远端实例由 `PlayerInstancePool` 创建的 `PlayerPrefab` 派生，并继续使用现有的无碰撞远端对象处理，因此当前不会与本地 `Player` 产生交互。
 - 如果多人插件在当前场景已经是 `Mian` 时才完成初始化，`GameManager.Start` 会补做当前场景资源准备并发布初始 `GameStartedEvent`；游戏中连接服务器时，握手也会触发玩家生命周期初始化并重新绑定本地玩家 ID。
 
+## Pot Skin
+
+罐子的外观全在 `Player/Pot/Mesh` 那个 MeshRenderer 的材质上，贴图和金度是同一个材质上的两件事（已实机确认）：
+
+| 材质成员 | 含义 |
+| --- | --- |
+| `mainTexture` | 罐子的贴图。皮肤 Mod 换的就是这个 |
+| `_Goldness` | 黑罐 `0`、金罐 `1`。通关后的金罐和普通黑罐用的是同一张贴图，差别只有这个值 |
+
+- **皮肤 Mod 只能依赖机制，不能依赖实现。** 现有皮肤 Mod（`SkinCustomizer` 只是其中一个）的实现各不相同，唯一稳定的是它们最终都把上面那个
+`mainTexture` 换成一张从本地图片加载的 `Texture2D`。所以同步皮肤读的是那张贴图本身，不读任何 Mod 的配置、目录或 `PlayerPrefs`。
+- **读本地用 `sharedMaterial`，写远端用 `material`。** `renderer.material` 会让 Unity 给这个 Renderer 拷一份独立材质，在本地玩家身上读它等
+于替皮肤 Mod 改了它的对象；反过来，写远端实例必须用 `material`，否则会改到所有实例共享的那一份。
+- **`Object.Instantiate` 不深拷贝 Material。** 所以 `PlayerPrefab` 和从池子里借来的远端实例，材质上挂的是本地玩家的贴图或前一个使用者的贴
+图——两种都不能直接给玩家看。远端实例出现时必须重画一次，入口是 `RemotePlayerInstanceCreatedEvent`（`PlayerManager.EnsureRemoteInstance` 里
+先入表再发，订阅者第一件事就是 `GetPlayer`）。
+- **这个 Unity 版本没有 `Texture.isReadable`**（2018.2+ 才有，游戏是 2017.x；`UnityEngine.CoreModule.dll` 里那个 `isReadable` 字符串属于 `
+Mesh`）。所以"这张贴图能不能编码成 PNG"只能试一次：`ImageConversion.EncodeToPNG` 用 try/catch 包住，结果按贴图对象记住。游戏自带的贴图在 C
+PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是这条失败路径，它不是错误**，只是 Unity 会往控制台打一行错，所以记住结果是为了每张贴图
+最多撞一次。
+- 因此没装皮肤时的基线不是"读到的贴图"，而是插件内嵌的一张原版贴图（`src/Unity/Resources/VanillaPot.png`），再叠上传过来的 `_Goldness`。
+
 ## Multiplayer Interaction
 
 - 当前阶段只要求远端玩家不与本地玩家产生交互。

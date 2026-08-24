@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using GOILauncher.Multiplayer.Core.Data;
+using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Core.Network;
@@ -51,7 +52,10 @@ namespace GOILauncher.Multiplayer.Core.Extensions
                 .SingleInstance();
             builder.Register(c =>
             {
-                var netManager = new NetManager(c.Resolve<NetworkClientListener>());
+                var netManager = new NetManager(c.Resolve<NetworkClientListener>())
+                {
+                    ChannelsCount = NetworkChannels.Count
+                };
                 return new NetworkClient(netManager,
                     c.Resolve<IEventBus>(),
                     c.Resolve<ILogger<NetworkClient>>());
@@ -74,7 +78,10 @@ namespace GOILauncher.Multiplayer.Core.Extensions
                 .SingleInstance();
             builder.Register(c =>
             {
-                var netManager = new NetManager(c.Resolve<NetworkServerListener>());
+                var netManager = new NetManager(c.Resolve<NetworkServerListener>())
+                {
+                    ChannelsCount = NetworkChannels.Count
+                };
                 return new NetworkServer(netManager,
                     c.Resolve<ILogger<NetworkServer>>());
             })

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Log;
 using LiteNetLib;
 using LiteNetLib.Utils;
@@ -50,20 +51,30 @@ namespace GOILauncher.Multiplayer.Network
 
         public void Send(int clientId, INetSerializable packet, DeliveryMethod method)
         {
+            Send(clientId, packet, NetworkChannels.Default, method);
+        }
+
+        public void Send(int clientId, INetSerializable packet, byte channel, DeliveryMethod method)
+        {
             var peer = _netManager.GetPeerById(clientId);
             if (peer == null) return;
 
             var bytes = NetSerializablePacketWriter.Write(packet);
-            peer.Send(bytes, method);
+            peer.Send(bytes, channel, method);
         }
 
         public void Multicast(IEnumerable<int> clientIds, INetSerializable packet, DeliveryMethod method)
+        {
+            Multicast(clientIds, packet, NetworkChannels.Default, method);
+        }
+
+        public void Multicast(IEnumerable<int> clientIds, INetSerializable packet, byte channel, DeliveryMethod method)
         {
             foreach (var clientId in clientIds)
             {
                 try
                 {
-                    Send(clientId, packet, method);
+                    Send(clientId, packet, channel, method);
                 }
                 catch (Exception e)
                 {

@@ -57,6 +57,7 @@
     <Compile Include="Services\ServerService.cs" />
     <Compile Include="Services\ChatService.cs" />
     <Compile Include="Synchronization\PlayerStateRelay.cs" />
+    <Compile Include="Synchronization\SkinRelay.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj">

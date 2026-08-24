@@ -239,6 +239,8 @@ namespace GOILauncher.Multiplayer.Unity.Player
             {
                 _players[info.Id] = instance;
                 _logger.Info("Instance created for remote player {PlayerName} ({PlayerId}).", info.Name, info.Id);
+                // 先入表再发事件：订阅者（比如皮肤）第一件事就是 GetPlayer 拿这个实例。
+                _eventBus.Publish(new RemotePlayerInstanceCreatedEvent(info.Id));
             }
         }
 

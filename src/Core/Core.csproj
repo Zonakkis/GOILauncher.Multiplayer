@@ -51,10 +51,15 @@
   <ItemGroup>
     <Compile Include="CoreManager.cs" />
     <Compile Include="Data\Constants\ModConstants.cs" />
+    <Compile Include="Data\Constants\NetworkChannels.cs" />
+    <Compile Include="Data\Constants\SkinConstants.cs" />
     <Compile Include="Data\IPacketDispatcher.cs" />
     <Compile Include="Data\Models\Platform.cs" />
     <Compile Include="Data\Models\PlayerInfo.cs" />
     <Compile Include="Data\Models\PlayerState.cs" />
+    <Compile Include="Data\Models\SkinBlob.cs" />
+    <Compile Include="Data\Models\SkinHash.cs" />
+    <Compile Include="Data\Models\SkinState.cs" />
     <Compile Include="Data\Models\UnityQuaternion.cs" />
     <Compile Include="Data\Models\UnityVector3.cs" />
     <Compile Include="Data\PacketDispatcher.cs" />
@@ -70,6 +75,12 @@
     <Compile Include="Data\Packets\C2SChatMessagePacket.cs" />
     <Compile Include="Data\Packets\C2SClientHandShakePacket.cs" />
     <Compile Include="Data\Packets\S2CPlayerStatePacket.cs" />
+    <Compile Include="Data\Packets\C2SSkinManifestPacket.cs" />
+    <Compile Include="Data\Packets\C2SSkinDataPacket.cs" />
+    <Compile Include="Data\Packets\C2SSkinRequestPacket.cs" />
+    <Compile Include="Data\Packets\S2CSkinManifestPacket.cs" />
+    <Compile Include="Data\Packets\S2CSkinDataPacket.cs" />
+    <Compile Include="Data\Packets\S2CSkinUnavailablePacket.cs" />
     <Compile Include="Event\ClientConnectedEvent.cs" />
     <Compile Include="Event\ClientDisconnectedEvent.cs" />
     <Compile Include="Event\EventBus.cs" />
@@ -90,7 +101,9 @@
     <Compile Include="Network\NetworkServer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Utils\DateTimeUtils.cs" />
+    <Compile Include="Utils\PngHeader.cs" />
     <Compile Include="Utils\SequenceNumber.cs" />
+    <Compile Include="Utils\SkinPayloadValidator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

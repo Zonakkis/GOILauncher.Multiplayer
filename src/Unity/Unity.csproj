@@ -66,6 +66,11 @@
       <HintPath>..\UnityLibraries\Android\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\UnityLibraries\Android\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.Physics2DModule, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\UnityLibraries\Android\UnityEngine.Physics2DModule.dll</HintPath>
@@ -76,6 +81,7 @@
     <Compile Include="Events\GameRestartedEvent.cs" />
     <Compile Include="Events\GameQuitEvent.cs" />
     <Compile Include="Events\GameStartedEvent.cs" />
+    <Compile Include="Events\RemotePlayerInstanceCreatedEvent.cs" />
     <Compile Include="Extensions\Vector3Extensions.cs" />
     <Compile Include="Extensions\PlatformExtensions.cs" />
     <Compile Include="Config\ISettingsStore.cs" />
@@ -102,6 +108,16 @@
     <Compile Include="MultiplayerUnityCore.cs" />
     <Compile Include="UnityServer.cs" />
     <Compile Include="Helpers\Physics2DHelper.cs" />
+    <Compile Include="Skin\LocalSkinReader.cs" />
+    <Compile Include="Skin\SkinSynchronizer.cs" />
+    <Compile Include="Skin\VanillaPotTexture.cs" />
+  </ItemGroup>
+  <ItemGroup> 
+    <!--
+      原版罐子贴图。文件缺失时不参与编译，VanillaPotTexture 会退化成"不改贴图"并警告一行——
+      少一张图不该让整个仓库编不过。
+    -->
+    <EmbeddedResource Include="Resources\VanillaPot.png" Condition="Exists('Resources\VanillaPot.png')" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Client\Client.csproj">

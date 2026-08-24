@@ -29,6 +29,10 @@ namespace GOILauncher.Multiplayer.Client.Extensions
                 .AsSelf()
                 .As<IStartable>()
                 .SingleInstance();
+            builder.RegisterType<ClientSkinSync>()
+                .AsSelf()
+                .As<IStartable>()
+                .SingleInstance();
             return builder;
         }
     }

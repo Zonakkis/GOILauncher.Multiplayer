@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Core.Data;
+using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Network;
 using LiteNetLib;
 using LiteNetLib.Utils;
@@ -29,58 +30,65 @@ namespace GOILauncher.Multiplayer.Tests.Client
 
         public void Send(INetSerializable packet, DeliveryMethod method)
         {
-            Sent.Add(new SentPacket(packet, method));
+            Send(packet, NetworkChannels.Default, method);
+        }
+
+        public void Send(INetSerializable packet, byte channel, DeliveryMethod method)
+        {
+            Sent.Add(new SentPacket(packet, channel, method));
         }
     }
+}
 
-    internal sealed class SentPacket
+internal sealed class SentPacket
+{
+    public INetSerializable Packet { get; private set; }
+    public byte Channel { get; private set; }
+    public DeliveryMethod Method { get; private set; }
+
+    public SentPacket(INetSerializable packet, byte channel, DeliveryMethod method)
     {
-        public INetSerializable Packet { get; private set; }
-        public DeliveryMethod Method { get; private set; }
+        Packet = packet;
+        Channel = channel;
+        Method = method;
+    }
+}
 
-        public SentPacket(INetSerializable packet, DeliveryMethod method)
-        {
-            Packet = packet;
-            Method = method;
-        }
+/// <summary>
+/// Captures the handlers a client module registers, so tests can feed S2C packets
+/// in without a live socket.
+/// </summary>
+internal sealed class RecordingClientDispatcher : IClientPacketDispatcher
+{
+    private readonly Dictionary<Type, Delegate> _handlers = new Dictionary<Type, Delegate>();
+
+    public void RegisterStruct<TPacket>(Action<TPacket, PacketSender> onReceive)
+        where TPacket : struct, INetSerializable
+    {
+        _handlers[typeof(TPacket)] = onReceive;
     }
 
-    /// <summary>
-    /// Captures the handlers a client module registers, so tests can feed S2C packets
-    /// in without a live socket.
-    /// </summary>
-    internal sealed class RecordingClientDispatcher : IClientPacketDispatcher
+    public void RegisterClass<TPacket>(Action<TPacket, PacketSender> onReceive)
+        where TPacket : class, INetSerializable, new()
     {
-        private readonly Dictionary<Type, Delegate> _handlers = new Dictionary<Type, Delegate>();
+        _handlers[typeof(TPacket)] = onReceive;
+    }
 
-        public void RegisterStruct<TPacket>(Action<TPacket, PacketSender> onReceive)
-            where TPacket : struct, INetSerializable
+    public void Dispatch(PacketSender sender, NetDataReader reader)
+    {
+    }
+
+    public void Receive<TPacket>(TPacket packet)
+        where TPacket : INetSerializable
+    {
+        Delegate handler;
+        if (!_handlers.TryGetValue(typeof(TPacket), out handler))
         {
-            _handlers[typeof(TPacket)] = onReceive;
+            throw new InvalidOperationException(
+                "No handler registered for " + typeof(TPacket).Name);
         }
 
-        public void RegisterClass<TPacket>(Action<TPacket, PacketSender> onReceive)
-            where TPacket : class, INetSerializable, new()
-        {
-            _handlers[typeof(TPacket)] = onReceive;
-        }
-
-        public void Dispatch(PacketSender sender, NetDataReader reader)
-        {
-        }
-
-        public void Receive<TPacket>(TPacket packet)
-            where TPacket : INetSerializable
-        {
-            Delegate handler;
-            if (!_handlers.TryGetValue(typeof(TPacket), out handler))
-            {
-                throw new InvalidOperationException(
-                    "No handler registered for " + typeof(TPacket).Name);
-            }
-
-            // S2C packets carry no meaningful sender: the client only ever talks to one server.
-            ((Action<TPacket, PacketSender>)handler)(packet, default(PacketSender));
-        }
+        // S2C packets carry no meaningful sender: the client only ever talks to one server.
+        ((Action<TPacket, PacketSender>)handler)(packet, default(PacketSender));
     }
 }

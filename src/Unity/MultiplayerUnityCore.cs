@@ -6,6 +6,7 @@ using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Extensions;
 using GOILauncher.Multiplayer.Unity.Config;
 using GOILauncher.Multiplayer.Unity.Player;
+using GOILauncher.Multiplayer.Unity.Skin;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -39,7 +40,8 @@ namespace GOILauncher.Multiplayer.Unity
             .RegisterMultiplayerSettings()
             .RegisterPlayerInstancePool()
             .RegisterPlayerManager()
-            .RegisterPlayerStateSynchronizer();
+            .RegisterPlayerStateSynchronizer()
+            .RegisterSkinSynchronizer();
 
             configure?.Invoke(builder);
 
@@ -49,6 +51,7 @@ namespace GOILauncher.Multiplayer.Unity
             // 纯 C# 的 Module 实现 IStartable，由容器在 Build() 时自动激活。
             _container.Resolve<IGameManager>();
             _container.Resolve<PlayerStateSynchronizer>();
+            _container.Resolve<SkinSynchronizer>();
             // 没有任何人依赖它，它靠构造时订阅设置变更生效，所以必须显式解析一次。
             _container.Resolve<MultiplayerLifecycleController>();
             return _container;
@@ -139,6 +142,27 @@ namespace GOILauncher.Multiplayer.Unity
                 var obj = new GameObject(nameof(PlayerStateSynchronizer));
                 obj.transform.SetParent(_core.transform);
                 var synchronizer = obj.AddComponent<PlayerStateSynchronizer>();
+                ctx.InjectProperties(synchronizer);
+                synchronizer.Init();
+                return synchronizer;
+            })
+            .AsSelf()
+            .SingleInstance();
+            return builder;
+        }
+        private static ContainerBuilder RegisterSkinSynchronizer(this ContainerBuilder builder)
+        {
+            builder.RegisterType<VanillaPotTexture>()
+                .AsSelf()
+                .SingleInstance();
+            builder.RegisterType<LocalSkinReader>()
+                .AsSelf()
+                .SingleInstance();
+            builder.Register(ctx =>
+            {
+                var obj = new GameObject(nameof(SkinSynchronizer));
+                obj.transform.SetParent(_core.transform);
+                var synchronizer = obj.AddComponent<SkinSynchronizer>();
                 ctx.InjectProperties(synchronizer);
                 synchronizer.Init();
                 return synchronizer;

@@ -5,10 +5,12 @@ namespace GOILauncher.Multiplayer.Server.Events
 {
     public class ClientHandshakeEvent
     {
+        public int PlayerId { get; set; }
         public string PlayerName { get; set; }
         public Platform Platform { get; set; }
-        public ClientHandshakeEvent(string playerName, Platform platform)
+        public ClientHandshakeEvent(int playerId, string playerName, Platform platform)
         {
+            PlayerId = playerId;
             PlayerName = playerName;
             Platform = platform;
         }

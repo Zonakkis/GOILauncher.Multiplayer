@@ -67,6 +67,50 @@ Mian LateUpdate
 - `UnityQuaternion` 只传 `Z` 和 `W`，`X` / `Y` 在收端写 0：这三个 Transform 只绕 Z 轴转（见 `docs/game-runtime.md`）。所以这个类型对状态同步是**有意有损**的，`X` / `Y` 写进去会被丢掉。
 - 整个 `PlayerState` 因此是 3×3 + 3×2 = 15 个 float、60 字节。`PlayerStatePacketTests` 有一条直接断言这个字节数——读写两边再不对称，会先炸在那里，而不是变成 reader 深处一个 `ArgumentOutOfRangeException`。
 
+## Skin Synchronization
+
+皮肤和 `PlayerState` 是两条完全不同的链：状态是每帧一份的小包、丢了就丢，皮肤是一局一份的大字节、必须到。所以它走独立的 `NetworkChannels.S
+kin` 通道（`ChannelsCount = 2`，两端必须一致）和 `ReliableOrdered`，不和 60 Hz 那条路抢序。
+
+同步的是**机制**而不是某个皮肤 Mod：所有皮肤 Mod 最终都把 `Pot/Mesh` 那个 MeshRenderer 的 `mainTexture` 换成一张自己加载的 `Texture2D`，本
+模块读的就是那张贴图本身，不读任何 Mod 的配置、目录或 `PlayerPrefs`（见 `docs/game-runtime.md` 的 Pot Skin）。
+
+```text
+进 Mian 后 0.1 s
+  -> LocalSkinReader 读 Pot/Mesh 的 sharedMaterial（贴图 + _Goldness）
+  -> ClientSkinSync.Announce(SkinState, PNG 字节)
+  -> C2SSkinManifestPacket + C2SSkinDataPacket
+  -> Server SkinRelay 校验发送者、槽位、哈希、载荷
+  -> S2CSkinManifestPacket 广播给其他所有玩家（含大厅里的）
+  -> 收端没有这个哈希的字节 -> C2SSkinRequestPacket
+  -> S2CSkinDataPacket（有）/ S2CSkinUnavailablePacket（没有）
+  -> PlayerSkinReceivedEvent
+  -> SkinSynchronizer 解码贴图，写远端实例的 material
+```
+
+- **一局只读一次，读完不再看。** 皮肤 Mod 是在场景加载后自己去换贴图的，谁先跑没有保证，所以等 0.1 s（`WaitForSecondsRealtime`，与 `timeSc
+ale` 无关）。没有轮询，也没有手动刷新：**游戏中途换皮肤不会同步，玩家要重开关卡**。`GameStartedEvent` 和 `GameRestartedEvent` 各触发一次读
+取，重开关卡因此是那个"生效"入口。
+- **清单和字节是分开的两个包，顺序是协议规定的。** 服务端只接受当前已宣告哈希的字节，否则它存下来的字节没有任何东西能证明属于哪张皮肤。上
+传不等别人来要：一张贴图迟早每个人都要。
+- **原版贴图不是"没有皮肤"，是一个正常的状态。** 没装皮肤时插件用内嵌的 `src/Unity/Resources/VanillaPot.png`，清单里哈希为空但 `Goldness`
+照常传。金罐和黑罐是同一张贴图、`_Goldness` 0↔1 的差别，所以只需要一张内嵌图。从自定义皮肤换回原版也必须发清单，收端才知道该换回去。
+- **哈希是内容标识，不是跨玩家去重。** 服务端缓存的粒度是每人一份（`Dictionary<int, SkinBlob>`），换皮肤时旧那份直接扔掉，玩家断开时连清单
+一起忘掉。它存在的理由是让上传只发生一次：一份贴图要发给房间里每个人、还要发给之后进来的人，按人头重传等于把上传方的上行带宽乘以人数。不落
+盘、不做 LRU。
+- **握手时补发全部清单。** 新来的人只收到玩家名单，名单里没有皮肤；不补这一遍，他看到的所有人都是原版罐子，直到那些人各自重开一次关卡。
+- **`S2CSkinUnavailablePacket` 是必须有的回音。** 客户端收到"没有"就退回原版且**不重试**——请求要是可以没有回音，那名玩家会永远停在原版上，
+而不是"暂时"停在那里。金度在退回时仍然生效，它从来不依赖贴图。
+- **两端各自校验载荷**（`SkinPayloadValidator`）：服务端转发的是别的客户端上传的字节，服务端本身也可能是别人的。`MaxPayloadBytes`（4 MB）
+只是给服务端缓存定天花板；真正拦压缩炸弹的是 `MaxTextureSize`（4096），而且必须在 `LoadImage` 之前从 PNG 的 IHDR 里读出尺寸判掉——解码完再
+查已经晚了，一张 4096² 的 RGBA32 是 64 MB。
+- **两级缓存、两条 prune 规则，都按"现在还有人穿吗"判。** `ClientSkinSync` 按哈希存字节，`SkinSynchronizer` 按哈希存解码后的 `Texture2D`；
+后者贵得多，所以它每次贴完贴图就问一次 `IsHashReferenced` 再扫。代价是那张要是又被换回来得重新下一次——上传侧的 A→B→A 会重传，正是为了让这
+条路走得通。
+- **断线清空远端一切，本地状态留着。** 重连可能是另一台服务器，或者同一台重启过，它那份缓存不算数了；本地皮肤没变，所以只需要在 `LocalPlay
+erReadyEvent` 时按原样再宣告一次。本地那次读取也可能发生在连上之前（先进游戏再连服务器），走的是同一条补发路径。
+- **`byte Slot` 现在只有 `PotSlot`。** 留着是为了以后加部件，服务端收到别的槽位会丢掉并警告——转发出去也没人渲染得了。
+
 ## Player Roster Ownership
 
 远端实例的创建时机取决于名单，所以名单的归属规则和同步方案绑定在一起。

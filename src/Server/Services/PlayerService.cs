@@ -57,7 +57,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                 Players = Players.Values.Where(p => p.Id != playerId).ToList()
             };
             _networkServer.Send(playerId, playerListPacket, DeliveryMethod.ReliableOrdered);
-            _eventBus.Publish(new ClientHandshakeEvent(playerName, platform));
+            _eventBus.Publish(new ClientHandshakeEvent(playerId, playerName, platform));
         }
 
         private void OnClientDisconnected(ClientDisconnectedEvent e)

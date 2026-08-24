@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Core.Data;
+using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Network;
 using LiteNetLib;
 using LiteNetLib.Utils;
@@ -29,14 +30,24 @@ namespace GOILauncher.Multiplayer.Tests.Server
 
         public void Send(int clientId, INetSerializable packet, DeliveryMethod method)
         {
-            Sent.Add(new SentPacket(clientId, packet, method));
+            Send(clientId, packet, NetworkChannels.Default, method);
+        }
+
+        public void Send(int clientId, INetSerializable packet, byte channel, DeliveryMethod method)
+        {
+            Sent.Add(new SentPacket(clientId, packet, channel, method));
         }
 
         public void Multicast(IEnumerable<int> clientIds, INetSerializable packet, DeliveryMethod method)
         {
+            Multicast(clientIds, packet, NetworkChannels.Default, method);
+        }
+
+        public void Multicast(IEnumerable<int> clientIds, INetSerializable packet, byte channel, DeliveryMethod method)
+        {
             foreach (var clientId in clientIds)
             {
-                Send(clientId, packet, method);
+                Send(clientId, packet, channel, method);
             }
         }
 
@@ -50,12 +61,14 @@ namespace GOILauncher.Multiplayer.Tests.Server
     {
         public int ClientId { get; private set; }
         public INetSerializable Packet { get; private set; }
+        public byte Channel { get; private set; }
         public DeliveryMethod Method { get; private set; }
 
-        public SentPacket(int clientId, INetSerializable packet, DeliveryMethod method)
+         public SentPacket(int clientId, INetSerializable packet, byte channel, DeliveryMethod method)
         {
             ClientId = clientId;
             Packet = packet;
+            Channel = channel;
             Method = method;
         }
     }

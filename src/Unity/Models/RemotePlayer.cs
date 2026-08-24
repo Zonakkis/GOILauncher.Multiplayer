@@ -12,6 +12,7 @@ namespace GOILauncher.Multiplayer.Unity.Models
 
         public GameObject LocalPlayer { get; set; }
         private Renderer[] _renderers;
+        private Material _potMaterial;
 
         /// <summary>
         /// 到本地玩家的直线距离（米）。头顶标签和玩家列表共用这一处定义，
@@ -92,6 +93,68 @@ namespace GOILauncher.Multiplayer.Unity.Models
             _hasState = false;
         }
 
+         /// <summary>
+        /// 换掉罐子的贴图和金度。<paramref name="texture"/> 为 null 时只改金度。
+        /// 返回 false 表示这个实例上找不到罐子的 MeshRenderer，外观没动过。
+        /// </summary>
+        /// <remarks>
+        /// 只写 <c>material</c>（每个 Renderer 自己那份），绝不写 <c>sharedMaterial</c>：
+        /// 远端实例是从本地 Player 克隆来的，两边的 Renderer 指着同一个材质，写共享那份
+        /// 等于把本地玩家也换掉。读 <c>material</c> 这一下就已经让 Unity 拷出独立副本了，
+        /// 副本归本实例所有，销毁时要自己收（见 <see cref="OnDestroy"/>）。
+        /// </remarks>
+        public bool ApplySkin(Texture2D texture, float goldness)
+        {
+            var material = GetPotMaterial();
+            if (material == null)
+            {
+                return false;
+            }
+
+            if (texture != null)
+            {
+                material.mainTexture = texture;
+            }
+            if (material.HasProperty(GameConstants.GoldnessProperty))
+            {
+                material.SetFloat(GameConstants.GoldnessProperty, goldness);
+            }
+            return true;
+        }
+
+        public void OnDestroy()
+        {
+            // 这份材质是读 material 时 Unity 为本实例拷出来的，没人替我们回收。
+            if (_potMaterial != null)
+            {
+                Destroy(_potMaterial);
+                _potMaterial = null;
+            }
+        }
+
+        private Material GetPotMaterial()
+        {
+            // 实例本身在池里反复借还，材质副本跟着实例活着，所以只拷一次。
+            if (_potMaterial != null)
+            {
+                return _potMaterial;
+            }
+
+            var mesh = transform.Find(GameConstants.PotMeshPath);
+            if (mesh == null)
+            {
+                return null;
+            }
+
+            var renderer = mesh.GetComponent<Renderer>();
+            if (renderer == null)
+            {
+                return null;
+            }
+
+            _potMaterial = renderer.material;
+            return _potMaterial;
+        }
 
         private bool TryCaptureState(out PlayerState state)
         {

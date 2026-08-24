@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using LiteNetLib;
@@ -57,10 +58,15 @@ namespace GOILauncher.Multiplayer.Network
 
         public void Send(INetSerializable packet, DeliveryMethod method)
         {
+            Send(packet, NetworkChannels.Default, method);
+        }
+
+        public void Send(INetSerializable packet, byte channel, DeliveryMethod method)
+        {
             if (!IsConnected) return;
 
             var bytes = NetSerializablePacketWriter.Write(packet);
-            _server.Send(bytes, method);
+            _server.Send(bytes, channel, method);
         }
     }
 }
