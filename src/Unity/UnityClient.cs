@@ -39,6 +39,13 @@ namespace GOILauncher.Multiplayer.Unity
         public event Action<Message> ChatMessageReceived;
         public event Action PlayerListUpdated;
 
+
+        /// <summary>
+        /// 本地玩家的视图。只读。
+        /// </summary>
+        public PlayerView LocalPlayer => new PlayerView(PlayerService.LocalPlayer.Id, PlayerService, PlayerManager);
+
+
         /// <summary>
         /// 每次枚举都现场造 PlayerView，不留副本：名单的唯一所有者是 PlayerService。
         /// </summary>

@@ -17,6 +17,11 @@ namespace GOILauncher.Multiplayer.Unity
         ReadOnlyCollection<Message> ChatMessages { get; }
 
         /// <summary>
+        /// 本地玩家的视图。只读。
+        /// </summary>
+        PlayerView LocalPlayer { get; }
+        
+        /// <summary>
         /// 当前名单（含本地玩家）。条目是读透权威来源的视图而不是快照，
         /// 可以存在 UI 行上跨帧复用。
         /// </summary>
