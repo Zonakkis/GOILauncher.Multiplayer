@@ -1,87 +1,26 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{FE614C55-A3F2-4315-82E1-A3A293CA89D1}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>GOILauncher.Multiplayer.Client</RootNamespace>
+    <TargetFrameworks>net35;netstandard2.0</TargetFrameworks>
     <AssemblyName>GOILauncher.Multiplayer.Client</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
+    <RootNamespace>GOILauncher.Multiplayer.Client</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ProjectGuid>{FE614C55-A3F2-4315-82E1-A3A293CA89D1}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="Autofac, Version=2.6.3.862, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Autofac.2.6.3.862\lib\NET35\Autofac.dll</HintPath>
-    </Reference>
-    <Reference Include="Autofac.Configuration, Version=2.6.3.862, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Autofac.2.6.3.862\lib\NET35\Autofac.Configuration.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net35'">
+    <PackageReference Include="Autofac" Version="2.6.3.862" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Events\ChatMessageEvent.cs" />
-    <Compile Include="Events\PlayerLeftEvent.cs" />
-    <Compile Include="Events\PlayerEnteredGameEvent.cs" />
-    <Compile Include="Events\PlayerQuitGameEvent.cs" />
-    <Compile Include="Events\PlayerJoinedEvent.cs" />
-    <Compile Include="Events\PlayerListUpdatedEvent.cs" />
-    <Compile Include="Events\PlayerRosterReceivedEvent.cs" />
-    <Compile Include="Events\LocalPlayerReadyEvent.cs" />
-    <Compile Include="Events\ServerHandshakeEvent.cs" />
-    <Compile Include="Events\PlayerStateReceivedEvent.cs" />
-    <Compile Include="Events\PlayerSkinReceivedEvent.cs" />
-    <Compile Include="Extensions\AutofacExtensions.cs" />
-    <Compile Include="Extensions\ClientPlayerExtensions.cs" />
-    <Compile Include="Models\Message.cs" />
-    <Compile Include="Models\MessageType.cs" />
-    <Compile Include="Services\ChatService.cs" />
-    <Compile Include="Services\ClientService.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Services\IChatService.cs" />
-    <Compile Include="Services\IClientService.cs" />
-    <Compile Include="Services\IPlayerService.cs" />
-    <Compile Include="Services\PlayerService.cs" />
-    <Compile Include="Synchronization\ClientPlayerStateSync.cs" />
-    <Compile Include="Synchronization\ClientSkinSync.cs" />
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Autofac" Version="4.9.4" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\Core\Core.csproj">
-      <Project>{908cf820-b1ab-40a3-a504-96dfc6bc3b40}</Project>
-      <Name>Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj">
-      <Project>{cd19dc5d-b660-02ac-3533-05551bf84ace}</Project>
-      <Name>LiteNetLib</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\Core\Core.csproj" />
+    <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
 </Project>
