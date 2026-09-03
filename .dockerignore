@@ -1,0 +1,47 @@
+# 构建输出
+**/bin/
+**/obj/
+**/Release/
+**/Debug/
+**/publish/
+
+# 版本控制
+.git/
+.gitignore
+.gitattributes
+.vs/
+.idea/
+
+# 文档
+README.md
+*.md
+
+# 日志
+*.log
+*.tmp
+
+# NuGet
+*.nupkg
+**/packages/
+
+# Docker
+Dockerfile*
+.dockerignore
+
+# 敏感配置
+*.env
+*.local
+appsettings.Development.json
+appsettings.Staging.json
+
+# 测试
+**/TestResults/
+**/coverage/
+
+# 其他
+*.user
+*.suo
+Thumbs.db
+.DS_Store
+.claude/
+.resonix/
