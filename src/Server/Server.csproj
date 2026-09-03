@@ -1,13 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net35;netstandard2.0</TargetFrameworks>
     <AssemblyName>GOILauncher.Multiplayer.Server</AssemblyName>
     <RootNamespace>GOILauncher.Multiplayer.Server</RootNamespace>
     <LangVersion>latest</LangVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ProjectGuid>{9D509ADD-EC76-4072-99C7-907624C222CF}</ProjectGuid>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(WithoutNet35)' == 'true'">
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(WithoutNet35)' != 'true'">
+    <TargetFramework>netstandard2.0;net35</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net35'">
