@@ -263,6 +263,11 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
 
             ButtonRef teleportButton = UIFactory.CreateButton(actionCell, "PlayerTeleport", "传送");
             UIFactory.SetLayoutElement(teleportButton.Component.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
+            // 新行先把按钮藏掉：TeleportVisible 字段默认 false，而 CreateButton 出来是激活的，
+            // 若直接交给 SetTeleportVisible 的防抖守卫，第一次 SetTeleportVisible(row, false)
+            // 会因 false == false 提前返回，SetActive(false) 永远不会执行——本地玩家这类
+            // 没有距离的行就会一直露着按钮（见 SetTeleportVisible）。
+            teleportButton.Component.gameObject.SetActive(false);
             // 可见性交给 SetTeleportVisible 管：可见 == 能传送 == 可点，按钮默认就是 interactable，
             // 不需要再维护一份置灰状态。
             // 行按 Id 建、也按 Id 销毁，所以闭包捕获 playerId 不会串到别人身上。
