@@ -153,4 +153,11 @@ docs/.vitepress/dist/
 docs/.vitepress/cache/
 
 src/UniverseLib/
+
+##################################################
+# Agent
+##################################################
+.claude/
+.reasonix/
 reasonix.toml
+.trae/
