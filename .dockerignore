@@ -4,6 +4,7 @@
 **/Release/
 **/Debug/
 **/publish/
+artifacts/
 
 # 版本控制
 .git/
@@ -15,6 +16,11 @@
 # 文档
 README.md
 *.md
+
+# 文档站点构建产物
+docs/node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/
 
 # 日志
 *.log
@@ -44,4 +50,4 @@ appsettings.Staging.json
 Thumbs.db
 .DS_Store
 .claude/
-.resonix/
+.reasonix/
