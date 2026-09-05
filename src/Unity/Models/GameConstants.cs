@@ -11,7 +11,7 @@ namespace GOILauncher.Multiplayer.Unity.Models
         
         /// <summary>
         /// 罐子那个 MeshRenderer 相对 <c>Player</c> 根的路径。皮肤 Mod 换的就是它材质上的
-        /// <c>mainTexture</c>，金度也在同一个材质上（见 docs/game-runtime.md）。
+        /// <c>mainTexture</c>，金度也在同一个材质上（见 docs/agent/game-runtime.md）。
         /// </summary>
         public const string PotMeshPath = "Pot/Mesh";
 

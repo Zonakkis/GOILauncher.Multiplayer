@@ -30,7 +30,7 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三�
 
 这样做的原因：
 
-- 客户端和服务端**共用一条 `IEventBus`**，隔离只靠事件类型名不相交维持（见 `docs/state-synchronization.md`）。UI 直接订阅总线，就得自己知道 `ServerConnectedEvent` 是"我连上了服务器"而不是"有客户端连上我了"——这正是不该让 UI 层背的知识。
+- 客户端和服务端**共用一条 `IEventBus`**，隔离只靠事件类型名不相交维持（见 `docs/agent/state-synchronization.md`）。UI 直接订阅总线，就得自己知道 `ServerConnectedEvent` 是"我连上了服务器"而不是"有客户端连上我了"——这正是不该让 UI 层背的知识。
 - 总线上的事件类型属于 `Core` / `Client`，UI 一订阅就得 `using` 下层命名空间，三门面的约定名存实亡。
 - 门面事件的参数按 UI 需不需要来定，不是照抄总线事件。`Disconnected` 只给 `reason`，`ChatMessageReceived` 给消息本体（见下），`PlayerListUpdated` 什么都不给——名单从 `Players` 读。
 

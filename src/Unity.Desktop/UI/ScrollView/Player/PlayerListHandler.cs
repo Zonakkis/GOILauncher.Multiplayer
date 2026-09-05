@@ -126,7 +126,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 row.Detail.text = player.Platform.ToString();
                 row.Status.text = player.IsInGame ? "游戏中" : "大厅";
                 // 传送按钮只对"现在能传送过去"的玩家可见，判据和 RefreshDistances 是同一处
-                // （有距离 == 有远端实例 == 能传送过去，见 docs/ui-facade.md）。
+                // （有距离 == 有远端实例 == 能传送过去，见 docs/agent/ui-facade.md）。
                 // 本地玩家没有远端实例，Distance 恒为 null，所以自己那行也在这里被隐藏。
                 // 按钮藏在固定宽度的格子里而不是撤掉格子，列不会错位（见 CreatePlayerRow）。
                 SetTeleportVisible(row, player.Distance.HasValue);
@@ -151,7 +151,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 PlayerRow row = pair.Value;
                 float? distance = row.View.Distance;
 
-                // 有距离 == 有远端实例 == 能传送过去，判据只此一处（见 docs/ui-facade.md）；
+                // 有距离 == 有远端实例 == 能传送过去，判据只此一处（见 docs/agent/ui-facade.md）；
                 // 不想显示按钮的玩家也由它隐藏（含本地玩家，见 SetPlayers）。
                 SetTeleportVisible(row, distance.HasValue);
 

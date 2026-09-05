@@ -7,7 +7,7 @@ using GOILauncher.Multiplayer.Unity.Player;
 namespace GOILauncher.Multiplayer.Unity
 {
     /// <summary>
-    /// UI 宿主访问客户端的唯一入口。约定见 docs/ui-facade.md：
+    /// UI 宿主访问客户端的唯一入口。约定见 docs/agent/ui-facade.md：
     /// 新增能力挂在这里（或 IUnityServer）下面，不要为它新开一个根接口，
     /// 也不要让 UI 直接订阅 IEventBus。
     /// </summary>

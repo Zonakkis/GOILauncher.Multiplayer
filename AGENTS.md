@@ -19,13 +19,13 @@ When encountering something you do not understand or cannot resolve, ask clarify
 Before changing gameplay, player lifecycle, networking, or state synchronization code, read:
 
 - `CONTEXT.md`
-- `docs/game-runtime.md`
-- `docs/state-synchronization.md`
+- `docs/agent/game-runtime.md`
+- `docs/agent/state-synchronization.md`
 
-Before changing anything the UI layer touches (`Unity.Desktop`, `IUnityClient`, `IUnityServer`, `MultiplayerUnityCore`), read `docs/ui-facade.md`. The UI layer depends on exactly three facades; new capabilities hang off an existing one instead of introducing a fourth root interface.
+Before changing anything the UI layer touches (`Unity.Desktop`, `IUnityClient`, `IUnityServer`, `MultiplayerUnityCore`), read `docs/agent/ui-facade.md`. The UI layer depends on exactly three facades; new capabilities hang off an existing one instead of introducing a fourth root interface.
 
-Treat Unity object names and casing in `docs/game-runtime.md` as exact. Do not infer object or component responsibilities from names alone; confirm them from code, runtime inspection, or the user.
+Treat Unity object names and casing in `docs/agent/game-runtime.md` as exact. Do not infer object or component responsibilities from names alone; confirm them from code, runtime inspection, or the user.
 
-Keep `CONTEXT.md` limited to domain vocabulary and relationships. Record Unity hierarchy, components, coordinate spaces, and runtime behavior in `docs/game-runtime.md`. Update the relevant document as new facts are confirmed.
+Keep `CONTEXT.md` limited to domain vocabulary and relationships. Record Unity hierarchy, components, coordinate spaces, and runtime behavior in `docs/agent/game-runtime.md`. Update the relevant document as new facts are confirmed.
 
 Treat the synchronization model inherited from `master` as a tested legacy baseline, not as the final design for the current rewrite. Keep legacy facts and new-version decisions distinct.
