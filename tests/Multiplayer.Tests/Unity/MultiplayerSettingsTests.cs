@@ -30,6 +30,7 @@ namespace GOILauncher.Multiplayer.Tests.Unity
             MultiplayerSettings settings = CreateSettings();
 
             settings.Enabled.Should().Be(MultiplayerSettings.DefaultEnabled);
+            settings.PlayerName.Should().Be(MultiplayerSettings.DefaultPlayerName);
             settings.ClientHost.Should().Be(MultiplayerSettings.DefaultClientHost);
             settings.ClientPort.Should().Be(MultiplayerSettings.DefaultClientPort);
             settings.ServerPort.Should().Be(MultiplayerSettings.DefaultServerPort);
@@ -39,6 +40,7 @@ namespace GOILauncher.Multiplayer.Tests.Unity
         public void PersistedValues_AreReadBack()
         {
             _store.Set(MultiplayerSettings.EnabledKey, "false");
+            _store.Set(MultiplayerSettings.PlayerNameKey, "Alice");
             _store.Set(MultiplayerSettings.ClientHostKey, "192.168.1.20");
             _store.Set(MultiplayerSettings.ClientPortKey, "1234");
             _store.Set(MultiplayerSettings.ServerPortKey, "65535");
@@ -46,6 +48,7 @@ namespace GOILauncher.Multiplayer.Tests.Unity
             MultiplayerSettings settings = CreateSettings();
 
             settings.Enabled.Should().BeFalse();
+            settings.PlayerName.Should().Be("Alice");
             settings.ClientHost.Should().Be("192.168.1.20");
             settings.ClientPort.Should().Be(1234);
             settings.ServerPort.Should().Be(65535);
@@ -123,6 +126,63 @@ namespace GOILauncher.Multiplayer.Tests.Unity
             settings.ClientHostChanged += host => raised++;
 
             settings.SetClientHost(MultiplayerSettings.DefaultClientHost);
+
+            _store.Writes.Should().Be(0);
+            raised.Should().Be(0);
+        }
+
+        // The name differs from the host: blank is a valid "not chosen yet" state, so neither reading
+        // nor writing normalizes it away.
+        [Test]
+        public void BlankPersistedName_StaysBlank()
+        {
+            _store.Set(MultiplayerSettings.PlayerNameKey, "   ");
+
+            CreateSettings().PlayerName.Should().Be(MultiplayerSettings.DefaultPlayerName);
+        }
+
+        [Test]
+        public void PersistedName_IsTrimmed()
+        {
+            _store.Set(MultiplayerSettings.PlayerNameKey, "  Alice  ");
+
+            CreateSettings().PlayerName.Should().Be("Alice");
+        }
+
+        [Test]
+        public void SetPlayerName_TrimsWritesAndRaises()
+        {
+            MultiplayerSettings settings = CreateSettings();
+            List<string> raised = new List<string>();
+            settings.PlayerNameChanged += raised.Add;
+
+            settings.SetPlayerName("  Alice  ");
+
+            settings.PlayerName.Should().Be("Alice");
+            _store.Read(MultiplayerSettings.PlayerNameKey).Should().Be("Alice");
+            raised.Should().Equal("Alice");
+        }
+
+        [Test]
+        public void SetPlayerName_Blank_StoresBlank()
+        {
+            _store.Set(MultiplayerSettings.PlayerNameKey, "Alice");
+            MultiplayerSettings settings = CreateSettings();
+
+            settings.SetPlayerName("   ");
+
+            settings.PlayerName.Should().Be(string.Empty);
+            _store.Read(MultiplayerSettings.PlayerNameKey).Should().Be(string.Empty);
+        }
+
+        [Test]
+        public void SetPlayerName_SameValue_DoesNotWriteOrRaise()
+        {
+            MultiplayerSettings settings = CreateSettings();
+            int raised = 0;
+            settings.PlayerNameChanged += name => raised++;
+
+            settings.SetPlayerName(MultiplayerSettings.DefaultPlayerName);
 
             _store.Writes.Should().Be(0);
             raised.Should().Be(0);

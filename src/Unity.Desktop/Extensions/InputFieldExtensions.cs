@@ -14,6 +14,20 @@ namespace GOILauncher.Multiplayer.Extensions
         public const string InvalidPortMessage = "\u7aef\u53e3\u5fc5\u987b\u662f 1-65535 \u4e4b\u95f4\u7684\u6570\u5b57";
 
         /// <summary>
+        /// Permanently hides the placeholder child of a field that is allowed to stay blank. A blank
+        /// name is the "not chosen yet" state, and an in-box hint makes an empty field look prefilled.
+        /// </summary>
+        public static void HidePlaceholder(this InputFieldRef input)
+        {
+            if (input == null)
+                return;
+
+            var placeholder = input.PlaceholderText;
+            if (placeholder != null)
+                placeholder.gameObject.SetActive(false);
+        }
+
+        /// <summary>
         /// Parses the field as a port, using <see cref="MultiplayerSettings.IsValidPort"/> as the range
         /// check so the UI never writes a value the settings would reject on the next load. On success
         /// the field is rewritten with the parsed value, so what the player sees is what was read.

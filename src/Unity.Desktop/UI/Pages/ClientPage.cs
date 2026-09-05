@@ -18,8 +18,6 @@ namespace GOILauncher.Multiplayer.UI.Pages
 {
     public class ClientPage : IPage
     {
-        private const string DefaultPlayerName = "\u73a9\u5bb6";
-
         private static readonly RoomListItemViewData[] MockRoomItems = new RoomListItemViewData[]
         {
             new RoomListItemViewData("\u65b0\u624b\u4f11\u95f2\u623f", "1/4"),
@@ -65,6 +63,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             _client.Connected += OnServerConnected;
             _client.Disconnected += OnServerDisconnected;
             _settings.EnabledChanged += OnMultiplayerEnabledChanged;
+            _settings.PlayerNameChanged += OnDefaultNameChanged;
             _settings.ClientHostChanged += OnDefaultHostChanged;
             _settings.ClientPortChanged += OnDefaultPortChanged;
         }
@@ -164,7 +163,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
             Text nameLabel = UIFactory.CreateLabel(nameRow, "NameLabel", "\u540d\u5b57", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(nameLabel.gameObject, minWidth: 72, preferredWidth: 80, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
 
-            playerNameInput = UIFactory.CreateInputField(nameRow, "PlayerNameInput", "\u8f93\u5165\u540d\u5b57");
+            playerNameInput = UIFactory.CreateInputField(nameRow, "PlayerNameInput", string.Empty);
+            playerNameInput.HidePlaceholder();
+            playerNameInput.Text = _settings.PlayerName;
             UIFactory.SetLayoutElement(playerNameInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
 
             GameObject addressRow = UIFactory.CreateHorizontalGroup(
@@ -334,6 +335,13 @@ namespace GOILauncher.Multiplayer.UI.Pages
             }
 
             string playerName = GetPlayerName();
+            if (string.IsNullOrWhiteSpace(playerName))
+            {
+                _toast.Show("\u540d\u5b57\u4e0d\u80fd\u4e3a\u7a7a");
+                RefreshClientState();
+                return;
+            }
+
             string serverHost = GetServerHost();
             if (!TryGetServerPort(out int serverPort))
                 return;
@@ -426,6 +434,12 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         // The settings page owns the defaults. Overwrite the fields only while the connection is idle:
         // during one they show where this connection is actually going, and they are not editable anyway.
+        private void OnDefaultNameChanged(string name)
+        {
+            if (playerNameInput != null && IsConnectionIdle)
+                playerNameInput.Text = name;
+        }
+
         private void OnDefaultHostChanged(string host)
         {
             if (serverHostInput != null && IsConnectionIdle)
@@ -458,11 +472,8 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void SyncConnectionInputs()
         {
-            if (playerNameInput == null || serverHostInput == null || serverPortInput == null)
+            if (serverHostInput == null || serverPortInput == null)
                 return;
-
-            if (string.IsNullOrEmpty(playerNameInput.Text))
-                playerNameInput.Text = DefaultPlayerName;
 
             if (string.IsNullOrEmpty(serverHostInput.Text))
                 serverHostInput.Text = DefaultServerHost;
@@ -473,14 +484,8 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private string GetPlayerName()
         {
-            string playerName = playerNameInput != null ? playerNameInput.Text?.Trim() : string.Empty;
-            if (string.IsNullOrWhiteSpace(playerName))
-                playerName = DefaultPlayerName;
-
-            if (playerNameInput != null)
-                playerNameInput.Text = playerName;
-
-            return playerName;
+            // Blank stays blank here; OnConnectClicked refuses to connect with one.
+            return playerNameInput != null ? playerNameInput.Text?.Trim() : string.Empty;
         }
 
         private string GetServerHost()

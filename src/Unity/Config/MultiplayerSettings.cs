@@ -14,14 +14,17 @@ namespace GOILauncher.Multiplayer.Unity.Config
     /// <see cref="MultiplayerLifecycleController"/> owns those consequences, which keeps "what the
     /// player chose" separate from "what that does".
     /// <para>
-    /// 连接地址和端口这三项存的是**默认值**：客户端页 / 服务端页拿它们填输入框初值，玩家在那儿
-    /// 临时改成别的地址只影响那一次连接，不回写这里。所以这里的值只有设置页会写。
+    /// 名字、连接地址和端口这四项存的是**默认值**：客户端页 / 服务端页拿它们填输入框初值，玩家在那儿
+    /// 临时改成别的值只影响那一次连接，不回写这里。所以这里的值只有设置页会写。
     /// </para>
     /// </remarks>
     public sealed class MultiplayerSettings : IMultiplayerState
     {
         public const string EnabledKey = "Multiplayer.Enabled";
         public const bool DefaultEnabled = true;
+
+        public const string PlayerNameKey = "Multiplayer.Client.PlayerName";
+        public const string DefaultPlayerName = "";
 
         public const string ClientHostKey = "Multiplayer.Client.DefaultHost";
         public const string DefaultClientHost = "127.0.0.1";
@@ -38,6 +41,7 @@ namespace GOILauncher.Multiplayer.Unity.Config
         private readonly ISettingsStore _store;
         private readonly ILogger<MultiplayerSettings> _logger;
         private bool _enabled;
+        private string _playerName;
         private string _clientHost;
         private int _clientPort;
         private int _serverPort;
@@ -50,12 +54,15 @@ namespace GOILauncher.Multiplayer.Unity.Config
             _store = store;
             _logger = logger;
             _enabled = ReadBool(EnabledKey, DefaultEnabled);
+            _playerName = ReadName(PlayerNameKey, DefaultPlayerName);
             _clientHost = ReadHost(ClientHostKey, DefaultClientHost);
             _clientPort = ReadPort(ClientPortKey, DefaultClientPort);
             _serverPort = ReadPort(ServerPortKey, DefaultServerPort);
         }
 
         public event Action<bool> EnabledChanged;
+
+        public event Action<string> PlayerNameChanged;
 
         public event Action<string> ClientHostChanged;
 
@@ -67,6 +74,15 @@ namespace GOILauncher.Multiplayer.Unity.Config
         {
             get { return _enabled; }
             set { SetEnabled(value); }
+        }
+
+        /// <summary>
+        /// The name the client page pre-fills. May be blank: an empty name is the "not chosen yet"
+        /// state, and the client page refuses to connect with one.
+        /// </summary>
+        public string PlayerName
+        {
+            get { return _playerName; }
         }
 
         /// <summary>The host the client page pre-fills. Never blank.</summary>
@@ -104,6 +120,22 @@ namespace GOILauncher.Multiplayer.Unity.Config
             _enabled = enabled;
             _store.Write(EnabledKey, enabled ? "true" : "false");
             Raise(EnabledChanged, enabled);
+        }
+
+        /// <summary>
+        /// Sets the name the client page pre-fills. The value is trimmed. Unlike
+        /// <see cref="SetClientHost"/>, a blank one is stored as-is: empty is a valid "not chosen yet"
+        /// state, and refusing to connect with an empty name belongs to the client page.
+        /// </summary>
+        public void SetPlayerName(string name)
+        {
+            string trimmed = name == null ? string.Empty : name.Trim();
+            if (_playerName == trimmed)
+                return;
+
+            _playerName = trimmed;
+            _store.Write(PlayerNameKey, trimmed);
+            Raise(PlayerNameChanged, trimmed);
         }
 
         /// <summary>
@@ -203,6 +235,16 @@ namespace GOILauncher.Multiplayer.Unity.Config
 
             string trimmed = raw.Trim();
             return trimmed.Length == 0 ? defaultValue : trimmed;
+        }
+
+        private string ReadName(string key, string defaultValue)
+        {
+            string raw;
+            if (!_store.TryRead(key, out raw) || raw == null)
+                return defaultValue;
+
+            // Blank is a valid state for the name, so there is no default to fall back to.
+            return raw.Trim();
         }
 
         private int ReadPort(string key, int defaultValue)

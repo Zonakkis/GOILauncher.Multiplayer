@@ -10,9 +10,9 @@ using UniverseLib.Utility;
 namespace GOILauncher.Multiplayer.UI.Pages
 {
     /// <summary>
-    /// Edits the persisted settings. The three address fields here are defaults: the client and server
-    /// pages seed their inputs from them, and changing an address over there is for that one connection
-    /// only, so this page is the only writer.
+    /// Edits the persisted settings. The fields here are defaults: the client and server pages seed
+    /// their inputs from them, and changing one over there is for that one connection only, so this
+    /// page is the only writer.
     /// </summary>
     public class SettingsPage : IPage
     {
@@ -20,6 +20,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private readonly Toast _toast;
 
         private Toggle _enabledToggle;
+        private InputFieldRef _playerNameInput;
         private InputFieldRef _clientHostInput;
         private InputFieldRef _clientPortInput;
         private InputFieldRef _serverPortInput;
@@ -86,9 +87,14 @@ namespace GOILauncher.Multiplayer.UI.Pages
             _enabledToggle.isOn = _settings.Enabled;
             _enabledToggle.onValueChanged.AddListener(OnToggleChanged);
 
-            // The address defaults stay editable with multiplayer off: configuring them before turning
+            // The default fields stay editable with multiplayer off: configuring them before turning
             // it on is the normal order.
             CreateSectionLabel("ClientSectionLabel", "\u5ba2\u6237\u7aef\u8bbe\u7f6e");
+
+            GameObject nameRow = CreateRow("PlayerNameRow");
+            CreateFieldLabel(nameRow, "PlayerNameLabel", "\u540d\u5b57");
+            _playerNameInput = CreateNameInput(nameRow, "PlayerNameInput", _settings.PlayerName);
+            _playerNameInput.Component.GetOnEndEdit().AddListener(OnPlayerNameEndEdit);
 
             GameObject clientRow = CreateRow("ClientDefaultsRow");
             CreateFieldLabel(clientRow, "ClientDefaultHostLabel", "\u9ed8\u8ba4\u4e3b\u673a");
@@ -144,6 +150,15 @@ namespace GOILauncher.Multiplayer.UI.Pages
             return input;
         }
 
+        private static InputFieldRef CreateNameInput(GameObject row, string name, string playerName)
+        {
+            InputFieldRef input = UIFactory.CreateInputField(row, name, string.Empty);
+            input.HidePlaceholder();
+            input.Text = playerName;
+            UIFactory.SetLayoutElement(input.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
+            return input;
+        }
+
         private static InputFieldRef CreatePortInput(GameObject row, string name, int port)
         {
             string text = InputFieldExtensions.FormatPort(port);
@@ -167,6 +182,15 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         // Persisting happens when the edit ends, not per keystroke: every write rewrites the whole
         // settings file.
+        // A blank name is a valid "not chosen yet" state, so clearing the field does not restore
+        // anything and the field stays blank; the client page is where an empty name is refused at
+        // connect time.
+        private void OnPlayerNameEndEdit(string value)
+        {
+            _settings.SetPlayerName(value);
+            SetInputText(_playerNameInput, _settings.PlayerName);
+        }
+
         private void OnClientHostEndEdit(string value)
         {
             _settings.SetClientHost(value);
@@ -200,6 +224,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void CommitInputs()
         {
+            if (_playerNameInput != null)
+                OnPlayerNameEndEdit(_playerNameInput.Text);
+
             if (_clientHostInput != null)
                 OnClientHostEndEdit(_clientHostInput.Text);
 
@@ -213,6 +240,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private void RefreshFromSettings()
         {
             RefreshToggle();
+            SetInputText(_playerNameInput, _settings.PlayerName);
             SetInputText(_clientHostInput, _settings.ClientHost);
             SetInputText(_clientPortInput, InputFieldExtensions.FormatPort(_settings.ClientPort));
             SetInputText(_serverPortInput, InputFieldExtensions.FormatPort(_settings.ServerPort));
