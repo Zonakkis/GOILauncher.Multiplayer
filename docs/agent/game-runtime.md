@@ -94,7 +94,7 @@ Player
 ## Cursor Object
 
 - `IGameManager.Cursor` 是场景中名为 `Cursor` 的游戏物体，`GameManager.RefreshGameResources` 用 `GameObject.Find("Cursor")` 获取它；它不是控制系统鼠标显隐的 `UnityEngine.Cursor`。
-- `Cursor` 物体上带有 `Rigidbody2D`。用户已实机验证：UI 占用鼠标时将其 `bodyType` 设为 `RigidbodyType2D.Static`，释放时恢复为 `RigidbodyType2D.Kinematic`，可以正确屏蔽并恢复本地游戏输入。
+- `Cursor` 物体上带有 `Rigidbody2D`。用户已实机验证：UI 占用鼠标时将其 `simulated` 设为 `false`，释放时恢复为 `true`，可以正确屏蔽并恢复本地游戏输入。
 - 之前直接禁用 `PlayerControl` 组件会出现 bug，使用 Harmony 跳过 `PlayerControl.FixedUpdate` 也未达到预期，均已由用户实测否定；当前不再使用这两种方案，具体失败原因不作推断。
 
 ## State Synchronization Runtime Behavior

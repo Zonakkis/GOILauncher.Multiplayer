@@ -241,11 +241,11 @@ public class Plugin : BaseUnityPlugin
         Rigidbody2D cursorBody = cursor != null ? cursor.GetComponent<Rigidbody2D>() : null;
 
         if (_blockedCursorBody != null && _blockedCursorBody != cursorBody)
-            _blockedCursorBody.bodyType = RigidbodyType2D.Kinematic;
+            _blockedCursorBody.simulated = false;
 
         _blockedCursorBody = cursorBody;
-        if (cursorBody != null && cursorBody.bodyType != RigidbodyType2D.Static)
-            cursorBody.bodyType = RigidbodyType2D.Static;
+        if (cursorBody != null && !cursorBody.simulated)
+            cursorBody.simulated = true;
     }
 
     private bool ShouldUnlockCursor()
