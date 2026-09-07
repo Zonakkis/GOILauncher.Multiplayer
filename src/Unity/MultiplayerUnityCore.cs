@@ -23,7 +23,7 @@ namespace GOILauncher.Multiplayer.Unity
         public static IUnityServer UnityServer => _container.Resolve<IUnityServer>();
 
         /// <summary>
-        /// 初始化后访问共享设置。
+        /// 设置入口。
         /// </summary>
         public static MultiplayerSettings Settings => _container.Resolve<MultiplayerSettings>();
 
