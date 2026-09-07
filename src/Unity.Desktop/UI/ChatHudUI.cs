@@ -17,13 +17,14 @@ namespace GOILauncher.Multiplayer.UI
 
         private InputFieldRef messageInput;
         private readonly IUnityClient _client;
+        private readonly RoomDialogUI _roomDialog;
         private MessageHandler _messageHandler;
         private GameObject inputRow;
         private CanvasGroup canvasGroup;
         private bool isActiveMode;
         private float lastPassiveActivityTime;
 
-        public ChatHudUI(UIBase owner, MessageHandler messageHandler, IUnityClient client) : base(owner)
+        public ChatHudUI(UIBase owner, MessageHandler messageHandler, IUnityClient client, RoomDialogUI roomDialog) : base(owner)
         {
             ImageUtility.MakeTransparent(UIRoot);
             ImageUtility.MakeTransparent(ContentRoot);
@@ -31,11 +32,14 @@ namespace GOILauncher.Multiplayer.UI
             canvasGroup.alpha = 1f;
 
             _client = client;
+            _roomDialog = roomDialog;
+            _roomDialog.ActiveChanged += active => { if (active && isActiveMode) SetActiveMode(false); };
             _messageHandler = messageHandler;
             _messageHandler.MessagesUpdated += OnMessagesUpdated;
             _messageHandler.Setup(ContentRoot);
             CreateInputRow();
             _client.ChatMessageReceived += OnChatMessageReceived;
+            _client.ChatHistoryReset += OnChatHistoryReset;
             RefreshMessages();
             SetActiveMode(false);
             LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
@@ -95,8 +99,10 @@ namespace GOILauncher.Multiplayer.UI
             if (messageInput == null || inputRow == null)
                 return;
 
+            if (_roomDialog.BlocksGameplayShortcuts) { UpdatePassiveFade(); return; }
             if (!isActiveMode)
             {
+                if (UiInputFocus.IsEditing) { UpdatePassiveFade(); return; }
                 if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
                 {
                     SetActiveMode(true);
@@ -158,6 +164,12 @@ namespace GOILauncher.Multiplayer.UI
             _client.SendMessage(MessageType.Player, text);
             messageInput.Text = string.Empty;
             FocusInput();
+        }
+
+        private void OnChatHistoryReset()
+        {
+            messageInput.Text = string.Empty;
+            RefreshMessages();
         }
 
         private void OnChatMessageReceived(Message message)

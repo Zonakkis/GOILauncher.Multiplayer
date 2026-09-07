@@ -46,6 +46,8 @@ namespace GOILauncher.Multiplayer.Tests.Server
                 started.Should().Contain(typeof(PlayerService));
                 started.Should().Contain(typeof(ServerService));
                 started.Should().Contain(typeof(PlayerStateRelay));
+                started.Should().Contain(typeof(RoomService));
+                started.Should().Contain(typeof(SkinRelay));
                 // Regression guard: ChatService used to be reachable only through the
                 // Unity host's property injection, so ConsoleServer never relayed chat.
                 started.Should().Contain(typeof(ChatService));

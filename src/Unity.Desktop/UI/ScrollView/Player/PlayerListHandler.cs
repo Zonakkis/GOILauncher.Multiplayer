@@ -124,7 +124,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 row.View = player;
                 row.Name.text = GetPlayerName(player);
                 row.Detail.text = player.Platform.ToString();
-                row.Status.text = player.IsInGame ? "游戏中" : "大厅";
+                row.Status.text = player.IsInGame ? "游戏中" : "未在游戏中";
                 // 传送按钮只对"现在能传送过去"的玩家可见，判据和 RefreshDistances 是同一处
                 // （有距离 == 有远端实例 == 能传送过去，见 docs/agent/ui-facade.md）。
                 // 本地玩家没有远端实例，Distance 恒为 null，所以自己那行也在这里被隐藏。
@@ -141,7 +141,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
         }
 
         /// <summary>
-        /// 只更新距离文本和传送按钮的可见性。没有场景实例的玩家（大厅里、实例池已满、
+        /// 只更新距离文本和传送按钮的可见性。没有场景实例的玩家（未在游戏中、实例池已满、
         /// 首个状态包未到）显示占位符，这是正常状态而不是错误。
         /// </summary>
         public void RefreshDistances()
@@ -207,7 +207,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             UIFactory.SetLayoutElement(detailHeader.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
             Text statusHeader = UIFactory.CreateLabel(tableHeader, "PlayerStatusHeader", "状态", TextAnchor.MiddleCenter);
-            UIFactory.SetLayoutElement(statusHeader.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+            UIFactory.SetLayoutElement(statusHeader.gameObject, minWidth: 90, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
             Text distanceHeader = UIFactory.CreateLabel(tableHeader, "PlayerDistanceHeader", "距离", TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(distanceHeader.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
@@ -241,7 +241,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
             UIFactory.SetLayoutElement(detailText.gameObject, minWidth: 80, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
             Text statusText = UIFactory.CreateLabel(row, "PlayerStatus", string.Empty, TextAnchor.MiddleCenter);
-            UIFactory.SetLayoutElement(statusText.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
+            UIFactory.SetLayoutElement(statusText.gameObject, minWidth: 90, preferredWidth: 90, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);
 
             Text distanceText = UIFactory.CreateLabel(row, "PlayerDistance", NoDistanceText, TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(distanceText.gameObject, minWidth: 60, preferredWidth: 70, minHeight: 20, flexibleHeight: 0, flexibleWidth: 0);

@@ -1,4 +1,3 @@
-using System.Linq;
 using Autofac;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Models;
@@ -9,54 +8,29 @@ using LiteNetLib;
 
 namespace GOILauncher.Multiplayer.Server.Synchronization
 {
-    /// <summary>
-    /// Relays visual player state only between peers that have completed the handshake
-    /// and are currently in the Mian gameplay scene.
-    /// </summary>
     public class PlayerStateRelay : IStartable
     {
-        private readonly INetworkServer _networkServer;
+        private readonly INetworkServer _network;
         private readonly IServerPacketDispatcher _dispatcher;
-        private readonly IPlayerService _playerService;
-
-        public PlayerStateRelay(INetworkServer networkServer,
-            IServerPacketDispatcher dispatcher,
-            IPlayerService playerService)
+        private readonly IPlayerService _players;
+        private readonly IRoomService _rooms;
+        public PlayerStateRelay(INetworkServer network, IServerPacketDispatcher dispatcher, IPlayerService players, IRoomService rooms)
+        { _network = network; _dispatcher = dispatcher; _players = players; _rooms = rooms; }
+        void IStartable.Start() { _dispatcher.RegisterStruct<C2SPlayerStatePacket>(OnState); }
+        private void OnState(C2SPlayerStatePacket packet, PacketSender sender)
         {
-            _networkServer = networkServer;
-            _dispatcher = dispatcher;
-            _playerService = playerService;
-        }
-
-        void IStartable.Start()
-        {
-            _dispatcher.RegisterStruct<C2SPlayerStatePacket>(OnPlayerStateReceived);
-        }
-
-        private void OnPlayerStateReceived(C2SPlayerStatePacket packet, PacketSender sender)
-        {
-            PlayerInfo senderInfo;
-            if (!_playerService.Players.TryGetValue(sender.Id, out senderInfo))
+            PlayerInfo player;
+            if (!_rooms.IsCurrentMembership(sender.Id, packet.MembershipId)
+                || !_players.Players.TryGetValue(sender.Id, out player) || !player.IsInGame) return;
+            foreach (var recipient in _rooms.GetMembers(sender.Id))
             {
-                return;
+                if (recipient.PlayerId == sender.Id || !_players.Players.TryGetValue(recipient.PlayerId, out player) || !player.IsInGame) continue;
+                _network.Send(recipient.PlayerId, new S2CPlayerStatePacket
+                {
+                    Scope = new RoomPacketScope(recipient.Id, packet.MembershipId), PlayerId = sender.Id,
+                    Sequence = packet.Sequence, State = packet.State
+                }, DeliveryMethod.Unreliable);
             }
-
-            if (senderInfo == null || !senderInfo.IsInGame)
-            {
-                return;
-            }
-
-            var relayPacket = new S2CPlayerStatePacket
-            {
-                PlayerId = sender.Id,
-                Sequence = packet.Sequence,
-                State = packet.State
-            };
-
-            var recipients = _playerService.Players.Values
-                .Where(player => player != null && player.Id != sender.Id && player.IsInGame)
-                .Select(player => player.Id);
-            _networkServer.Multicast(recipients, relayPacket, DeliveryMethod.Unreliable);
         }
     }
 }

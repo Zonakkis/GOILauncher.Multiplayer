@@ -1,9 +1,11 @@
-﻿using LiteNetLib.Utils;
+using GOILauncher.Multiplayer.Core.Data.Models;
+using LiteNetLib.Utils;
 
 namespace GOILauncher.Multiplayer.Core.Data.Packets
 {
     public struct S2CChatMessagePacket : INetSerializable
     {
+        public RoomPacketScope Scope { get; set; }
         public int PlayerId { get; set; }
         public string Content { get; set; }
         /// <summary>
@@ -13,6 +15,7 @@ namespace GOILauncher.Multiplayer.Core.Data.Packets
 
         public void Serialize(NetDataWriter writer)
         {
+            writer.Put(Scope);
             writer.Put(PlayerId);
             writer.Put(Content);
             writer.Put(Timestamp);
@@ -20,6 +23,7 @@ namespace GOILauncher.Multiplayer.Core.Data.Packets
 
         public void Deserialize(NetDataReader reader)
         {
+            Scope = reader.Get<RoomPacketScope>();
             PlayerId = reader.GetInt();
             Content = reader.GetString();
             Timestamp = reader.GetLong();

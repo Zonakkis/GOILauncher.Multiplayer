@@ -1,4 +1,5 @@
-﻿using GOILauncher.Multiplayer.Core.Data;
+using GOILauncher.Multiplayer.Core.Data.Constants;
+using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using LiteNetLib;
@@ -11,11 +12,11 @@ namespace GOILauncher.Multiplayer.Core.Network
     public class NetworkServerListener : INetEventListener
     {
         private readonly IServerPacketDispatcher _dispatcher;
-        private readonly IEventBus _eventBus;
+        private readonly IServerEventBus _eventBus;
         private readonly ILogger<NetworkServerListener> _logger;
 
         public NetworkServerListener(IServerPacketDispatcher dispatcher,
-            IEventBus eventBus,
+            IServerEventBus eventBus,
             ILogger<NetworkServerListener> logger)
         {
             _dispatcher = dispatcher;
@@ -25,7 +26,7 @@ namespace GOILauncher.Multiplayer.Core.Network
 
         public void OnConnectionRequest(ConnectionRequest request)
         {
-            request.AcceptIfKey("GOILauncher");
+            request.AcceptIfKey(RoomConstants.ConnectionKey);
         }
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)

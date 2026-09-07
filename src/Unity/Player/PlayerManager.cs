@@ -20,7 +20,7 @@ namespace GOILauncher.Multiplayer.Unity.Player
     {
         private const int DefaultInstanceWarmUpCount = 4;
 
-        private readonly IEventBus _eventBus;
+        private readonly IClientEventBus _eventBus;
         private readonly IGameManager _gameManager;
         private readonly IPlayerService _playerService;
         private readonly IPlayerInstancePool _instancePool;
@@ -37,7 +37,7 @@ namespace GOILauncher.Multiplayer.Unity.Player
             get { return _localPlayer; }
         }
 
-        public PlayerManager(IEventBus eventBus,
+        public PlayerManager(IClientEventBus eventBus,
             IGameManager gameManager,
             IPlayerService playerService,
             IPlayerInstancePool instancePool,
@@ -69,6 +69,7 @@ namespace GOILauncher.Multiplayer.Unity.Player
             // 拿它驱动实例增删会让同一次变化走两条路径。
             _subscriptions.Add(_eventBus.Subscribe<LocalPlayerReadyEvent>(OnLocalPlayerReadyEvent));
             _subscriptions.Add(_eventBus.Subscribe<PlayerRosterReceivedEvent>(OnPlayerRosterReceivedEvent));
+            _subscriptions.Add(_eventBus.Subscribe<RoomMembershipChangedEvent>(e => RemoveAllRemotePlayers()));
             _subscriptions.Add(_eventBus.Subscribe<GameStartedEvent>(OnGameStartedEvent));
             _subscriptions.Add(_eventBus.Subscribe<GameRestartedEvent>(OnGameRestartedEvent));
             _subscriptions.Add(_eventBus.Subscribe<GameQuitEvent>(OnGameQuitEvent));
@@ -111,7 +112,7 @@ namespace GOILauncher.Multiplayer.Unity.Player
         }
 
         /// <summary>
-        /// 加入一个已经有人的服务器时，这些玩家不会再产生 PlayerJoinedEvent，
+        /// 加入一个已经有人的房间时，这些玩家不会再产生 PlayerJoinedEvent，
         /// 只能靠这一次名单快照补齐实例。
         /// </summary>
         private void OnPlayerRosterReceivedEvent(PlayerRosterReceivedEvent e)
@@ -348,6 +349,7 @@ namespace GOILauncher.Multiplayer.Unity.Player
                 }
             }
             _players.Clear();
+            if (_localPlayer != null) _players[_localPlayer.Id] = _localPlayer;
         }
     }
 }

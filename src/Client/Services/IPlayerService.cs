@@ -9,6 +9,9 @@ namespace GOILauncher.Multiplayer.Client.Services
     public interface IPlayerService
     {
         PlayerInfo LocalPlayer { get; }
+        ulong LocalMembershipId { get; }
+        bool AcceptsScope(int playerId, RoomPacketScope scope);
+        void ReplaceRoomRoster(IEnumerable<RoomMemberInfo> members);
 
         /// <summary>
         /// 当前名单（含本地玩家）。这是内部字典的实时视图，只用于读取和遍历；

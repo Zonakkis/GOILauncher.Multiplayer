@@ -25,7 +25,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
             _networkServer = new FakeNetworkServer();
             _dispatcher = new RecordingServerDispatcher();
             _playerService = new StubServerPlayerService();
-            var relay = new PlayerStateRelay(_networkServer, _dispatcher, _playerService);
+            var relay = new PlayerStateRelay(_networkServer, _dispatcher, _playerService, new LobbyRoomStub(_playerService));
             ((IStartable)relay).Start();
         }
 
@@ -80,7 +80,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
         private void Relay(int senderId, uint sequence)
         {
             _dispatcher.Receive(
-                new C2SPlayerStatePacket { Sequence = sequence, State = default(PlayerState) },
+                new C2SPlayerStatePacket { MembershipId = (ulong)senderId + 1, Sequence = sequence, State = default(PlayerState) },
                 senderId);
         }
 

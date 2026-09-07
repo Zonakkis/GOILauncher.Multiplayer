@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
@@ -11,13 +11,13 @@ namespace GOILauncher.Multiplayer.Network
     {
         public bool IsConnected => _server != null && _server.ConnectionState == ConnectionState.Connected;
         private readonly NetManager _netManager;
-        private readonly IEventBus _eventBus;
+        private readonly IClientEventBus _eventBus;
         private readonly ILogger<NetworkClient> _logger;
         private NetPeer _server;
 
         public NetworkClient(
             NetManager netManager,
-            IEventBus eventBus,
+            IClientEventBus eventBus,
             ILogger<NetworkClient> logger)
         {
             _netManager = netManager;
@@ -39,7 +39,7 @@ namespace GOILauncher.Multiplayer.Network
         public void Connect(string host, int port)
         {
             _logger.Info($"Connecting to {host}:{port}...");
-            _server = _netManager.Connect(host, port, "GOILauncher");
+            _server = _netManager.Connect(host, port, RoomConstants.ConnectionKey);
         }
 
         public void Disconnect()

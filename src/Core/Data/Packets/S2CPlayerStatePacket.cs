@@ -5,12 +5,14 @@ namespace GOILauncher.Multiplayer.Core.Data.Packets
 {
     public struct S2CPlayerStatePacket : INetSerializable
     {
+        public RoomPacketScope Scope { get; set; }
         public int PlayerId { get; set; }
         public uint Sequence { get; set; }
         public PlayerState State { get; set; }
 
         public void Serialize(NetDataWriter writer)
         {
+            writer.Put(Scope);
             writer.Put(PlayerId);
             writer.Put(Sequence);
             writer.Put(State);
@@ -18,6 +20,7 @@ namespace GOILauncher.Multiplayer.Core.Data.Packets
 
         public void Deserialize(NetDataReader reader)
         {
+            Scope = reader.Get<RoomPacketScope>();
             PlayerId = reader.GetInt();
             Sequence = reader.GetUInt();
             State = reader.Get<PlayerState>();

@@ -29,7 +29,15 @@ namespace GOILauncher.Multiplayer.Unity
         public IClientService ClientService { get; set; }
         public IPlayerService PlayerService { get; set; }
         public IChatService ChatService { get; set; }
-        public IEventBus EventBus { get; set; }
+        public IRoomService RoomService { get; set; }
+        public IEnumerable<RoomInfo> Rooms => RoomService.Rooms;
+        public RoomInfo CurrentRoom => RoomService.CurrentRoom;
+        public bool IsRoomOperationPending => RoomService.IsOperationPending;
+        public event Action RoomListUpdated;
+        public event Action CurrentRoomChanged;
+        public event Action<RoomOperationResult> RoomOperationCompleted;
+        public event Action ChatHistoryReset;
+        public IClientEventBus EventBus { get; set; }
         public IGameManager GameManager { get; set; }
         public IPlayerManager PlayerManager { get; set; }
         public IMultiplayerState MultiplayerState { get; set; }
@@ -81,10 +89,14 @@ namespace GOILauncher.Multiplayer.Unity
             EventBus.Subscribe<GameQuitEvent>(OnGameQuitEvent);
             EventBus.Subscribe<PlayerListUpdatedEvent>(OnPlayerListUpdatedEvent);
             // 门面把下层事件转成自己的事件，UI 不需要认识 EventBus 上的事件类型，
-            // 也不会看到服务端角色的事件（两个角色共用一条总线）。
+            // 也不会看到服务端角色的事件（两个角色使用独立总线）。
             EventBus.Subscribe<ServerConnectedEvent>(OnServerConnectedEvent);
             EventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnectedEvent);
             EventBus.Subscribe<ChatMessageEvent>(OnChatMessageEvent);
+            EventBus.Subscribe<RoomListUpdatedEvent>(e => RoomListUpdated?.Invoke());
+            EventBus.Subscribe<CurrentRoomChangedEvent>(e => CurrentRoomChanged?.Invoke());
+            EventBus.Subscribe<RoomOperationCompletedEvent>(e => RoomOperationCompleted?.Invoke(e.Result));
+            EventBus.Subscribe<ChatHistoryResetEvent>(e => ChatHistoryReset?.Invoke());
         }
 
         private void Update()
@@ -102,6 +114,15 @@ namespace GOILauncher.Multiplayer.Unity
             PlayerService.SetLocalPlayerInfo(playerInfo);
             ClientService.Connect(host, port);
         }
+
+        public void RefreshRooms() { if (IsMultiplayerEnabled) RoomService.RefreshRooms(); }
+        public void CreateRoom(string name, string password, int maxPlayers)
+        { if (IsMultiplayerEnabled) RoomService.CreateRoom(name, password, maxPlayers); }
+        public void JoinRoom(int roomId, string password)
+        { if (IsMultiplayerEnabled) RoomService.JoinRoom(roomId, password); }
+        public void LeaveRoom() { if (IsMultiplayerEnabled) RoomService.LeaveRoom(); }
+        public void UpdateRoom(int roomId, string name, int maxPlayers, RoomPasswordChange passwordChange, string password)
+        { if (IsMultiplayerEnabled) RoomService.UpdateRoom(roomId, name, maxPlayers, passwordChange, password); }
 
         public void Disconnect()
         {

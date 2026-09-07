@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using BepInEx;
 using BepInEx.Logging;
 using GOILauncher.Multiplayer.UI;
@@ -31,6 +31,7 @@ public class Plugin : BaseUnityPlugin
     private static readonly MethodInfo UpdateCursorControlMethod = typeof(CursorUnlocker).GetMethod("UpdateCursorControl", BindingFlags.Static | BindingFlags.NonPublic);
 
     private MultiplayerUI _multiplayerUI;
+    private RoomDialogUI _roomDialogUI;
     private MultiplayerSettings _settings;
     private ChatHudUI _chatHudUI;
     private PlayerListUI _playerListOverlayUI;
@@ -63,6 +64,7 @@ public class Plugin : BaseUnityPlugin
         Theme = container.Resolve<ITheme>();
         UIBase = container.Resolve<UIBase>();
         _multiplayerUI = container.Resolve<MultiplayerUI>();
+        _roomDialogUI = container.Resolve<RoomDialogUI>();
         _chatHudUI = container.Resolve<ChatHudUI>();
         _playerListOverlayUI = container.Resolve<PlayerListUI>();
         _chatHudUI.ActiveModeChanged += OnChatActiveModeChanged;
@@ -89,6 +91,9 @@ public class Plugin : BaseUnityPlugin
         .As<UIBase>()
         .SingleInstance();
         builder.RegisterType<Toast>()
+        .AsSelf()
+        .SingleInstance();
+        builder.RegisterType<RoomDialogUI>()
         .AsSelf()
         .SingleInstance();
         builder.RegisterType<ClientPage>()
@@ -154,6 +159,13 @@ public class Plugin : BaseUnityPlugin
             return;
         }
 
+        if ((_roomDialogUI != null && _roomDialogUI.BlocksGameplayShortcuts) || UiInputFocus.IsEditing)
+        {
+            _playerListOverlayUI.SetActive(false);
+            ApplyCursorState();
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Tab))
         {
             _playerListOverlayUI.SetActive(true);
@@ -204,6 +216,7 @@ public class Plugin : BaseUnityPlugin
     private bool ShouldUnlockCursor()
     {
         return (_multiplayerUI != null && _multiplayerUI.Enabled)
+            || (_roomDialogUI != null && _roomDialogUI.Enabled)
             || (_playerListOverlayUI != null && _playerListOverlayUI.Enabled)
             || (_chatHudUI != null && _chatHudUI.IsActiveMode);
     }

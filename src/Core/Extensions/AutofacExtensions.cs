@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Event;
@@ -30,15 +30,12 @@ namespace GOILauncher.Multiplayer.Core.Extensions
                 .As(typeof(ILogger<>))
                 .SingleInstance();
 
-            builder.RegisterType<EventBus>()
-                .As<IEventBus>()
-                .SingleInstance();
-
             return builder;
         }
 
         public static ContainerBuilder RegisterClientCore(this ContainerBuilder builder)
         {
+            builder.RegisterType<ClientEventBus>().As<IClientEventBus>().SingleInstance();
             // Each role owns a private NetPacketProcessor. Sharing one would let a packet
             // arriving on the server socket invoke a client-side handler (and vice versa)
             // whenever both roles run in the same process.
@@ -57,7 +54,7 @@ namespace GOILauncher.Multiplayer.Core.Extensions
                     ChannelsCount = NetworkChannels.Count
                 };
                 return new NetworkClient(netManager,
-                    c.Resolve<IEventBus>(),
+                    c.Resolve<IClientEventBus>(),
                     c.Resolve<ILogger<NetworkClient>>());
             })
                 .As<INetworkClient>()
@@ -68,6 +65,7 @@ namespace GOILauncher.Multiplayer.Core.Extensions
 
         public static ContainerBuilder RegisterServerCore(this ContainerBuilder builder)
         {
+            builder.RegisterType<ServerEventBus>().As<IServerEventBus>().SingleInstance();
             builder.Register(c => new ServerPacketDispatcher(
                     new NetPacketProcessor(),
                     c.Resolve<ILogger<PacketDispatcher>>()))
@@ -83,6 +81,7 @@ namespace GOILauncher.Multiplayer.Core.Extensions
                     ChannelsCount = NetworkChannels.Count
                 };
                 return new NetworkServer(netManager,
+                    c.Resolve<IServerEventBus>(),
                     c.Resolve<ILogger<NetworkServer>>());
             })
                 .As<INetworkServer>()

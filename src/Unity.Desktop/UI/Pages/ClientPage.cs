@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using GOILauncher.Multiplayer;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Extensions;
-using GOILauncher.Multiplayer.UI.Components;
+using GOILauncher.Multiplayer.Core.Data.Models;
+using System.Linq;
 using GOILauncher.Multiplayer.UI.Theme;
 using GOILauncher.Multiplayer.Unity;
 using GOILauncher.Multiplayer.Unity.Config;
@@ -12,22 +13,11 @@ using UnityEngine.UI;
 using UniverseLib;
 using UniverseLib.UI;
 using UniverseLib.UI.Models;
-using UniverseLib.UI.Widgets;
 
 namespace GOILauncher.Multiplayer.UI.Pages
 {
     public class ClientPage : IPage
     {
-        private static readonly RoomListItemViewData[] MockRoomItems = new RoomListItemViewData[]
-        {
-            new RoomListItemViewData("\u65b0\u624b\u4f11\u95f2\u623f", "1/4"),
-            new RoomListItemViewData("\u53cc\u4eba\u534f\u4f5c", "2/2"),
-            new RoomListItemViewData("\u901f\u901a\u6311\u6218", "3/4"),
-            new RoomListItemViewData("\u4e2d\u6587\u4ea4\u6d41\u623f", "2/6"),
-            new RoomListItemViewData("\u516c\u5f00\u5927\u5385 #1", "5/8"),
-            new RoomListItemViewData("\u516c\u5f00\u5927\u5385 #2", "0/8")
-        };
-
         private readonly IUnityClient _client;
         private readonly MultiplayerSettings _settings;
         private readonly ILogger<ClientPage> _logger;
@@ -35,8 +25,10 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private readonly ITheme _theme = Plugin.Theme;
 
         private GameObject roomListContent;
-        private AutoSliderScrollbar roomListScrollbar;
-        private IRoomListUiComponent roomListComponent;
+        private readonly RoomDialogUI _roomDialog;
+        private readonly List<KeyValuePair<RoomInfo, ButtonRef>> roomButtons = new List<KeyValuePair<RoomInfo, ButtonRef>>();
+        private ButtonRef createRoomButton, editRoomButton;
+        private int joiningRoomId;
         private InputFieldRef playerNameInput;
         private InputFieldRef serverHostInput;
         private InputFieldRef serverPortInput;
@@ -52,12 +44,18 @@ namespace GOILauncher.Multiplayer.UI.Pages
             IUnityClient unityClient,
             MultiplayerSettings settings,
             ILogger<ClientPage> logger,
-            Toast toast)
+            Toast toast,
+            RoomDialogUI roomDialog)
         {
             _client = unityClient;
             _settings = settings;
             _logger = logger;
             _toast = toast;
+            _roomDialog = roomDialog;
+            _roomDialog.ActiveChanged += active => RefreshClientState();
+            _client.RoomListUpdated += OnRoomsUpdated;
+            _client.CurrentRoomChanged += OnCurrentRoomChanged;
+            _client.RoomOperationCompleted += OnRoomOperationCompleted;
             lastServerHost = DefaultServerHost;
             lastServerPort = DefaultServerPort;
             _client.Connected += OnServerConnected;
@@ -73,16 +71,10 @@ namespace GOILauncher.Multiplayer.UI.Pages
         public void SetActive(bool active)
         {
             Root?.SetActive(active);
+            if (!active) _roomDialog.SetActive(false);
 
             if (active)
                 RefreshClientState();
-        }
-
-        public void Bind(IRoomListUiComponent roomListComponent)
-        {
-            this.roomListComponent = roomListComponent;
-            PopulateRoomList();
-            SyncConnectionInputs();
         }
 
         public void CreateContent(GameObject pagesContainer)
@@ -111,8 +103,16 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 new Color(0.16f, 0.16f, 0.16f, 1f));
             UIFactory.SetLayoutElement(titleRow, minHeight: 34, flexibleHeight: 0);
 
-            Text roomListTitle = UIFactory.CreateLabel(titleRow, "RoomListTitle", "\u53ef\u7528\u623f\u95f4\u5217\u8868", TextAnchor.MiddleLeft);
+            Text roomListTitle = UIFactory.CreateLabel(titleRow, "RoomListTitle", "\u623f\u95f4\u5217\u8868", TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(roomListTitle.gameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
+
+            editRoomButton = UIFactory.CreateButton(titleRow, "EditRoom", "房间设置");
+            UIFactory.SetLayoutElement(editRoomButton.Component.gameObject, minHeight: 24, minWidth: 96, flexibleWidth: 0);
+            editRoomButton.OnClick += () => _roomDialog.ShowEdit();
+
+            createRoomButton = UIFactory.CreateButton(titleRow, "CreateRoom", "创建房间");
+            UIFactory.SetLayoutElement(createRoomButton.Component.gameObject, minHeight: 24, minWidth: 96, flexibleWidth: 0);
+            createRoomButton.OnClick += () => _roomDialog.ShowCreate();
 
             refreshButton = UIFactory.CreateButton(titleRow, "RefreshRoomList", "\u5237\u65b0");
             UIFactory.SetLayoutElement(refreshButton.Component.gameObject, minHeight: 24, minWidth: 80, flexibleWidth: 0, flexibleHeight: 0);
@@ -126,7 +126,8 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 true,
                 true,
                 6,
-                new Vector4(8, 5, 8, 5),
+                // Match the rows' 8px padding plus the scroll content's 4px padding.
+                new Vector4(12, 5, 12, 5),
                 new Color(0.2f, 0.2f, 0.2f, 1f));
             UIFactory.SetLayoutElement(tableHeader, minHeight: 32, flexibleHeight: 0);
 
@@ -143,8 +144,11 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 Root,
                 "RoomListScrollView",
                 out roomListContent,
-                out roomListScrollbar,
+                out var roomListScrollbar,
                 new Color(0.09f, 0.09f, 0.09f, 1f));
+            // Keep wheel/drag scrolling, but hide the slider and reclaim its viewport gutter.
+            roomListScrollbar.UIRoot.SetActive(false);
+            roomListScrollbar.ViewportRect.offsetMax = Vector2.zero;
             UIFactory.SetLayoutElement(roomListScroll, minHeight: 180, flexibleHeight: 9999, flexibleWidth: 9999);
             UIFactory.SetLayoutGroup<VerticalLayoutGroup>(roomListContent, false, false, true, true, 4, 4, 4, 4, 4, TextAnchor.UpperLeft);
 
@@ -220,110 +224,72 @@ namespace GOILauncher.Multiplayer.UI.Pages
             RefreshClientState();
         }
 
+        private bool CanOperateRooms => IsMultiplayerEnabled && _client.IsConnected && _client.CurrentRoom != null
+            && !_client.IsRoomOperationPending && !_roomDialog.Enabled;
+
         private void OnRefreshClicked()
         {
-            if (!IsMultiplayerEnabled)
-            {
-                RefreshClientState();
-                return;
-            }
-
-            if (roomListComponent != null)
-                roomListComponent.RefreshRooms();
-
-            PopulateRoomList();
+            if (!CanOperateRooms) return;
+            _client.RefreshRooms();
+            RefreshClientState();
         }
-
+        private void OnRoomsUpdated() { PopulateRoomList(); RefreshClientState(); }
+        private void OnCurrentRoomChanged() { RefreshClientState(); }
+        private void OnRoomOperationCompleted(RoomOperationResult result)
+        {
+            RefreshClientState();
+            if (result.IsSuccess) return;
+            if (result.Operation == RoomOperation.Join && result.Error == RoomError.IncorrectPassword && !_roomDialog.Enabled)
+            {
+                var target = _client.Rooms.FirstOrDefault(r => r.Id == joiningRoomId);
+                if (target != null) { _roomDialog.ShowJoin(target); return; }
+            }
+            if (!_roomDialog.Enabled) _toast.Show(RoomUiText.Error(result.Error));
+        }
         private void PopulateRoomList()
         {
-            if (roomListContent == null)
-                return;
-
+            if (roomListContent == null) return;
             for (int i = roomListContent.transform.childCount - 1; i >= 0; i--)
             {
-                UnityEngine.Object.Destroy(roomListContent.transform.GetChild(i).gameObject);
+                var row = roomListContent.transform.GetChild(i).gameObject;
+                row.SetActive(false);
+                UnityEngine.Object.Destroy(row);
             }
-
+            roomButtons.Clear();
             int rowIndex = 0;
-            foreach (RoomListItemViewData roomItem in GetRoomItems())
+            foreach (var room in _client.Rooms) CreateRoomListRow(room, rowIndex++);
+            if (rowIndex == 0)
             {
-                CreateRoomListRow(roomItem, rowIndex);
-                rowIndex++;
+                var empty = UIFactory.CreateLabel(roomListContent, "EmptyRooms", _client.IsConnected ? "正在等待服务器房间信息…" : "连接服务器后显示房间", TextAnchor.MiddleCenter);
+                UIFactory.SetLayoutElement(empty.gameObject, minHeight: 40, flexibleWidth: 9999);
             }
-
-            if (roomListScrollbar != null)
-                roomListScrollbar.UpdateSliderHandle();
         }
-
-        private RoomListItemViewData[] GetRoomItems()
+        private void CreateRoomListRow(RoomInfo room, int rowIndex)
         {
-            if (roomListComponent == null)
-                return MockRoomItems;
-
-            var items = new List<RoomListItemViewData>();
-            foreach (RoomListItemViewData item in roomListComponent.GetRooms())
-            {
-                items.Add(item);
-            }
-
-            if (items.Count == 0)
-                return MockRoomItems;
-
-            return items.ToArray();
-        }
-
-        private void CreateRoomListRow(RoomListItemViewData item, int rowIndex)
-        {
-            Color rowColor = rowIndex % 2 == 0
-                ? new Color(0.14f, 0.14f, 0.14f, 1f)
-                : new Color(0.11f, 0.11f, 0.11f, 1f);
-
-            GameObject row = UIFactory.CreateHorizontalGroup(
-                roomListContent,
-                "RoomRow_" + rowIndex,
-                false,
-                false,
-                true,
-                true,
-                6,
-                new Vector4(8, 4, 8, 4),
-                rowColor,
+            // Equal cell heights keep short numeric labels on the same line as names and buttons.
+            const int cellHeight = 26;
+            var row = UIFactory.CreateHorizontalGroup(roomListContent, "Room_" + room.Id, false, false, true, true,
+                6, new Vector4(8, 4, 8, 4), rowIndex % 2 == 0 ? new Color(0.14f, 0.14f, 0.14f) : new Color(0.11f, 0.11f, 0.11f),
                 TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(row, minHeight: 34, flexibleHeight: 0, flexibleWidth: 9999);
-
-            Text roomNameText = UIFactory.CreateLabel(row, "RoomName", item.RoomName, TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(roomNameText.gameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
-
-            Text playersText = UIFactory.CreateLabel(row, "RoomPlayers", item.PlayerCountText, TextAnchor.MiddleCenter);
-            UIFactory.SetLayoutElement(playersText.gameObject, minWidth: 100, preferredWidth: 110, minHeight: 24, flexibleHeight: 0, flexibleWidth: 0);
-
-            ButtonRef joinButton = UIFactory.CreateButton(row, "JoinRoomButton", "\u52a0\u5165");
-            UIFactory.SetLayoutElement(joinButton.Component.gameObject, minWidth: 90, preferredWidth: 100, minHeight: 24, flexibleWidth: 0, flexibleHeight: 0);
-            RuntimeHelper.SetColorBlock(
-                joinButton.Component,
-                new Color(0.22f, 0.38f, 0.28f),
-                new Color(0.26f, 0.44f, 0.32f),
-                new Color(0.14f, 0.24f, 0.18f),
-                new Color(0.2f, 0.2f, 0.2f));
-
-            joinButton.OnClick += () =>
-            {
-                OnJoinClicked(item);
-            };
+            UIFactory.SetLayoutElement(row, minHeight: 34, flexibleWidth: 9999, flexibleHeight: 0);
+            var name = UIFactory.CreateLabel(row, "Name", room.Name, TextAnchor.MiddleLeft);
+            name.supportRichText = false;
+            UIFactory.SetLayoutElement(name.gameObject, minHeight: cellHeight, flexibleHeight: 0, flexibleWidth: 9999);
+            var count = UIFactory.CreateLabel(row, "Players", room.PlayerCount + "/" + (room.MaxPlayers == 0 ? "∞" : room.MaxPlayers.ToString()), TextAnchor.MiddleCenter);
+            UIFactory.SetLayoutElement(count.gameObject, minWidth: 100, preferredWidth: 110, minHeight: cellHeight, flexibleHeight: 0, flexibleWidth: 0);
+            var join = UIFactory.CreateButton(row, "Join", "加入");
+            UIFactory.SetLayoutElement(join.Component.gameObject, minWidth: 90, preferredWidth: 100, minHeight: cellHeight, flexibleHeight: 0, flexibleWidth: 0);
+            join.SetConfirm();
+            join.OnClick += () => OnJoinClicked(room);
+            roomButtons.Add(new KeyValuePair<RoomInfo, ButtonRef>(room, join));
         }
-
-        private void OnJoinClicked(RoomListItemViewData item)
+        private void OnJoinClicked(RoomInfo room)
         {
-            if (!IsMultiplayerEnabled)
-                return;
-
-            if (roomListComponent != null)
-            {
-                roomListComponent.JoinRoom(item.RoomName);
-                return;
-            }
-
-            Plugin.Logger.LogInfo($"Join clicked for room: {item.RoomName}");
+            if (!CanOperateRooms) return;
+            joiningRoomId = room.Id;
+            if (room.HasPassword) _roomDialog.ShowJoin(room);
+            else _client.JoinRoom(room.Id, null);
+            RefreshClientState();
         }
 
         private void OnConnectClicked()
@@ -463,8 +429,20 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
             connectButton.Component.interactable = canEditConnection;
             disconnectButton.Component.interactable = multiplayerEnabled && (isConnecting || connected);
-            if (refreshButton != null)
-                refreshButton.Component.interactable = multiplayerEnabled;
+            var room = _client.CurrentRoom;
+            if (refreshButton != null) refreshButton.Component.interactable = CanOperateRooms;
+            if (createRoomButton != null) createRoomButton.Component.interactable = CanOperateRooms;
+            if (editRoomButton != null)
+            {
+                editRoomButton.Component.gameObject.SetActive(room != null && !room.IsLobby && room.OwnerPlayerId == _client.LocalPlayer.Id);
+                editRoomButton.Component.interactable = CanOperateRooms;
+            }
+            foreach (var entry in roomButtons)
+            {
+                bool current = room != null && entry.Key.Id == room.Id;
+                entry.Value.ButtonText.text = current ? "当前房间" : entry.Key.IsFull ? "已满" : "加入";
+                entry.Value.Component.interactable = CanOperateRooms && !current && !entry.Key.IsFull;
+            }
             SetInputInteractable(playerNameInput, canEditConnection);
             SetInputInteractable(serverHostInput, canEditConnection);
             SetInputInteractable(serverPortInput, canEditConnection);

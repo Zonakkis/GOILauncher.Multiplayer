@@ -15,6 +15,7 @@ namespace GOILauncher.Multiplayer.Tests.Data
         {
             var expected = new C2SPlayerStatePacket
             {
+                MembershipId = 42,
                 Sequence = 17,
                 State = CreateState(1)
             };
@@ -22,6 +23,7 @@ namespace GOILauncher.Multiplayer.Tests.Data
             var actual = RoundTrip(expected);
 
             actual.Sequence.Should().Be(expected.Sequence);
+            actual.MembershipId.Should().Be(42);
             AssertState(actual.State, expected.State);
         }
 

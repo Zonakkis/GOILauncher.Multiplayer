@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Data.Packets;
@@ -12,12 +12,12 @@ namespace GOILauncher.Multiplayer.Client.Services
     {
         private readonly INetworkClient _networkClient;
         private readonly IClientPacketDispatcher _dispatcher;
-        private readonly IEventBus _eventBus;
+        private readonly IClientEventBus _eventBus;
         public bool IsConnected => _networkClient.IsConnected;
 
         public ClientService(INetworkClient networkClient,
             IClientPacketDispatcher dispatcher,
-            IEventBus eventBus)
+            IClientEventBus eventBus)
         {
             _networkClient = networkClient;
             _dispatcher = dispatcher;

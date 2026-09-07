@@ -6,11 +6,11 @@ namespace GOILauncher.Multiplayer.Core.Data.Constants
     /// </summary>
     public static class NetworkChannels
     {
-        /// <summary>状态同步和其余所有包走的通道。</summary>
+        /// <summary>状态同步及可靠控制消息（房间、名单、聊天、下行皮肤清单）的通道。</summary>
         public const byte Default = 0;
 
         /// <summary>
-        /// 皮肤清单和贴图字节走的通道。一张贴图有几百 KB，要分片可靠重传，
+        /// 本地皮肤上传（先清单后字节）、皮肤请求和字节响应的通道。下行清单走 Default，以保持名单先到。一张贴图有几百 KB，要分片可靠重传，
         /// 和 60 Hz 的状态同步挤同一条可靠通道会互相拖慢。
         /// </summary>
         public const byte Skin = 1;

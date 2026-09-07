@@ -22,7 +22,7 @@ namespace GOILauncher.Multiplayer.Tests.Client
 
         private RecordingClientDispatcher _dispatcher;
         private FakeNetworkClient _networkClient;
-        private EventBus _eventBus;
+        private ClientEventBus _eventBus;
         private ClientSkinSync _sync;
         private List<PlayerSkinReceivedEvent> _received;
 
@@ -31,9 +31,9 @@ namespace GOILauncher.Multiplayer.Tests.Client
         {
             _dispatcher = new RecordingClientDispatcher();
             _networkClient = new FakeNetworkClient();
-            _eventBus = new EventBus(new Mock<ILogger<EventBus>>().Object);
+            _eventBus = new ClientEventBus(new Mock<ILogger<EventBus>>().Object);
             _sync = new ClientSkinSync(_networkClient, _dispatcher, _eventBus,
-                new Mock<ILogger<ClientSkinSync>>().Object);
+                new Mock<ILogger<ClientSkinSync>>().Object, TestClientRoster.Create());
             ((IStartable)_sync).Start();
 
             _received = new List<PlayerSkinReceivedEvent>();
@@ -143,16 +143,16 @@ namespace GOILauncher.Multiplayer.Tests.Client
             _networkClient.Sent.Should().BeEmpty();
 
             _networkClient.IsConnected = true;
-            _eventBus.Publish(new LocalPlayerReadyEvent(new PlayerInfo(1, "me", Platform.PC, true)));
+            _eventBus.Publish(new RoomMembershipChangedEvent());
 
             _networkClient.Sent.Select(s => s.Packet.GetType()).Should().Equal(
                 typeof(C2SSkinManifestPacket), typeof(C2SSkinDataPacket));
         }
 
         [Test]
-        public void LocalPlayerReady_WithNothingRead_SendsNothing()
+        public void RoomMembershipReady_WithNothingRead_SendsNothing()
         {
-            _eventBus.Publish(new LocalPlayerReadyEvent(new PlayerInfo(1, "me", Platform.PC, true)));
+            _eventBus.Publish(new RoomMembershipChangedEvent());
 
             _networkClient.Sent.Should().BeEmpty();
         }
@@ -234,7 +234,7 @@ namespace GOILauncher.Multiplayer.Tests.Client
             // Right hash on the wire, wrong bytes behind it.
             _dispatcher.Receive(new S2CSkinDataPacket
             {
-                PlayerId = RemoteId,
+                Scope = TestClientRoster.Scope(RemoteId), PlayerId = RemoteId,
                 Blob = new SkinBlob { Hash = SkinHash.Compute(payload), Data = SkinTestData.Png(0x02) }
             });
 
@@ -272,7 +272,7 @@ namespace GOILauncher.Multiplayer.Tests.Client
 
             _dispatcher.Receive(new S2CSkinUnavailablePacket
             {
-                PlayerId = RemoteId,
+                Scope = TestClientRoster.Scope(RemoteId), PlayerId = RemoteId,
                 Hash = SkinHash.Compute(payload)
             });
 
@@ -292,7 +292,7 @@ namespace GOILauncher.Multiplayer.Tests.Client
 
             _dispatcher.Receive(new S2CSkinUnavailablePacket
             {
-                PlayerId = RemoteId,
+                Scope = TestClientRoster.Scope(RemoteId), PlayerId = RemoteId,
                 Hash = SkinHash.Compute(SkinTestData.Png(0x02))
             });
 
@@ -396,7 +396,7 @@ namespace GOILauncher.Multiplayer.Tests.Client
             _sync.TryGetSkin(RemoteId, out state, out stored).Should().BeFalse();
 
             _networkClient.Sent.Clear();
-            _eventBus.Publish(new LocalPlayerReadyEvent(new PlayerInfo(1, "me", Platform.PC, true)));
+            _eventBus.Publish(new RoomMembershipChangedEvent());
 
             _networkClient.Sent.Select(s => s.Packet.GetType()).Should().Equal(
                 typeof(C2SSkinManifestPacket), typeof(C2SSkinDataPacket));
@@ -404,14 +404,14 @@ namespace GOILauncher.Multiplayer.Tests.Client
 
         private void ReceiveManifest(int playerId, SkinState state)
         {
-            _dispatcher.Receive(new S2CSkinManifestPacket { PlayerId = playerId, State = state });
+            _dispatcher.Receive(new S2CSkinManifestPacket { Scope = TestClientRoster.Scope(playerId), PlayerId = playerId, State = state });
         }
 
         private void ReceiveData(int playerId, byte[] payload)
         {
             _dispatcher.Receive(new S2CSkinDataPacket
             {
-                PlayerId = playerId,
+                Scope = TestClientRoster.Scope(playerId), PlayerId = playerId,
                 Blob = SkinTestData.Blob(payload)
             });
         }

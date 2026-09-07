@@ -1,3 +1,4 @@
+using GOILauncher.Multiplayer.Core.Data.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,11 +10,27 @@ namespace GOILauncher.Multiplayer.Unity
     /// <summary>
     /// UI 宿主访问客户端的唯一入口。约定见 docs/agent/ui-facade.md：
     /// 新增能力挂在这里（或 IUnityServer）下面，不要为它新开一个根接口，
-    /// 也不要让 UI 直接订阅 IEventBus。
+    /// 也不要让 UI 直接订阅 IClientEventBus。
     /// </summary>
     public interface IUnityClient
     {
         bool IsConnected { get; }
+        /// <summary>Server-wide public directory; no room passwords or foreign rosters.</summary>
+        IEnumerable<RoomInfo> Rooms { get; }
+        /// <summary>Null until the first authoritative room snapshot, and after disconnect.</summary>
+        RoomInfo CurrentRoom { get; }
+        bool IsRoomOperationPending { get; }
+        event Action RoomListUpdated;
+        /// <summary>Membership or current room metadata changed. Does not necessarily mean a room switch.</summary>
+        event Action CurrentRoomChanged;
+        event Action<RoomOperationResult> RoomOperationCompleted;
+        /// <summary>Re-read ChatMessages even when no new message was appended.</summary>
+        event Action ChatHistoryReset;
+        void RefreshRooms();
+        void CreateRoom(string name, string password, int maxPlayers);
+        void JoinRoom(int roomId, string password);
+        void LeaveRoom();
+        void UpdateRoom(int roomId, string name, int maxPlayers, RoomPasswordChange passwordChange, string password);
         ReadOnlyCollection<Message> ChatMessages { get; }
 
         /// <summary>
@@ -58,7 +75,7 @@ namespace GOILauncher.Multiplayer.Unity
         void SendMessage(MessageType type, string message);
 
         /// <summary>
-        /// 把本地玩家传送到指定玩家处。对方当前没有远端实例（在大厅、实例池已满、
+        /// 把本地玩家传送到指定玩家处。对方当前没有远端实例（未在游戏中、实例池已满、
         /// 本地自己不在游戏里）或传的是自己的 Id 时什么都不做。
         /// PlayerView.Distance 有值即"能传送过去"，UI 按它决定按钮的可用性。
         /// </summary>

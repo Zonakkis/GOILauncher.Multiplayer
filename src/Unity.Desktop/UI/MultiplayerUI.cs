@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.UI.Pages;
 using UnityEngine;
@@ -27,10 +27,12 @@ namespace GOILauncher.Multiplayer.UI
         public override bool CanDragAndResize => true;
 
         private readonly List<PageEntry> _pages;
+        private readonly RoomDialogUI _roomDialog;
         private GameObject _pagesContainer;
 
-        public MultiplayerUI(UIBase owner, ClientPage clientPage, ServerPage serverPage, SettingsPage settingsPage) : base(owner)
+        public MultiplayerUI(UIBase owner, ClientPage clientPage, ServerPage serverPage, SettingsPage settingsPage, RoomDialogUI roomDialog) : base(owner)
         {
+            _roomDialog = roomDialog;
             _pages = new List<PageEntry>
             {
                 new PageEntry(MultiplayerPage.Client, "\u5ba2\u6237\u7aef", clientPage),
@@ -44,6 +46,12 @@ namespace GOILauncher.Multiplayer.UI
                 page.Page.CreateContent(_pagesContainer);
 
             ShowPage(MultiplayerPage.Client);
+        }
+
+        public override void SetActive(bool active)
+        {
+            if (!active) _roomDialog?.SetActive(false);
+            base.SetActive(active);
         }
 
         protected override void ConstructPanelContent()

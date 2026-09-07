@@ -25,8 +25,20 @@ _Avoid_: Texture、Material（这两个词只用于描述 Unity 运行时实现�
 一组共同游玩的玩家及其可配置多人规则的归属范围。
 _Avoid_: Server、Scene
 
+**Server**:
+承载联机连接与多个 **Room** 的服务端，不等同于任意一个房间。
+
+**Lobby（大厅）**:
+服务器的默认 **Room**，不是游戏的主菜单或某个 **Scene**。
+
+**Room Owner（房主）**:
+拥有房间属性编辑权限的房间成员，不等同于服务端宿主。
+
 ## Relationships
 
+- 一个 **Server** 承载多个 **Room**，包括一个 **Lobby**
+- 已加入服务器的参与者属于一个 **Room**；房间成员关系与是否处于游戏场景独立
+- 普通 **Room** 的 **Room Owner** 是该房间的一名成员；**Lobby** 没有房主
 - 一名处于游戏场景中的参与者由一个 **Player** 表现
 - 一个 **Player** 包含一个 **Hammer Handle** 和一个 **Pot**
 - 一个 **Pot** 有一个 **Skin**，其他玩家看到的应当是这个 **Skin**
@@ -41,3 +53,4 @@ _Avoid_: Server、Scene
 - `Player` 既可能指玩家实体，也可能指 Unity 中名为 `Player` 的根对象；讨论领域规则时指玩家实体，讨论对象层级时明确称为 `Player` 根对象。
 - “handle” 可能指锤柄或名为 `Handle` 的运行时节点；领域讨论使用 **Hammer Handle**，对象层级讨论使用完整路径。
 - “皮肤” 可能指玩家选中的那张图片，也可能指罐子最终呈现的外观；**Skin** 指后者，它包含金度，所以“没有皮肤”不等于“外观相同”。
+- “大厅”只指默认房间，不用于表示“未在游戏中”；房间规则与运行时流程见 `docs/agent/room-system.md`。

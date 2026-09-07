@@ -75,7 +75,7 @@ namespace ConsoleServer
         {
             var builder = new ContainerBuilder();
 
-            // RegisterMultiplayerCore supplies CoreManager, ILogger<> and IEventBus;
+            // RegisterMultiplayerCore supplies CoreManager and ILogger<>; WithServer supplies IServerEventBus;
             // WithServer only registers the server role on top of them.
             builder.RegisterMultiplayerCore().WithServer();
 

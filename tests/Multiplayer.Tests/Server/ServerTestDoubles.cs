@@ -110,6 +110,9 @@ namespace GOILauncher.Multiplayer.Tests.Server
             ((Action<TPacket, PacketSender>)handler)(packet, new PacketSender(senderId));
         }
 
+        public void ReceivePacket(INetSerializable packet, int senderId)
+        { _handlers[packet.GetType()].DynamicInvoke(packet, new PacketSender(senderId)); }
+
         public bool HasHandlerFor<TPacket>()
         {
             return _handlers.ContainsKey(typeof(TPacket));

@@ -17,6 +17,10 @@ namespace GOILauncher.Multiplayer.Server.Extensions
                 .As<IPlayerService>()
                 .As<IStartable>()
                 .SingleInstance();
+            builder.RegisterType<RoomService>()
+                .As<IRoomService>()
+                .As<IStartable>()
+                .SingleInstance();
             builder.RegisterType<ServerService>()
                 .As<IServerService>()
                 .As<IStartable>()

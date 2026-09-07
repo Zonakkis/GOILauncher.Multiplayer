@@ -31,7 +31,7 @@ namespace GOILauncher.Multiplayer.Unity.Skin
         private const float UnknownGoldness = 0f;
 
         public ClientSkinSync SkinSync { get; set; }
-        public IEventBus EventBus { get; set; }
+        public IClientEventBus EventBus { get; set; }
         public IGameManager GameManager { get; set; }
         public IPlayerManager PlayerManager { get; set; }
         public LocalSkinReader SkinReader { get; set; }
@@ -48,6 +48,7 @@ namespace GOILauncher.Multiplayer.Unity.Skin
             EventBus.Subscribe<RemotePlayerInstanceCreatedEvent>(OnRemotePlayerInstanceCreated);
             EventBus.Subscribe<PlayerSkinReceivedEvent>(OnPlayerSkinReceived);
             EventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
+            EventBus.Subscribe<RoomMembershipChangedEvent>(e => ClearRemoteTextures());
         }
 
         private void OnGameStarted(GameStartedEvent e)
@@ -110,7 +111,7 @@ namespace GOILauncher.Multiplayer.Unity.Skin
 
         private void OnPlayerSkinReceived(PlayerSkinReceivedEvent e)
         {
-            // 拿不到实例不用管：他还在大厅或者实例池满了，实例建起来时会自己来取。
+            // 拿不到实例不用管：他尚未进入关卡或者实例池满了，实例建起来时会自己来取。
             var remote = PlayerManager.GetPlayer(e.PlayerId) as RemotePlayer;
             if (remote == null)
             {
@@ -120,7 +121,9 @@ namespace GOILauncher.Multiplayer.Unity.Skin
             Apply(remote, e.State, e.Payload);
         }
 
-        private void OnServerDisconnected(ServerDisconnectedEvent e)
+        private void OnServerDisconnected(ServerDisconnectedEvent e) { ClearRemoteTextures(); }
+
+        private void ClearRemoteTextures()
         {
             foreach (var texture in _textures.Values)
             {

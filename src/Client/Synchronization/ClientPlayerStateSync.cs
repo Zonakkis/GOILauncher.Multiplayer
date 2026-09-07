@@ -1,3 +1,4 @@
+using GOILauncher.Multiplayer.Client.Services;
 using System.Collections.Generic;
 using Autofac;
 using GOILauncher.Multiplayer.Client.Events;
@@ -19,8 +20,9 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
     public class ClientPlayerStateSync : IStartable
     {
         private readonly INetworkClient _networkClient;
+        private readonly IPlayerService _players;
         private readonly IClientPacketDispatcher _dispatcher;
-        private readonly IEventBus _eventBus;
+        private readonly IClientEventBus _eventBus;
         private readonly Dictionary<int, uint> _lastReceivedSequences = new Dictionary<int, uint>();
         private uint _nextSequence;
 
@@ -28,11 +30,12 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
 
         public ClientPlayerStateSync(INetworkClient networkClient,
             IClientPacketDispatcher dispatcher,
-            IEventBus eventBus)
+            IClientEventBus eventBus, IPlayerService players)
         {
             _networkClient = networkClient;
             _dispatcher = dispatcher;
             _eventBus = eventBus;
+            _players = players;
         }
 
         void IStartable.Start()
@@ -40,17 +43,19 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
             _dispatcher.RegisterStruct<S2CPlayerStatePacket>(OnPlayerStateReceived);
             _eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
             _eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
+            _eventBus.Subscribe<RoomMembershipChangedEvent>(e => _lastReceivedSequences.Clear());
         }
 
         public void Send(PlayerState state)
         {
-            if (!_networkClient.IsConnected)
+            if (!_networkClient.IsConnected || _players.LocalMembershipId == 0)
             {
                 return;
             }
 
             var packet = new C2SPlayerStatePacket
             {
+                MembershipId = _players.LocalMembershipId,
                 Sequence = _nextSequence,
                 State = state
             };
@@ -60,6 +65,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
 
         private void OnPlayerStateReceived(S2CPlayerStatePacket packet, PacketSender _)
         {
+            if (!_players.AcceptsScope(packet.PlayerId, packet.Scope) || packet.PlayerId == _players.LocalPlayer.Id) return;
             uint lastSequence;
             if (_lastReceivedSequences.TryGetValue(packet.PlayerId, out lastSequence) &&
                 !SequenceNumber.IsNewer(packet.Sequence, lastSequence))

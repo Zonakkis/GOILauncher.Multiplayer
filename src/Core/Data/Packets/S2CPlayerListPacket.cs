@@ -4,34 +4,19 @@ using LiteNetLib.Utils;
 
 namespace GOILauncher.Multiplayer.Core.Data.Packets
 {
-    public class S2CPlayerListPacket : INetSerializable
+    /// <summary>Authoritative room-entry snapshot, including the local member.</summary>
+    public sealed class S2CPlayerListPacket : INetSerializable
     {
-        public List<PlayerInfo> Players { get; set; } = new List<PlayerInfo>();
-
+        public RoomInfo Room { get; set; }
+        public List<RoomMemberInfo> Members { get; set; } = new List<RoomMemberInfo>();
         public void Serialize(NetDataWriter writer)
-        {
-            writer.Put(Players.Count);
-            foreach (var player in Players)
-            {
-                writer.Put(player.Id);
-                writer.Put(player.Name);
-                writer.Put((byte)player.Platform);
-                writer.Put(player.IsInGame);
-            }
-        }
-
+        { writer.Put(Room); writer.Put(Members.Count); foreach (var member in Members) writer.Put(member); }
         public void Deserialize(NetDataReader reader)
         {
-            Players.Clear();
-            int playerCount = reader.GetInt();
-            for (int i = 0; i < playerCount; i++)
-            {
-                Players.Add(new PlayerInfo(
-                    reader.GetInt(),
-                    reader.GetString(),
-                    (Platform)reader.GetByte(),
-                    reader.GetBool()));
-            }
+            Room = reader.Get<RoomInfo>(); Members.Clear();
+            int count = reader.GetInt();
+            if (count < 0 || count > reader.AvailableBytes) throw new ParseException("Invalid member count.");
+            for (int i = 0; i < count; i++) Members.Add(reader.Get<RoomMemberInfo>());
         }
     }
 }

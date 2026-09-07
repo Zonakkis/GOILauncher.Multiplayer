@@ -17,7 +17,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
     {
         private FakeNetworkServer _networkServer;
         private RecordingServerDispatcher _dispatcher;
-        private EventBus _eventBus;
+        private ServerEventBus _eventBus;
         private PlayerService _playerService;
 
         [SetUp]
@@ -25,13 +25,11 @@ namespace GOILauncher.Multiplayer.Tests.Server
         {
             _networkServer = new FakeNetworkServer();
             _dispatcher = new RecordingServerDispatcher();
-            _eventBus = new EventBus(new Mock<ILogger<EventBus>>().Object);
-            _playerService = new PlayerService(
-                _networkServer,
-                _dispatcher,
-                _eventBus,
-                new Mock<ILogger<PlayerService>>().Object);
+            _eventBus = new ServerEventBus(new Mock<ILogger<EventBus>>().Object);
+            _playerService = new PlayerService(_dispatcher, _eventBus);
             ((IStartable)_playerService).Start();
+            var rooms = new RoomService(_playerService, _networkServer, _dispatcher, _eventBus, new Mock<ILogger<RoomService>>().Object);
+            ((IStartable)rooms).Start();
         }
 
         [Test]
@@ -60,7 +58,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
         }
 
         [Test]
-        public void Handshake_SendsExistingRosterToJoiner_ExcludingSelf()
+        public void Handshake_SendsRoomRosterToJoiner_IncludingSelf()
         {
             Handshake(1, "alice", false);
             _networkServer.Sent.Clear();
@@ -70,7 +68,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
             var listSend = _networkServer.Sent.Single(s => s.Packet is S2CPlayerListPacket);
             listSend.ClientId.Should().Be(2);
             var list = (S2CPlayerListPacket)listSend.Packet;
-            list.Players.Select(p => p.Id).Should().BeEquivalentTo(new[] { 1 });
+            list.Members.Select(p => p.Player.Id).Should().BeEquivalentTo(new[] { 1, 2 });
         }
 
         [Test]

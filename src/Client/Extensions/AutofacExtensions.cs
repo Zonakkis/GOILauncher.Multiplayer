@@ -21,6 +21,10 @@ namespace GOILauncher.Multiplayer.Client.Extensions
                 .As<IPlayerService>()
                 .As<IStartable>()
                 .SingleInstance();
+            builder.RegisterType<RoomService>()
+                .As<IRoomService>()
+                .As<IStartable>()
+                .SingleInstance();
             builder.RegisterType<ChatService>()
                 .As<IChatService>()
                 .As<IStartable>()

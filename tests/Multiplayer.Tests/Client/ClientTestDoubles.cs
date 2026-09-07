@@ -78,6 +78,9 @@ internal sealed class RecordingClientDispatcher : IClientPacketDispatcher
     {
     }
 
+    public void ReceivePacket(INetSerializable packet)
+    { _handlers[packet.GetType()].DynamicInvoke(packet, default(PacketSender)); }
+
     public void Receive<TPacket>(TPacket packet)
         where TPacket : INetSerializable
     {

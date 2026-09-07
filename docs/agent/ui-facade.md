@@ -27,10 +27,14 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三�
 | `IUnityClient.Disconnected(reason)` | `Core.Event.ServerDisconnectedEvent` |
 | `IUnityClient.ChatMessageReceived(message)` | `Client.Events.ChatMessageEvent` |
 | `IUnityClient.PlayerListUpdated` | `Client.Events.PlayerListUpdatedEvent` |
+| `IUnityClient.RoomListUpdated` | `Client.Events.RoomListUpdatedEvent` |
+| `IUnityClient.CurrentRoomChanged` | `Client.Events.CurrentRoomChangedEvent` |
+| `IUnityClient.RoomOperationCompleted(result)` | `Client.Events.RoomOperationCompletedEvent` |
+| `IUnityClient.ChatHistoryReset` | `Client.Events.ChatHistoryResetEvent` |
 
 这样做的原因：
 
-- 客户端和服务端**共用一条 `IEventBus`**，隔离只靠事件类型名不相交维持（见 `docs/agent/state-synchronization.md`）。UI 直接订阅总线，就得自己知道 `ServerConnectedEvent` 是"我连上了服务器"而不是"有客户端连上我了"——这正是不该让 UI 层背的知识。
+- 客户端与服务端已按角色拆成独立的 `IClientEventBus` / `IServerEventBus`；Unity 游戏事件属于客户端。UI 仍不订阅任何下层总线，不需要掌握传输或房间事件的内部阶段。
 - 总线上的事件类型属于 `Core` / `Client`，UI 一订阅就得 `using` 下层命名空间，三门面的约定名存实亡。
 - 门面事件的参数按 UI 需不需要来定，不是照抄总线事件。`Disconnected` 只给 `reason`，`ChatMessageReceived` 给消息本体（见下），`PlayerListUpdated` 什么都不给——名单从 `Players` 读。
 
@@ -44,6 +48,20 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三�
 - **只要特定类型的消息**：读参数的 `Type` 过滤（系统提示、私聊、队伍消息……），自攒一份记录。这条路不用每次事件都扫一遍 `ChatMessages` 去找新增的那条。
 
 名单没有"只要一部分"这种用法（UI 拿到的永远是当前快照），所以 `PlayerListUpdated` 不带参数。
+
+## Rooms
+
+房间能力都在 `IUnityClient`：`Rooms` / `CurrentRoom` / `IsRoomOperationPending`，以及 `RefreshRooms` / `CreateRoom` / `JoinRoom` / `LeaveRoom` / `UpdateRoom`。`IUnityServer` 不承担房主操作。
+
+`RoomInfo`、`RoomOperationResult`、`RoomPasswordChange` 与共享长度常量是数据契约，不是额外的服务入口。
+
+目录与当前房间读透客户端 `RoomService`，名单仍从 `PlayerService` 读。`RoomInfo` 只含公开元数据，密码仅有 `HasPassword`；编辑密码明确区分 Keep / Set / Remove，不回填原密码。
+
+`CurrentRoom` 在入房快照到来前为 null；`IsConnected` 仍只代表真实连接，不混入房间就绪状态。`CurrentRoomChanged` 包含属性、房主及成员关系变化，不能把每次通知都当作换房。`ChatHistoryReset` 单独通知记录清空，即使没有新消息，聊天 UI 也必须重读 `ChatMessages`。
+
+`PlayerListUI` 用 `CurrentRoom` 和 `TryGetPlayer` 绘制 Tab 顶部“当前房间 / 房主”两列，订阅 `CurrentRoomChanged` 更新房名与房主；名单变化和重新显示时也重读，避免房主名字或隐藏期间的数据滞后。距离刷新仍独立按帧节流，不重建房间信息行。房间 ID 保留为命令参数，但游戏 UI 不展示。
+
+内部切房按“写入房间和完整名单 → 清理旧房间 → 创建新实例 → UI 通知”分阶段，不能依赖订阅顺序。详细规则见 `room-system.md`。旧房间 UI 接口和假数据已移除，没有第四个 UI 根入口。
 
 ## PlayerView
 
@@ -61,9 +79,9 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三�
 | 实例事实 | `IPlayerManager` → `RemotePlayer`（只在场景里） | 有没有远端实例、世界坐标 |
 | 派生显示值 | 读时现算，任何地方都不存 | `Distance` |
 
-`PlayerView.Distance` 为 `null` 表示这名玩家当前没有远端实例——在大厅、实例池已满、首个状态包还没到都属于正常情况，本地玩家自己也是 `null`。这个判据同时就是"能不能传送过去"：没有实例就没有目标位置，所以 `IUnityClient.TeleportTo(playerId)` 不用再配一个 `CanTeleportTo`，UI 直接按 `Distance.HasValue` 决定按钮的可用性。传送本身是命令，所以放门面上而不是 `PlayerView` 上。
+`PlayerView.Distance` 为 `null` 表示这名玩家当前没有远端实例——未在游戏中、实例池已满、首个状态包还没到都属于正常情况，本地玩家自己也是 `null`。这个判据同时就是"能不能传送过去"：没有实例就没有目标位置，所以 `IUnityClient.TeleportTo(playerId)` 不用再配一个 `CanTeleportTo`，UI 直接按 `Distance.HasValue` 决定按钮的可用性。传送本身是命令，所以放门面上而不是 `PlayerView` 上。
 
-传送这条链是：`IUnityClient.TeleportTo(playerId)` → `UnityClient` 从 `IPlayerManager` 取出本地玩家和目标实例 → `LocalPlayer.TeleportTo(Transform target)`。搬运逻辑落在最后一环，那里本地玩家（`this`）和目标（`target`）两边的层级都在手上——它靠逐个配对两边的 `Rigidbody2D` 来搬，所以依赖"远端实例和本地玩家出自同一个 `PlayerPrefab`、刚体结构一致"这个前提（见 `docs/game-runtime.md`）。
+传送这条链是：`IUnityClient.TeleportTo(playerId)` → `UnityClient` 从 `IPlayerManager` 取出本地玩家和目标实例 → `LocalPlayer.TeleportTo(Transform target)`。搬运逻辑落在最后一环，那里本地玩家（`this`）和目标（`target`）两边的层级都在手上——它靠逐个配对两边的 `Rigidbody2D` 来搬，所以依赖"远端实例和本地玩家出自同一个 `PlayerPrefab`、刚体结构一致"这个前提（见 `docs/agent/game-runtime.md`）。
 
 UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerListHandler.TeleportRequested(playerId)`，由 `PlayerListUI`（它本来就持有 `IUnityClient`）接到 `TeleportTo` 上。行渲染类因此仍然只认识 `PlayerView`，不引用任何门面类型——**纯视图类不必自己去拿门面，让持有门面的那一层把事件接过去**，这条对以后的踢人、私聊按钮同样适用。
 
@@ -71,10 +89,10 @@ UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerLis
 
 `GOILauncher.Multiplayer.Unity.Config.MultiplayerSettings` 是持久化设置的唯一所有者。UI 用构造注入拿到它，读属性、调 `SetXxx`、订阅变更事件，不自己存副本——和 `PlayerView` 是同一类东西：**约束限制的是"UI 要认识几个入口"，不是"UI 能出现几个类名"。**
 
-除了联机开关，它还有四项默认值（`PlayerName` / `ClientHost` / `ClientPort` / `ServerPort`）。这四项是读透的**初值来源**：`SettingsPage` 是唯一写入方，`ClientPage` / `ServerPage` 只在填输入框时读它，并订阅对应的 `XxxChanged` 在空闲时更新输入框——页面上临时改名字或地址只影响那一次连接，不回写。名字允许为空（“还没填”），空名字连接时由 `ClientPage` 弹“名字不能为空”拦下，没有兜底默认名（见 `docs/game-runtime.md` 的 Multiplayer Settings）。
+除了联机开关，它还有四项默认值（`PlayerName` / `ClientHost` / `ClientPort` / `ServerPort`）。这四项是读透的**初值来源**：`SettingsPage` 是唯一写入方，`ClientPage` / `ServerPage` 只在填输入框时读它，并订阅对应的 `XxxChanged` 在空闲时更新输入框——页面上临时改名字或地址只影响那一次连接，不回写。名字允许为空（“还没填”），空名字连接时由 `ClientPage` 弹“名字不能为空”拦下，没有兜底默认名（见 `docs/agent/game-runtime.md` 的 Multiplayer Settings）。
 
 这条以前是反方向的：`IMultiplayerState` 由 UI 宿主实现（`MultiplayerStateCoordinator` 把 BepInEx 的 `ConfigEntry` 包一层暴露出来），Unity 层调用。搬到 `src/Unity` 之后方向反了过来，存储归 Unity 层、UI 只是消费者，所以"反向接口不受约束"这条理由不再成立，改按 `PlayerView` 的先例走。
 
-搬下来的原因是 **BepInEx 只存在于 PC 宿主**。Android / iOS 宿主没有 `ConfigFile`，要读的设置却是同一套；留在 UI 层就得每个宿主各写一遍键名、类型、默认值和变更通知。现在这些都在平台无关的 `src/Unity` 里，只把"字节落到哪"抽成 `ISettingsStore`（见 `docs/game-runtime.md` 的 Multiplayer Settings）。
+搬下来的原因是 **BepInEx 只存在于 PC 宿主**。Android / iOS 宿主没有 `ConfigFile`，要读的设置却是同一套；留在 UI 层就得每个宿主各写一遍键名、类型、默认值和变更通知。现在这些都在平台无关的 `src/Unity` 里，只把"字节落到哪"抽成 `ISettingsStore`（见 `docs/agent/game-runtime.md` 的 Multiplayer Settings）。
 
-`IMultiplayerState` 还在，但已经退成 Unity 层内部的端口，UI 不再碰它。它同时提供 `Enabled` 和 `EnabledChanged`，因为下层要的是同一件事的两半：`UnityClient` / `UnityServer` 读它来拒绝关闭后的连接和启动请求，`MultiplayerLifecycleController` 和 `PlayerManager` 订阅它来撤掉已经建立的连接和玩家实例（见 `docs/game-runtime.md` 的“关闭联机保证什么”）。只写 `SetXxx` 的那一面留在 `MultiplayerSettings` 上，所以下层拿不到写权限。
+`IMultiplayerState` 还在，但已经退成 Unity 层内部的端口，UI 不再碰它。它同时提供 `Enabled` 和 `EnabledChanged`，因为下层要的是同一件事的两半：`UnityClient` / `UnityServer` 读它来拒绝关闭后的连接和启动请求，`MultiplayerLifecycleController` 和 `PlayerManager` 订阅它来撤掉已经建立的连接和玩家实例（见 `docs/agent/game-runtime.md` 的“关闭联机保证什么”）。只写 `SetXxx` 的那一面留在 `MultiplayerSettings` 上，所以下层拿不到写权限。

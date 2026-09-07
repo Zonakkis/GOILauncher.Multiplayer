@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using GOILauncher.Multiplayer.Core.Event;
 using System.Collections.Generic;
 using System.Linq;
 using GOILauncher.Multiplayer.Core.Data.Constants;
@@ -12,13 +13,16 @@ namespace GOILauncher.Multiplayer.Network
     {
         public bool IsRunning => _netManager.IsRunning;
         private readonly NetManager _netManager;
+        private readonly IServerEventBus _eventBus;
         private readonly ILogger<NetworkServer> _logger;
 
         public NetworkServer(
             NetManager netManager,
+            IServerEventBus eventBus,
             ILogger<NetworkServer> logger)
         {
             _netManager = netManager;
+            _eventBus = eventBus;
             _logger = logger;
         }
 
@@ -41,6 +45,7 @@ namespace GOILauncher.Multiplayer.Network
                 return;
 
             _netManager.Stop();
+            _eventBus.Publish(new ServerStoppedEvent());
             _logger.Info("Server stopped.");
         }
 

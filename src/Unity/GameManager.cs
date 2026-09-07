@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Unity.Events;
@@ -12,7 +12,7 @@ namespace GOILauncher.Multiplayer.Unity
 
     public class GameManager : MonoBehaviour, IGameManager
     {
-        public IEventBus EventBus { get; set; }
+        public IClientEventBus EventBus { get; set; }
         public ILogger<GameManager> Logger { get; set; }
         private string _currentSceneName;
         public bool IsInGame => _currentSceneName == GOIScene.Mian.ToString();

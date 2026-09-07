@@ -1,4 +1,4 @@
-﻿using GOILauncher.Multiplayer.Core.Data;
+using GOILauncher.Multiplayer.Core.Data;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
 using LiteNetLib;
@@ -10,11 +10,11 @@ namespace GOILauncher.Multiplayer.Core.Network
     public class NetworkClientListener : INetEventListener
     {
         private readonly IClientPacketDispatcher _dispatcher;
-        private readonly IEventBus _eventBus;
+        private readonly IClientEventBus _eventBus;
         private readonly ILogger<NetworkClientListener> _logger;
 
         public NetworkClientListener(IClientPacketDispatcher dispatcher,
-            IEventBus eventBus,
+            IClientEventBus eventBus,
             ILogger<NetworkClientListener> logger)
         {
             _dispatcher = dispatcher;

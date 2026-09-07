@@ -17,7 +17,7 @@ namespace GOILauncher.Multiplayer.Tests.Client
     {
         private RecordingClientDispatcher _dispatcher;
         private FakeNetworkClient _networkClient;
-        private EventBus _eventBus;
+        private ClientEventBus _eventBus;
         private ClientPlayerStateSync _sync;
 
         [SetUp]
@@ -25,8 +25,8 @@ namespace GOILauncher.Multiplayer.Tests.Client
         {
             _dispatcher = new RecordingClientDispatcher();
             _networkClient = new FakeNetworkClient();
-            _eventBus = new EventBus(new Mock<ILogger<EventBus>>().Object);
-            _sync = new ClientPlayerStateSync(_networkClient, _dispatcher, _eventBus);
+            _eventBus = new ClientEventBus(new Mock<ILogger<EventBus>>().Object);
+            _sync = new ClientPlayerStateSync(_networkClient, _dispatcher, _eventBus, TestClientRoster.Create());
             ((IStartable)_sync).Start();
         }
 
@@ -48,9 +48,9 @@ namespace GOILauncher.Multiplayer.Tests.Client
             var received = 0;
             _eventBus.Subscribe<PlayerStateReceivedEvent>(e => received++);
 
-            _dispatcher.Receive(new S2CPlayerStatePacket { PlayerId = 4, Sequence = 10 });
-            _dispatcher.Receive(new S2CPlayerStatePacket { PlayerId = 4, Sequence = 9 });
-            _dispatcher.Receive(new S2CPlayerStatePacket { PlayerId = 4, Sequence = 11 });
+            _dispatcher.Receive(new S2CPlayerStatePacket { Scope = TestClientRoster.Scope(4), PlayerId = 4, Sequence = 10 });
+            _dispatcher.Receive(new S2CPlayerStatePacket { Scope = TestClientRoster.Scope(4), PlayerId = 4, Sequence = 9 });
+            _dispatcher.Receive(new S2CPlayerStatePacket { Scope = TestClientRoster.Scope(4), PlayerId = 4, Sequence = 11 });
 
             received.Should().Be(2);
         }
@@ -61,9 +61,9 @@ namespace GOILauncher.Multiplayer.Tests.Client
             var received = 0;
             _eventBus.Subscribe<PlayerStateReceivedEvent>(e => received++);
 
-            _dispatcher.Receive(new S2CPlayerStatePacket { PlayerId = 4, Sequence = 10 });
+            _dispatcher.Receive(new S2CPlayerStatePacket { Scope = TestClientRoster.Scope(4), PlayerId = 4, Sequence = 10 });
             _eventBus.Publish(new PlayerLeftEvent(4, "remote", Platform.PC));
-            _dispatcher.Receive(new S2CPlayerStatePacket { PlayerId = 4, Sequence = 0 });
+            _dispatcher.Receive(new S2CPlayerStatePacket { Scope = TestClientRoster.Scope(4), PlayerId = 4, Sequence = 0 });
 
             received.Should().Be(2);
         }

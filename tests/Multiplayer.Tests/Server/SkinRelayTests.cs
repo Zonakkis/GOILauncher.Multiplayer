@@ -25,7 +25,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
         private FakeNetworkServer _networkServer;
         private RecordingServerDispatcher _dispatcher;
         private StubPlayerService _playerService;
-        private EventBus _eventBus;
+        private ServerEventBus _eventBus;
 
         [SetUp]
         public void Setup()
@@ -33,9 +33,9 @@ namespace GOILauncher.Multiplayer.Tests.Server
             _networkServer = new FakeNetworkServer();
             _dispatcher = new RecordingServerDispatcher();
             _playerService = new StubPlayerService();
-            _eventBus = new EventBus(new Mock<ILogger<EventBus>>().Object);
+            _eventBus = new ServerEventBus(new Mock<ILogger<EventBus>>().Object);
 
-            var relay = new SkinRelay(_networkServer, _dispatcher, _playerService, _eventBus,
+            var relay = new SkinRelay(_networkServer, _dispatcher, _playerService, new LobbyRoomStub(_playerService), _eventBus,
                 new Mock<ILogger<SkinRelay>>().Object);
             ((IStartable)relay).Start();
         }
@@ -69,21 +69,22 @@ namespace GOILauncher.Multiplayer.Tests.Server
         }
 
         [Test]
-        public void Manifest_IsRelayedToEveryoneElseOnTheSkinChannel()
+        public void ReadyManifest_IsRelayedToRoomMembersOnTheControlChannel()
         {
             AddPlayer(SenderId);
             AddPlayer(OtherId);
             AddPlayer(3);
 
             Announce(SenderId, SkinTestData.State(SkinTestData.Png(0x01), 1f));
+            Upload(SenderId, SkinTestData.Png(0x01));
 
             _networkServer.Sent.Select(s => s.ClientId).Should().BeEquivalentTo(new[] { OtherId, 3 });
             _networkServer.Sent.Should().OnlyContain(s =>
-                s.Channel == NetworkChannels.Skin && s.Method == DeliveryMethod.ReliableOrdered);
+                s.Channel == NetworkChannels.Default && s.Method == DeliveryMethod.ReliableOrdered);
         }
 
         /// <summary>
-        /// Lobby players are included on purpose: getting the manifest early means the texture is
+        /// Members outside the gameplay scene are included on purpose: getting the manifest early means the texture is
         /// already downloaded by the time they enter the level.
         /// </summary>
         [Test]
@@ -93,6 +94,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
             AddPlayer(OtherId);
 
             Announce(SenderId, SkinTestData.State(SkinTestData.Png(0x01), 1f));
+            Upload(SenderId, SkinTestData.Png(0x01));
 
             var relayed = (S2CSkinManifestPacket)_networkServer.Sent.Single().Packet;
             relayed.PlayerId.Should().Be(SenderId);
@@ -218,16 +220,18 @@ namespace GOILauncher.Multiplayer.Tests.Server
         /// catch-up every pot in the room stays vanilla until its owner restarts the level.
         /// </summary>
         [Test]
-        public void Handshake_PushesEveryKnownManifestExceptTheNewcomersOwn()
+        public void RoomEntry_PushesEveryKnownManifestExceptTheNewcomersOwn()
         {
             AddPlayer(SenderId);
             AddPlayer(OtherId);
             Announce(SenderId, SkinTestData.State(SkinTestData.Png(0x01)));
+            Upload(SenderId, SkinTestData.Png(0x01));
             Announce(OtherId, SkinTestData.State(SkinTestData.Png(0x02)));
+            Upload(OtherId, SkinTestData.Png(0x02));
             _networkServer.Sent.Clear();
 
             AddPlayer(3);
-            _eventBus.Publish(new ClientHandshakeEvent(3, "late", Platform.PC));
+            _eventBus.Publish(new PlayerRoomEnteredEvent(3));
 
             var pushed = _networkServer.Sent
                 .Where(s => s.ClientId == 3)
@@ -238,13 +242,13 @@ namespace GOILauncher.Multiplayer.Tests.Server
         }
 
         [Test]
-        public void Handshake_DoesNotEchoTheNewcomersOwnManifestBack()
+        public void RoomEntry_DoesNotEchoTheNewcomersOwnManifestBack()
         {
             AddPlayer(SenderId);
             Announce(SenderId, SkinTestData.State(SkinTestData.Png(0x01)));
             _networkServer.Sent.Clear();
 
-            _eventBus.Publish(new ClientHandshakeEvent(SenderId, "self", Platform.PC));
+            _eventBus.Publish(new PlayerRoomEnteredEvent(SenderId));
 
             _networkServer.Sent.Should().BeEmpty();
         }
@@ -260,13 +264,16 @@ namespace GOILauncher.Multiplayer.Tests.Server
 
             _playerService.Players.Remove(SenderId);
             _eventBus.Publish(new ClientDisconnectedEvent(SenderId, "left"));
-
+            _networkServer.Sent.Clear();
+            Request(OtherId, SenderId, SkinHash.Compute(payload));
+            _networkServer.Sent.Should().BeEmpty(); // no longer a room member: no information is disclosed
+            AddPlayer(SenderId);
             Request(OtherId, SenderId, SkinHash.Compute(payload));
             LastPacketFor(OtherId).Should().BeOfType<S2CSkinUnavailablePacket>();
 
             _networkServer.Sent.Clear();
             AddPlayer(3);
-            _eventBus.Publish(new ClientHandshakeEvent(3, "late", Platform.PC));
+            _eventBus.Publish(new PlayerRoomEnteredEvent(3));
             _networkServer.Sent.Should().BeEmpty();
         }
 
@@ -282,7 +289,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
 
         private void Request(int senderId, int ownerId, SkinHash hash)
         {
-            _dispatcher.Receive(new C2SSkinRequestPacket { PlayerId = ownerId, Hash = hash }, senderId);
+            _dispatcher.Receive(new C2SSkinRequestPacket { Scope = new RoomPacketScope((ulong)senderId + 1, (ulong)ownerId + 1), PlayerId = ownerId, Hash = hash }, senderId);
         }
 
         private object LastPacketFor(int clientId)

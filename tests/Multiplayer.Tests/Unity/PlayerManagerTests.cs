@@ -26,7 +26,7 @@ namespace GOILauncher.Multiplayer.Tests.Unity
     {
         private const int LocalPlayerId = 7;
 
-        private EventBus _eventBus;
+        private ClientEventBus _eventBus;
         private Mock<IGameManager> _gameManager;
         private Mock<IPlayerInstancePool> _instancePool;
         private FakePlayerService _playerService;
@@ -36,7 +36,7 @@ namespace GOILauncher.Multiplayer.Tests.Unity
         [SetUp]
         public void Setup()
         {
-            _eventBus = new EventBus(new Mock<ILogger<EventBus>>().Object);
+            _eventBus = new ClientEventBus(new Mock<ILogger<EventBus>>().Object);
             _gameManager = new Mock<IGameManager>();
             _gameManager.SetupGet(m => m.IsInGame).Returns(true);
             _instancePool = new Mock<IPlayerInstancePool>();
@@ -53,6 +53,22 @@ namespace GOILauncher.Multiplayer.Tests.Unity
                 _multiplayerState,
                 new Mock<ILogger<PlayerManager>>().Object);
             ((IStartable)_playerManager).Start();
+        }
+
+        [Test]
+        public void RoomMembershipChange_DoesNotReleaseLocalPlayerOrClearTheInstancePool()
+        {
+            _eventBus.Publish(new RoomMembershipChangedEvent());
+            _instancePool.Verify(pool => pool.Clear(), Times.Never);
+            _instancePool.Verify(pool => pool.WarmUp(It.IsAny<int>()), Times.Never);
+            _gameManager.VerifyGet(game => game.Player, Times.Never);
+            _playerService.ReplaceRoomRoster(new[]
+            {
+                new RoomMemberInfo(_playerService.LocalPlayer, 10),
+                new RoomMemberInfo(new PlayerInfo(2, "new room", Platform.PC, true), 11)
+            });
+            _eventBus.Publish(new PlayerRosterReceivedEvent());
+            _instancePool.Verify(pool => pool.Rent(It.Is<PlayerInfo>(p => p.Id == 2)), Times.Once);
         }
 
         [Test]
@@ -109,7 +125,7 @@ namespace GOILauncher.Multiplayer.Tests.Unity
         }
 
         [Test]
-        public void PlayerJoinedInLobby_RentsNothing()
+        public void PlayerJoinedOutsideGame_RentsNothing()
         {
             _playerService.Add(new PlayerInfo(4, "carol", Platform.PC, false));
 
@@ -245,6 +261,10 @@ namespace GOILauncher.Multiplayer.Tests.Unity
             private readonly Dictionary<int, PlayerInfo> _players = new Dictionary<int, PlayerInfo>();
 
             public PlayerInfo LocalPlayer { get; private set; }
+            public ulong LocalMembershipId => 1;
+            public bool AcceptsScope(int playerId, RoomPacketScope scope) => false;
+            public void ReplaceRoomRoster(IEnumerable<RoomMemberInfo> members)
+            { _players.Clear(); foreach (var member in members) _players[member.Player.Id] = member.Player; }
 
             public IEnumerable<PlayerInfo> Players
             {

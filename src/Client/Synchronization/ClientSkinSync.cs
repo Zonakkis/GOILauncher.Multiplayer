@@ -1,3 +1,4 @@
+using GOILauncher.Multiplayer.Client.Services;
 using System.Collections.Generic;
 using Autofac;
 using GOILauncher.Multiplayer.Client.Events;
@@ -18,14 +19,15 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
     /// 不碰 Unity——贴图解码和材质都在 Unity 层，本模块只管协议和缓存。
     /// </summary>
     /// <remarks>
-    /// 字节按哈希缓存，所以同一张贴图在一次连接里只会下载一次；断线时连缓存一起清掉，
-    /// 因为重连后服务端的那份缓存可能已经是别人的了。
+    /// 远端清单仍引用同一哈希时复用已下载字节；换房清空远端缓存。
+    /// 自身皮肤及上传记录按连接保留，断线后重新上传到下一条连接的服务端。
     /// </remarks>
     public class ClientSkinSync : IStartable
     {
         private readonly INetworkClient _networkClient;
+        private readonly IPlayerService _players;
         private readonly IClientPacketDispatcher _dispatcher;
-        private readonly IEventBus _eventBus;
+        private readonly IClientEventBus _eventBus;
         private readonly ILogger<ClientSkinSync> _logger;
 
         private readonly Dictionary<int, SkinState> _manifests = new Dictionary<int, SkinState>();
@@ -45,13 +47,14 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
 
         public ClientSkinSync(INetworkClient networkClient,
             IClientPacketDispatcher dispatcher,
-            IEventBus eventBus,
-            ILogger<ClientSkinSync> logger)
+            IClientEventBus eventBus,
+            ILogger<ClientSkinSync> logger, IPlayerService players)
         {
             _networkClient = networkClient;
             _dispatcher = dispatcher;
             _eventBus = eventBus;
             _logger = logger;
+            _players = players;
         }
 
         void IStartable.Start()
@@ -59,14 +62,14 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
             _dispatcher.RegisterStruct<S2CSkinManifestPacket>(OnManifest);
             _dispatcher.RegisterStruct<S2CSkinDataPacket>(OnData);
             _dispatcher.RegisterStruct<S2CSkinUnavailablePacket>(OnUnavailable);
-            _eventBus.Subscribe<LocalPlayerReadyEvent>(OnLocalPlayerReady);
+            _eventBus.Subscribe<RoomMembershipChangedEvent>(OnRoomChanged);
             _eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
             _eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
         }
 
         /// <summary>
         /// 宣告本地皮肤。<paramref name="payload"/> 是 PNG 字节，原版贴图传 null。
-        /// 没连上也可以调用：状态先留着，握手完成后自动补发。
+        /// 没连上也可以调用：状态先留着，房间就绪后自动补发。
         /// </summary>
         public void Announce(SkinState state, byte[] payload)
         {
@@ -121,7 +124,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
 
         private void SendLocalSkin()
         {
-            if (!_networkClient.IsConnected)
+            if (!_networkClient.IsConnected || _players.LocalMembershipId == 0)
             {
                 return;
             }
@@ -151,6 +154,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
 
         private void OnManifest(S2CSkinManifestPacket packet, PacketSender _)
         {
+            if (!_players.AcceptsScope(packet.PlayerId, packet.Scope) || packet.PlayerId == _players.LocalPlayer.Id) return;
             var state = packet.State;
             _manifests[packet.PlayerId] = state;
             PruneUnreferencedPayloads();
@@ -169,12 +173,13 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
                 return;
             }
 
-            _networkClient.Send(new C2SSkinRequestPacket { PlayerId = packet.PlayerId, Hash = state.Hash },
+            _networkClient.Send(new C2SSkinRequestPacket { Scope = packet.Scope, PlayerId = packet.PlayerId, Hash = state.Hash },
                 NetworkChannels.Skin, DeliveryMethod.ReliableOrdered);
         }
 
         private void OnData(S2CSkinDataPacket packet, PacketSender _)
         {
+            if (!_players.AcceptsScope(packet.PlayerId, packet.Scope) || packet.PlayerId == _players.LocalPlayer.Id) return;
             var blob = packet.Blob;
 
             // 服务端也不能全信：它转发的是别的客户端上传的字节，校验和上限得在这儿再走一遍。
@@ -201,6 +206,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
 
         private void OnUnavailable(S2CSkinUnavailablePacket packet, PacketSender _)
         {
+            if (!_players.AcceptsScope(packet.PlayerId, packet.Scope) || packet.PlayerId == _players.LocalPlayer.Id) return;
             SkinState state;
             if (!_manifests.TryGetValue(packet.PlayerId, out state) || !state.Hash.Equals(packet.Hash))
             {
@@ -213,8 +219,10 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
             _eventBus.Publish(new PlayerSkinReceivedEvent(packet.PlayerId, state, null));
         }
 
-        private void OnLocalPlayerReady(LocalPlayerReadyEvent e)
+        private void OnRoomChanged(RoomMembershipChangedEvent e)
         {
+            _manifests.Clear();
+            _payloads.Clear();
             // 本地那次读取可能发生在连上之前（先进游戏再连服务器），那时 Announce 只存了状态。
             // 上传去重保证这里不会重复传字节。
             if (_hasLocalSkin)

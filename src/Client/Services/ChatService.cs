@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Autofac;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -18,22 +18,25 @@ namespace GOILauncher.Multiplayer.Client.Services
     {
         private readonly INetworkClient _networkClient;
         private readonly IClientPacketDispatcher _dispatcher;
-        private readonly IEventBus _eventBus;
+        private readonly IClientEventBus _eventBus;
         private readonly ILogger<ChatService> _logger;
         private readonly IPlayerService _playerService;
+        private readonly IRoomService _roomService;
         private readonly List<Message> _messages = new List<Message>();
         public ReadOnlyCollection<Message> Messages { get; private set; }
         public ChatService(INetworkClient networkClient,
             IClientPacketDispatcher dispatcher,
-            IEventBus eventBus,
+            IClientEventBus eventBus,
             ILogger<ChatService> logger,
-            IPlayerService playerService)
+            IPlayerService playerService,
+            IRoomService roomService)
         {
             _networkClient = networkClient;
             _dispatcher = dispatcher;
             _eventBus = eventBus;
             _logger = logger;
             _playerService = playerService;
+            _roomService = roomService;
             Messages = new ReadOnlyCollection<Message>(_messages);
         }
 
@@ -42,6 +45,24 @@ namespace GOILauncher.Multiplayer.Client.Services
             _dispatcher.RegisterStruct<S2CChatMessagePacket>(OnChatMessage);
             _eventBus.Subscribe<PlayerJoinedEvent>(OnPlayerJoined);
             _eventBus.Subscribe<PlayerLeftEvent>(OnPlayerLeft);
+            _eventBus.Subscribe<RoomMembershipChangedEvent>(OnRoomMembershipChanged);
+            _eventBus.Subscribe<ServerDisconnectedEvent>(e => ClearHistory());
+        }
+
+        private void OnRoomMembershipChanged(RoomMembershipChangedEvent e)
+        {
+            ClearHistory();
+            // RoomService installs CurrentRoom before publishing the membership change.
+            // Use the local Server-message path, not a player message sent over the network.
+            var room = _roomService.CurrentRoom;
+            if (room != null)
+                SendMessage(MessageType.Server, "已进入" + room.Name);
+        }
+
+        private void ClearHistory()
+        {
+            _messages.Clear();
+            _eventBus.Publish(new ChatHistoryResetEvent());
         }
 
         private void AddMessage(Message message)
@@ -60,13 +81,13 @@ namespace GOILauncher.Multiplayer.Client.Services
 
         private void SendChatMessage(string content)
         {
-            if (!_networkClient.IsConnected)
+            if (!_networkClient.IsConnected || _playerService.LocalMembershipId == 0)
             {
                 SendSystemMessage("尚未连接到服务器。");
                 return;
             }
 
-            var packet = new C2SChatMessagePacket(content);
+            var packet = new C2SChatMessagePacket(content) { MembershipId = _playerService.LocalMembershipId };
             _networkClient.Send(packet, DeliveryMethod.ReliableOrdered);
 
             // 本地回显：服务端只把消息广播给其他玩家（排除发送者），自己的消息需要本地直接显示
@@ -94,6 +115,7 @@ namespace GOILauncher.Multiplayer.Client.Services
 
         private void OnChatMessage(S2CChatMessagePacket packet, PacketSender _)
         {
+            if (!_playerService.AcceptsScope(packet.PlayerId, packet.Scope)) return;
             var playerId = packet.PlayerId;
             var dateTime = DateTimeUtils.FromUnixTimeSeconds(packet.Timestamp);
             if (_playerService.TryGetPlayer(playerId, out var player))
@@ -101,21 +123,15 @@ namespace GOILauncher.Multiplayer.Client.Services
                 var message = new Message(MessageType.Player, player.Name, packet.Content, dateTime);
                 AddMessage(message);
             }
-            else
-            {
-                _logger.Warn("Unknown playerId: {PlayerId}, Content: {Content}", playerId, packet.Content);
-                var message = new Message(MessageType.Player, $"玩家 {playerId}", packet.Content, dateTime);
-                AddMessage(message);
-            }
         }
         private void OnPlayerJoined(PlayerJoinedEvent e)
         {
-            var message = new Message(MessageType.Server, "服务器", $"玩家 {e.PlayerName} 加入了游戏。");
+            var message = new Message(MessageType.Server, "服务器", $"玩家 {e.PlayerName} 加入了房间。");
             AddMessage(message);
         }
         private void OnPlayerLeft(PlayerLeftEvent e)
         {
-            AddMessage(new Message(MessageType.Server, "服务器", $"玩家 {e.PlayerName} 离开了游戏。"));
+            AddMessage(new Message(MessageType.Server, "服务器", $"玩家 {e.PlayerName} 离开了房间。"));
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Network;
@@ -10,10 +10,10 @@ namespace GOILauncher.Multiplayer.Server.Services
     {
         public bool IsRunning => _networkServer.IsRunning;
         private readonly INetworkServer _networkServer;
-        private readonly IEventBus _eventBus;
+        private readonly IServerEventBus _eventBus;
 
         public ServerService(INetworkServer networkServer,
-            IEventBus eventBus)
+            IServerEventBus eventBus)
         {
             _networkServer = networkServer;
             _eventBus = eventBus;

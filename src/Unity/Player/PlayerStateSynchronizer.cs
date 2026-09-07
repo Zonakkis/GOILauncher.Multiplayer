@@ -17,7 +17,7 @@ namespace GOILauncher.Multiplayer.Unity.Player
         private const float StateInterval = 1f / 60f;
 
         public ClientPlayerStateSync StateSync { get; set; }
-        public IEventBus EventBus { get; set; }
+        public IClientEventBus EventBus { get; set; }
         public IGameManager GameManager { get; set; }
         public IPlayerManager PlayerManager { get; set; }
 
