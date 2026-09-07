@@ -91,6 +91,12 @@ Player
 
 搬运期间物理模拟被关掉再恢复。`Physics2D.autoSimulation`（旧版 Unity）和 `Physics2D.simulationMode`（新版 Unity）是同一件事的两种 API，游戏可能是任一版本，所以由 `Unity/Helpers/Physics2DHelper` 用反射二选一；只有这两种情况。
 
+## Cursor Object
+
+- `IGameManager.Cursor` 是场景中名为 `Cursor` 的游戏物体，`GameManager.RefreshGameResources` 用 `GameObject.Find("Cursor")` 获取它；它不是控制系统鼠标显隐的 `UnityEngine.Cursor`。
+- `Cursor` 物体上带有 `Rigidbody2D`。用户已实机验证：UI 占用鼠标时将其 `bodyType` 设为 `RigidbodyType2D.Static`，释放时恢复为 `RigidbodyType2D.Kinematic`，可以正确屏蔽并恢复本地游戏输入。
+- 之前直接禁用 `PlayerControl` 组件会出现 bug，使用 Harmony 跳过 `PlayerControl.FixedUpdate` 也未达到预期，均已由用户实测否定；当前不再使用这两种方案，具体失败原因不作推断。
+
 ## State Synchronization Runtime Behavior
 
 - `LocalPlayer` 挂载在 `Player` 根对象上，从 `Player`、`Player/Hub/Slider` 和 `Player/Hub/Slider/Handle` 读取世界位置与世界旋转。
@@ -182,6 +188,8 @@ PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是�
 - 联机开关是 `MultiplayerSettings.Enabled`，`SettingsPage` 的勾选框读写它，`Plugin`、`ClientPage`、`ServerPage` 订阅 `EnabledChanged` 刷新自己。
 - “设置”页除了开关还管四个默认值，按“客户端设置”（从上到下是“名字”一行、默认主机和默认端口同一行）和“服务端设置”（默认端口）两段排：`ClientPage` 和 `ServerPage` 从它们取输入框初值，并订阅对应的变更事件，在空闲时跟着更新（见上面 Multiplayer Settings）。这四个输入框不随联机开关变灰——关着联机也要能先把默认值配好。落盘发生在编辑结束（`InputField.onEndEdit`）和离开设置页时，不是每敲一个字符就写一次：每次写都要整份重写配置文件。端口填了非法值会弹提示并把输入框回填成当前设置值；主机清空则归一化回默认值；名字清空就保留为空，连接时为空会弹“名字不能为空”并拦下连接。名字输入框不设占位提示，空就是空框；已知限制：uGUI 的 `InputField` 文本为空时聚焦不画光标，空名字框点进去看不到光标（未处理）。
 - F2 始终切换 `MultiplayerUI`（“连接配置”）窗口，不受联机开关影响，因此关闭联机后仍可进入“设置”页重新启用。
+- `Plugin.ApplyCursorState` 使用同一判据解锁系统鼠标和将游戏 `Cursor` 的刚体切为 `Static`：配置窗口、房间弹窗、Tab 玩家列表、聊天输入激活，或其他 UniverseLib UI 显示；被动聊天 HUD 不屏蔽输入。UI 不再占用鼠标时恢复为 `Kinematic`，不修改 `PlayerControl` 的启用状态或拦截其方法。
+- `Plugin` 初始化时通过 `container.Resolve<IGameManager>()` 保存 GameManager，输入屏蔽直接读取它的 `Cursor`，不依赖联机开关、连接或 `LocalPlayer` 组件。刚体处理在光标状态缓存的提前返回之前执行：UI 开着进入或重载场景时也会处理新 Cursor，并释放此前记录的旧刚体（如果仍存在）。Plugin 被禁用或销毁时将已屏蔽的刚体恢复为 `Kinematic`。
 - 关闭联机开关时，`MultiplayerLifecycleController`（`src/Unity`）立即请求 `IUnityClient.Disconnect()` 和 `IUnityServer.Stop()`；Unity 客户端和服务端适配器也会拒绝后续的连接或启动请求。它在容器初始化末尾被显式解析一次，构造时就按持久化的值补做一遍，所以上次退出时是关闭状态的话，这次启动不会先起服务再关掉。玩家实例那一半不在它身上，见上面“关闭联机保证什么”。
 - 因为关开关也算一次主动断开，`ClientPage` 的提示按当前开关状态分支（“联机已关闭，连接已断开”），不靠标志位——设置在通知任何监听者之前就已写好，谁先收到通知都不影响读到的值。
 - 关闭联机时 `ChatHudUI` 被隐藏并退出输入激活状态，`PlayerListUI` 被隐藏，Plugin 不再响应 Tab 来显示玩家列表。

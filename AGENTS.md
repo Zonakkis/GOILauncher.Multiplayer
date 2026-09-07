@@ -22,7 +22,7 @@ Before changing gameplay, player lifecycle, networking, or state synchronization
 - `docs/agent/game-runtime.md`
 - `docs/agent/state-synchronization.md`
 
-Before changing anything the UI layer touches (`Unity.Desktop`, `IUnityClient`, `IUnityServer`, `MultiplayerUnityCore`), read `docs/agent/ui-facade.md`. The UI layer depends on exactly three facades; new capabilities hang off an existing one instead of introducing a fourth root interface.
+Before changing anything the UI layer touches (`Unity.Desktop`, `IUnityClient`, `IUnityServer`, `IGameManager`, `MultiplayerUnityCore`), read `docs/agent/ui-facade.md`. UI accesses multiplayer business through `IUnityClient` and `IUnityServer`, and may use `IGameManager` for scene state and in-game object references, not business operations. `MultiplayerUnityCore` initializes the container. Add business capabilities to the existing client/server facades and game references to `IGameManager` instead of introducing new service roots.
 
 Treat Unity object names and casing in `docs/agent/game-runtime.md` as exact. Do not infer object or component responsibilities from names alone; confirm them from code, runtime inspection, or the user.
 

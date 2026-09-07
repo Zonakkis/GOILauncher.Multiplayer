@@ -1,21 +1,28 @@
 # UI Facade
 
-UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三个门面访问联机功能：
+UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）通过以下入口访问联机业务与游戏运行时：
 
-- `MultiplayerUnityCore` — 初始化容器，取到下面两个门面；
-- `IUnityClient` — 客户端的一切；
-- `IUnityServer` — 内嵌服务端的一切。
+- `MultiplayerUnityCore` — 初始化容器，取得下面的依赖；
+- `IUnityClient` — 客户端联机业务；
+- `IUnityServer` — 内嵌服务端联机业务；
+- `IGameManager` — 游戏场景状态与游戏内对象引用，不提供联机业务。
 
-这条约束是为了让写 UI 的人只需要学三个入口，不用先读懂 `Client` / `Server` / `Unity` 三层的分工。
+这条约束区分了业务门面和游戏引用的来源，让 UI 不必了解 `Client` / `Server` / `Unity` 三层的内部服务分工。
 
 ## Rules
 
-- **UI 层向下只能依赖这三个类型。** 不要让 UI 直接依赖 `IPlayerService`、`IPlayerManager`、`IChatService`、`IEventBus` 等下层类型。
-- **新增能力挂在已有门面下面，不要新开一个根接口。** "玩家名单该由谁提供"这类问题的答案永远是 `IUnityClient`，哪怕实现要组合好几个下层服务——组合工作在 `UnityClient` 里做。
+- **UI 通过上述入口访问业务和游戏引用。** 不要让 UI 直接依赖 `IPlayerService`、`IPlayerManager`、`IChatService`、`IEventBus` 等内部服务。
+- **新增联机业务挂在已有客户端/服务端门面，游戏引用放在 `IGameManager`，不要新开服务根接口。** "玩家名单该由谁提供"这类问题的答案永远是 `IUnityClient`，哪怕实现要组合好几个下层服务——组合工作在 `UnityClient` 里做。
 - **UI 不订阅 `IEventBus`，事件由门面转发。** 见下面 Events 一节。
-- **`MultiplayerSettings` 不算第四个根接口**（`GOILauncher.Multiplayer.Unity.Config`）。它和 `PlayerView` 一样，是从容器里取到的类型，不是新开的入口。见下面 MultiplayerSettings 一节。
+- **`MultiplayerSettings` 不是新的服务根接口**（`GOILauncher.Multiplayer.Unity.Config`）。它和 `PlayerView` 一样，是 UI 可以使用的设置/视图类型，不是新的业务入口。见下面 MultiplayerSettings 一节。
 
 单一数据源和这条约束不冲突：单一数据源约束的是**谁能写、有没有人存副本**，不是成员声明在哪个接口上。只要门面上的成员是读透（read-through）的、不缓存，把它放在 `IUnityClient` 上和放在一个独立接口上完全等价。`UnityClient.Players` 每次枚举现场构造 `PlayerView`，名单的唯一所有者仍然是 `Client/Services/IPlayerService`。
+
+## IGameManager
+
+`IGameManager` 提供 `IsInGame` 及 `Player`、`PlayerPrefab`、`Cursor` 等游戏内引用，不承载连接、房间、名单等业务。UI 可以在初始化时通过 `container.Resolve<IGameManager>()` 获取并保存它；场景中的对象会被销毁或替换，使用时从它的属性读取当前引用。
+
+桌面 UI 占用鼠标时，`Plugin` 直接操作 `IGameManager.Cursor` 上的 `Rigidbody2D.bodyType`：占用时设为 `Static`，释放时设为 `Kinematic`。这是 UI 对游戏对象的交互，不必为此增加 `IUnityClient` 方法，也不让 `IGameManager` 保存 UI 状态或提供业务命令。具体运行时事实见 `game-runtime.md` 的 Cursor Object。
 
 ## Events
 
@@ -35,7 +42,7 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三�
 这样做的原因：
 
 - 客户端与服务端已按角色拆成独立的 `IClientEventBus` / `IServerEventBus`；Unity 游戏事件属于客户端。UI 仍不订阅任何下层总线，不需要掌握传输或房间事件的内部阶段。
-- 总线上的事件类型属于 `Core` / `Client`，UI 一订阅就得 `using` 下层命名空间，三门面的约定名存实亡。
+- 总线上的事件类型属于 `Core` / `Client`，UI 一订阅就得 `using` 下层命名空间，UI 不依赖内部服务的约定名存实亡。
 - 门面事件的参数按 UI 需不需要来定，不是照抄总线事件。`Disconnected` 只给 `reason`，`ChatMessageReceived` 给消息本体（见下），`PlayerListUpdated` 什么都不给——名单从 `Players` 读。
 
 签名用 `Action` / `Action<T>` 而不是 `EventHandler`：订阅方一个都没用到 `sender`，`Action` 还能让参数一致的方法直接 `+=` 上去。
@@ -61,13 +68,13 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）只通过三�
 
 `PlayerListUI` 用 `CurrentRoom` 和 `TryGetPlayer` 绘制 Tab 顶部“当前房间 / 房主”两列，订阅 `CurrentRoomChanged` 更新房名与房主；名单变化和重新显示时也重读，避免房主名字或隐藏期间的数据滞后。距离刷新仍独立按帧节流，不重建房间信息行。房间 ID 保留为命令参数，但游戏 UI 不展示。
 
-内部切房按“写入房间和完整名单 → 清理旧房间 → 创建新实例 → UI 通知”分阶段，不能依赖订阅顺序。详细规则见 `room-system.md`。旧房间 UI 接口和假数据已移除，没有第四个 UI 根入口。
+内部切房按“写入房间和完整名单 → 清理旧房间 → 创建新实例 → UI 通知”分阶段，不能依赖订阅顺序。详细规则见 `room-system.md`。旧房间 UI 接口和假数据已移除，没有额外的房间服务入口。
 
 ## PlayerView
 
 `GOILauncher.Multiplayer.Unity.Player.PlayerView` 是"UI 看到的一名玩家"。它只记 `Id` 和两个权威来源，每次读属性都回去取，所以可以存在列表行上跨帧复用。
 
-**派生显示值放 `PlayerView`，命令放门面。** 读的东西会随着列增长（距离，以后可能的高度差、进度、速度），每加一个就往 `IUnityClient` 上加一个方法的话，门面很快就不是"三个入口"了；命令的数量是有限的（传送、踢人），放门面上不会失控。
+**派生显示值放 `PlayerView`，命令放门面。** 读的东西会随着列增长（距离，以后可能的高度差、进度、速度），每加一个就往 `IUnityClient` 上加一个方法的话，门面的方法就会不断膨胀；命令的数量是有限的（传送、踢人），放门面上不会失控。
 
 也不要把派生值加进 `PlayerInfo`：那是协议模型（`S2CPlayerListPacket` 逐字段序列化），服务端也在用。
 

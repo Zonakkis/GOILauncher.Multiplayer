@@ -33,6 +33,8 @@ public class Plugin : BaseUnityPlugin
     private MultiplayerUI _multiplayerUI;
     private RoomDialogUI _roomDialogUI;
     private MultiplayerSettings _settings;
+    private IGameManager _gameManager;
+    private Rigidbody2D _blockedCursorBody;
     private ChatHudUI _chatHudUI;
     private PlayerListUI _playerListOverlayUI;
     private bool _hasAppliedCursorState;
@@ -58,6 +60,7 @@ public class Plugin : BaseUnityPlugin
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loading...");
         var container = MultiplayerUnityCore.Initialize(Configure);
 
+        _gameManager = container.Resolve<IGameManager>();
         _settings = container.Resolve<MultiplayerSettings>();
         _settings.EnabledChanged += OnMultiplayerEnabledChanged;
 
@@ -180,6 +183,21 @@ public class Plugin : BaseUnityPlugin
         ApplyCursorState();
     }
 
+    private void OnDisable()
+    {
+        ApplyCursorPhysicsState(false);
+    }
+
+    private void OnDestroy()
+    {
+        ApplyCursorPhysicsState(false);
+
+        if (_settings != null)
+            _settings.EnabledChanged -= OnMultiplayerEnabledChanged;
+        if (_chatHudUI != null)
+            _chatHudUI.ActiveModeChanged -= OnChatActiveModeChanged;
+    }
+
     private void OnChatActiveModeChanged(bool active)
     {
         ApplyCursorState();
@@ -204,6 +222,9 @@ public class Plugin : BaseUnityPlugin
     {
         bool shouldUnlockCursor = ShouldUnlockCursor() || IsOtherUniverseUiShowing();
 
+        // 光标状态未变也要处理：UI 打开期间重载场景会换掉 Cursor。
+        ApplyCursorPhysicsState(isActiveAndEnabled && shouldUnlockCursor);
+
         if (_hasAppliedCursorState && _lastCursorUnlockState == shouldUnlockCursor)
             return;
 
@@ -211,6 +232,20 @@ public class Plugin : BaseUnityPlugin
         _lastCursorUnlockState = shouldUnlockCursor;
         ConfigManager.Force_Unlock_Mouse = shouldUnlockCursor;
         UpdateCursorControlMethod?.Invoke(null, null);
+    }
+
+    private void ApplyCursorPhysicsState(bool blocked)
+    {
+        // 释放只依赖已记录的刚体，Plugin 尚未初始化就被禁用时也可安全调用。
+        GameObject cursor = blocked ? _gameManager.Cursor : null;
+        Rigidbody2D cursorBody = cursor != null ? cursor.GetComponent<Rigidbody2D>() : null;
+
+        if (_blockedCursorBody != null && _blockedCursorBody != cursorBody)
+            _blockedCursorBody.bodyType = RigidbodyType2D.Kinematic;
+
+        _blockedCursorBody = cursorBody;
+        if (cursorBody != null && cursorBody.bodyType != RigidbodyType2D.Static)
+            cursorBody.bodyType = RigidbodyType2D.Static;
     }
 
     private bool ShouldUnlockCursor()

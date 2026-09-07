@@ -18,6 +18,7 @@ namespace GOILauncher.Multiplayer.Unity
         public bool IsInGame => _currentSceneName == GOIScene.Mian.ToString();
         public GameObject Player { get; private set; }
         public GameObject PlayerPrefab { get; private set; }
+        public GameObject Cursor { get; private set; }
         private Coroutine _refreshRoutine;
 
         public void Awake()
@@ -91,6 +92,7 @@ namespace GOILauncher.Multiplayer.Unity
         private IEnumerator RefreshGameResources(bool wasInGame)
         {
             Player = GameObject.Find("Player");
+            Cursor = GameObject.Find("Cursor");
             var playerPrefab = CreatePlayerPrefab();
 
             // 等一帧，让 CreatePlayerPrefab 里排队的 Destroy 在帧末真正执行完
