@@ -22,7 +22,7 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）通过以下�
 
 `IGameManager` 提供 `IsInGame` 及 `Player`、`PlayerPrefab`、`Cursor` 等游戏内引用，不承载连接、房间、名单等业务。UI 可以在初始化时通过 `container.Resolve<IGameManager>()` 获取并保存它；场景中的对象会被销毁或替换，使用时从它的属性读取当前引用。
 
-桌面 UI 占用鼠标时，`Plugin` 直接操作 `IGameManager.Cursor` 上的 `Rigidbody2D.bodyType`：占用时设为 `Static`，释放时设为 `Kinematic`。这是 UI 对游戏对象的交互，不必为此增加 `IUnityClient` 方法，也不让 `IGameManager` 保存 UI 状态或提供业务命令。具体运行时事实见 `game-runtime.md` 的 Cursor Object。
+桌面 UI 占用鼠标时，`Plugin` 直接操作 `IGameManager.Cursor` 上的 `Rigidbody2D.simulated`：占用时设为 `false`，释放时设为 `true`。这是 UI 对游戏对象的交互，不必为此增加 `IUnityClient` 方法，也不让 `IGameManager` 保存 UI 状态或提供业务命令。具体运行时事实见 `game-runtime.md` 的 Cursor Object。
 
 ## Events
 
@@ -94,7 +94,7 @@ UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerLis
 
 ## MultiplayerSettings
 
-`GOILauncher.Multiplayer.Unity.Config.MultiplayerSettings` 是持久化设置的唯一所有者。UI 用构造注入拿到它，读属性、调 `SetXxx`、订阅变更事件，不自己存副本——和 `PlayerView` 是同一类东西：**约束限制的是"UI 要认识几个入口"，不是"UI 能出现几个类名"。**
+`GOILauncher.Multiplayer.Unity.Config.MultiplayerSettings` 是持久化设置的唯一所有者。UI 可以在初始化完成后通过 `MultiplayerUnityCore.Settings` 取得它，也可以使用构造注入；两种方式指向容器中的同一个单例，不新建设置或保存静态副本。UI 读属性、调 `SetXxx`、订阅变更事件，不自己存副本——和 `PlayerView` 是同一类东西：**约束限制的是"UI 要认识几个入口"，不是"UI 能出现几个类名"。**
 
 除了联机开关，它还有四项默认值（`PlayerName` / `ClientHost` / `ClientPort` / `ServerPort`）。这四项是读透的**初值来源**：`SettingsPage` 是唯一写入方，`ClientPage` / `ServerPage` 只在填输入框时读它，并订阅对应的 `XxxChanged` 在空闲时更新输入框——页面上临时改名字或地址只影响那一次连接，不回写。名字允许为空（“还没填”），空名字连接时由 `ClientPage` 弹“名字不能为空”拦下，没有兜底默认名（见 `docs/agent/game-runtime.md` 的 Multiplayer Settings）。
 
