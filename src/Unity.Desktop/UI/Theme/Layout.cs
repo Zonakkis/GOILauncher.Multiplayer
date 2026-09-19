@@ -47,7 +47,7 @@ namespace GOILauncher.Multiplayer.UI.Theme
         public const int FontTableHeader = 12;
         public const int FontDetail = 13;
 
-        /// <summary>房间目录的列宽。表头和数据行同时引用这里，别在一边单独写字面量。</summary>
+        /// <summary>房间列表的列宽。表头和数据行同时引用这里，别在一边单独写字面量。</summary>
         public static class RoomColumns
         {
             /// <summary>状态格（有密码 / 已满 / 当前房间），固定宽，居中。</summary>

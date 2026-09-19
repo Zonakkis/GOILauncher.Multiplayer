@@ -17,7 +17,7 @@ using UniverseLib.UI.Models;
 namespace GOILauncher.Multiplayer.UI.Pages
 {
     /// <summary>
-    /// 客户端页。结构分两段，从上到下是"房间目录 → 连接"：
+    /// 客户端页。结构分两段，从上到下是"房间列表 → 连接"：
     ///
     /// - 目录段是主要工作区，占到全部剩余高度；
     /// - 连接段是低频操作，放底部固定高度。
@@ -102,7 +102,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             RefreshClientState();
         }
 
-        #region 房间目录
+        #region 房间列表
 
         private void CreateRoomDirectorySection()
         {
@@ -113,7 +113,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
             // 三个动作都只对"已入房"有意义，所以和它们作用的对象（目录）放在同一个区块头里，
             // 不再和连接按钮挤在一起。
-            GameObject header = UiKit.CreateSectionHeader(section, "RoomDirectoryHeader", "房间目录");
+            GameObject header = UiKit.CreateSectionHeader(section, "RoomDirectoryHeader", "房间列表");
             createRoomButton = CreateHeaderButton(header, "CreateRoom", "创建房间", 96);
             createRoomButton.SetConfirm();
             createRoomButton.OnClick += () => _roomDialog.ShowCreate();

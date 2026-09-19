@@ -96,7 +96,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         /// </summary>
         private void CreateClientSection()
         {
-            UiKit.CreateSectionHeader(Root, "ClientSectionHeader", "客户端默认值");
+            UiKit.CreateSectionHeader(Root, "ClientSectionHeader", "客户端设置");
 
             GameObject card = CreateCard("ClientCard");
 
@@ -123,7 +123,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void CreateServerSection()
         {
-            UiKit.CreateSectionHeader(Root, "ServerSectionHeader", "服务端默认值");
+            UiKit.CreateSectionHeader(Root, "ServerSectionHeader", "服务端设置");
 
             GameObject card = CreateCard("ServerCard");
 
