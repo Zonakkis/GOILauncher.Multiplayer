@@ -240,12 +240,12 @@ public class Plugin : BaseUnityPlugin
         GameObject cursor = blocked ? _gameManager.Cursor : null;
         Rigidbody2D cursorBody = cursor != null ? cursor.GetComponent<Rigidbody2D>() : null;
 
-        if (_blockedCursorBody != null && _blockedCursorBody != cursorBody)
-            _blockedCursorBody.simulated = false;
+        if (_blockedCursorBody != null && _blockedCursorBody != cursorBody && !_blockedCursorBody.simulated)
+            _blockedCursorBody.simulated = true;
 
         _blockedCursorBody = cursorBody;
-        if (cursorBody != null && !cursorBody.simulated)
-            cursorBody.simulated = true;
+        if (cursorBody != null && cursorBody.simulated)
+            cursorBody.simulated = false;
     }
 
     private bool ShouldUnlockCursor()
