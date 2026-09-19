@@ -7,6 +7,7 @@ on:
     paths:
       - docs/**
       - .github/workflows/deploy-docs.yml
+      - '!docs/agents/**'
   workflow_dispatch:
 
 # Pages 部署走 OIDC，这三个权限缺一不可
