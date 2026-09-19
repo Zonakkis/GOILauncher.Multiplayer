@@ -2,6 +2,8 @@ import { defineConfig } from 'vitepress'
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
+  // GitHub Pages 项目站点部署在 /<repo>/ 子路径下，必须与仓库名一致
+  base: '/GOILauncher.Multiplayer/',
   title: "GOILauncher.Multiplayer",
   description: "跨平台的Getting Over It联机Mod",
   themeConfig: {
