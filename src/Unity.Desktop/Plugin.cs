@@ -252,8 +252,16 @@ public class Plugin : BaseUnityPlugin
     {
         return (_multiplayerUI != null && _multiplayerUI.Enabled)
             || (_roomDialogUI != null && _roomDialogUI.Enabled)
-            || (_playerListOverlayUI != null && _playerListOverlayUI.Enabled)
+            || IsPlayerListMouseRequested()
             || (_chatHudUI != null && _chatHudUI.IsActiveMode);
+    }
+
+    // 玩家列表只是展示，按住 Tab 时游戏输入照常；Tab + 空格才交出鼠标，用来点行内的传送按钮。
+    private bool IsPlayerListMouseRequested()
+    {
+        return _playerListOverlayUI != null
+            && _playerListOverlayUI.Enabled
+            && Input.GetKey(KeyCode.Space);
     }
 
     private bool IsOtherUniverseUiShowing()
