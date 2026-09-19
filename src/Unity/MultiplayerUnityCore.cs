@@ -5,6 +5,7 @@ using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Extensions;
 using GOILauncher.Multiplayer.Unity.Config;
+using GOILauncher.Multiplayer.Unity.Extensions;
 using GOILauncher.Multiplayer.Unity.Player;
 using GOILauncher.Multiplayer.Unity.Skin;
 using UnityEngine;
@@ -79,47 +80,35 @@ namespace GOILauncher.Multiplayer.Unity
 
         private static ContainerBuilder RegisterGameManager(this ContainerBuilder builder)
         {
-            builder.Register(ctx =>
-            {
-                var obj = new GameObject(nameof(GameManager));
-                obj.transform.SetParent(_core.transform);
-                var gameManager = obj.AddComponent<GameManager>();
-                ctx.InjectProperties(gameManager);
-                return gameManager;
-            }).
-            As<IGameManager>().
-            SingleInstance();
+            builder.RegisterComponent<GameManager>(gameManager =>
+                {
+                    gameManager.transform.SetParent(_core.transform);
+                }).
+                As<IGameManager>()
+                .SingleInstance();
             return builder;
         }
 
         private static ContainerBuilder RegisterUnityClient(this ContainerBuilder builder)
         {
-            builder.Register(ctx =>
-            {
-                var obj = new GameObject(nameof(UnityClient));
-                obj.transform.SetParent(_core.transform);
-                var unityClient = obj.AddComponent<UnityClient>();
-                ctx.InjectProperties(unityClient);
-                unityClient.Init();
-                return unityClient;
-            }).
-            As<IUnityClient>().
-            SingleInstance();
+            builder.RegisterComponent<UnityClient>(unityClient =>
+                {
+                    unityClient.transform.SetParent(_core.transform);
+                    unityClient.Init();
+                }).
+                As<IUnityClient>()
+                .SingleInstance();
             return builder;
         }
 
         private static ContainerBuilder RegisterUnityServer(this ContainerBuilder builder)
         {
-            builder.Register(ctx =>
-            {
-                var obj = new GameObject(nameof(UnityServer));
-                obj.transform.SetParent(_core.transform);
-                var unityServer = obj.AddComponent<UnityServer>();
-                ctx.InjectProperties(unityServer);
-                return unityServer;
-            }).
-            As<IUnityServer>().
-            SingleInstance();
+            builder.RegisterComponent<UnityServer>(unityServer =>
+                {
+                    unityServer.transform.SetParent(_core.transform);
+                }).
+                As<IUnityServer>()
+                .SingleInstance();
             return builder;
         }
 
@@ -142,17 +131,13 @@ namespace GOILauncher.Multiplayer.Unity
 
         private static ContainerBuilder RegisterPlayerStateSynchronizer(this ContainerBuilder builder)
         {
-            builder.Register(ctx =>
-            {
-                var obj = new GameObject(nameof(PlayerStateSynchronizer));
-                obj.transform.SetParent(_core.transform);
-                var synchronizer = obj.AddComponent<PlayerStateSynchronizer>();
-                ctx.InjectProperties(synchronizer);
-                synchronizer.Init();
-                return synchronizer;
-            })
-            .AsSelf()
-            .SingleInstance();
+            builder.RegisterComponent<PlayerStateSynchronizer>(playerStateSynchronizer => 
+                {
+                    playerStateSynchronizer.transform.SetParent(_core.transform);
+                }).
+                AsSelf()
+                .SingleInstance();
+                
             return builder;
         }
         private static ContainerBuilder RegisterSkinSynchronizer(this ContainerBuilder builder)
@@ -163,17 +148,13 @@ namespace GOILauncher.Multiplayer.Unity
             builder.RegisterType<LocalSkinReader>()
                 .AsSelf()
                 .SingleInstance();
-            builder.Register(ctx =>
-            {
-                var obj = new GameObject(nameof(SkinSynchronizer));
-                obj.transform.SetParent(_core.transform);
-                var synchronizer = obj.AddComponent<SkinSynchronizer>();
-                ctx.InjectProperties(synchronizer);
-                synchronizer.Init();
-                return synchronizer;
-            })
-            .AsSelf()
-            .SingleInstance();
+            builder.RegisterComponent<SkinSynchronizer>(skinSynchronizer =>
+                {
+                    skinSynchronizer.transform.SetParent(_core.transform);
+                    skinSynchronizer.Init();
+                }).
+                AsSelf()
+                .SingleInstance();
             return builder;
         }
     }
