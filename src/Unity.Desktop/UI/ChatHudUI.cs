@@ -139,7 +139,9 @@ namespace GOILauncher.Multiplayer.UI
                 true,
                 true,
                 6,
-                new Vector4(6, 4, 6, 6),
+                // UIFactory 按 (top, bottom, left, right) 取这个 Vector4，不是直觉的
+                // (left, top, right, bottom)。行高 34 扣掉上下各 5，正好放得下 24 高的输入框。
+                new Vector4(5, 5, 6, 6),
                 new Color(0f, 0f, 0f, 0.35f),
                 TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(inputRow, minHeight: 34, flexibleHeight: 0, flexibleWidth: 9999);

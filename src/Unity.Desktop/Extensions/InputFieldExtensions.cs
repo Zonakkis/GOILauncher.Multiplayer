@@ -28,6 +28,20 @@ namespace GOILauncher.Multiplayer.Extensions
         }
 
         /// <summary>
+        /// Makes a field read-only without making it look broken: interactable keeps the text
+        /// selectable and the background unchanged, while readOnly blocks every edit path
+        /// (typing, paste, backspace) at the InputField level.
+        /// </summary>
+        public static void SetReadOnly(this InputFieldRef input, bool readOnly)
+        {
+            if (input == null)
+                return;
+
+            input.Component.readOnly = readOnly;
+            input.Component.interactable = true;
+        }
+
+        /// <summary>
         /// Parses the field as a port, using <see cref="MultiplayerSettings.IsValidPort"/> as the range
         /// check so the UI never writes a value the settings would reject on the next load. On success
         /// the field is rewritten with the parsed value, so what the player sees is what was read.

@@ -111,7 +111,7 @@ namespace GOILauncher.Multiplayer.UI
                 true,
                 true,
                 0,
-                new Vector4(14, 10, 14, 10),
+                new Vector4(10, 10, 14, 14),
                 new Color(0, 0, 0, 0.5f),
                 TextAnchor.MiddleCenter);
             UIFactory.SetLayoutElement(body, minHeight: 48, flexibleHeight: 9999, flexibleWidth: 9999);

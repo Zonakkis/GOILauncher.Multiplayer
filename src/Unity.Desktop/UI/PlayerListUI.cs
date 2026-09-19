@@ -94,7 +94,7 @@ namespace GOILauncher.Multiplayer.UI
             ContentRoot.GetComponent<VerticalLayoutGroup>().spacing = 0f;
             var row = UIFactory.CreateHorizontalGroup(
                 ContentRoot, "RoomInfoRow", false, false, true, true, 8,
-                new Vector4(10, 4, 10, 4), HeaderBackgroundColor);
+                new Vector4(4, 4, 10, 10), HeaderBackgroundColor);
             UIFactory.SetLayoutElement(row, minHeight: 30, flexibleHeight: 0, flexibleWidth: 9999);
 
             currentRoomText = UIFactory.CreateLabel(row, "CurrentRoom", string.Empty, TextAnchor.MiddleLeft);

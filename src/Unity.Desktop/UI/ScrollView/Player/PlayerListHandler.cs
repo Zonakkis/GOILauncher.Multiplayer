@@ -196,7 +196,10 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 true,
                 true,
                 4,
-                new Vector4(HeaderHorizontalPadding, 4, HeaderHorizontalPadding, 4),
+                // UIFactory 按 (top, bottom, left, right) 取这个 Vector4，不是直觉的
+                // (left, top, right, bottom)。写成 (左右, 上下) 会让上边距吃掉下边距，
+                // 行高 28 减完只剩 14，比单元格自己要的 20 还矮——表头会被裁掉一截。
+                new Vector4(4, 4, HeaderHorizontalPadding, HeaderHorizontalPadding),
                 backgroundColor);
             UIFactory.SetLayoutElement(tableHeader, minHeight: 28, flexibleHeight: 0);
 
@@ -228,13 +231,16 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 true,
                 true,
                 4,
-                new Vector4(RowHorizontalPadding, 3, RowHorizontalPadding, 3),
+                new Vector4(3, 3, RowHorizontalPadding, RowHorizontalPadding),
                 Color.clear,
                 TextAnchor.MiddleLeft);
             UIFactory.SetLayoutElement(row, minHeight: 26, flexibleHeight: 0, flexibleWidth: 9999);
             ImageUtility.MakeTransparent(row);
 
             Text nameText = UIFactory.CreateLabel(row, "PlayerName", string.Empty, TextAnchor.MiddleLeft);
+            // 名字来自网络，不是本地输入：关掉富文本，否则别人可以把名字写成 <color=...>
+            // 之类的标签来改变这一行的显示（房间名那条路径已经这么做了，见 PlayerListUI）。
+            nameText.supportRichText = false;
             UIFactory.SetLayoutElement(nameText.gameObject, minHeight: 20, flexibleHeight: 0, flexibleWidth: 9999);
 
             Text detailText = UIFactory.CreateLabel(row, "PlayerDetail", string.Empty, TextAnchor.MiddleCenter);

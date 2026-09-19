@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.UI.Pages;
+using GOILauncher.Multiplayer.UI.Theme;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
@@ -16,7 +17,7 @@ namespace GOILauncher.Multiplayer.UI
 
         public override int MinWidth => 600;
 
-        public override int MinHeight => 800;
+        public override int MinHeight => 640;
 
         public override Vector2 DefaultAnchorMin => new Vector2(0.5f, 0.5f);
 
@@ -65,15 +66,25 @@ namespace GOILauncher.Multiplayer.UI
 
         private void CreateContent()
         {
-            GameObject buttonRow = UIFactory.CreateHorizontalGroup(ContentRoot, "ButtonRow", false, false, true, true, 5, new Vector4(5, 5, 5, 5));
-            UIFactory.SetLayoutElement(buttonRow, minHeight: 40, flexibleHeight: 0);
+            GameObject buttonRow = UIFactory.CreateHorizontalGroup(ContentRoot, "ButtonRow", true, false, true, true,
+                Layout.SpaceSm,
+                // UIFactory 按 (top, bottom, left, right) 取这个 Vector4，不是直觉的
+                // (left, top, right, bottom)。上下各 4 是有数的：行高 32 扣掉这 8，
+                // 剩下的 24 正好等于页签按钮自己的高度；给多了按钮就会被裁掉一截。
+                new Vector4(Layout.SpaceXs, Layout.SpaceXs, Layout.SpaceMd, Layout.SpaceMd),
+                Plugin.Theme.SurfaceHeader);
+            UIFactory.SetLayoutElement(buttonRow, minHeight: Layout.SectionHeaderHeight, preferredHeight: Layout.SectionHeaderHeight,
+                flexibleHeight: 0);
             buttonRow.AddComponent<ToggleGroup>();
 
             foreach (PageEntry page in _pages)
             {
                 PageEntry pageEntry = page;
                 ButtonRef button = UIFactory.CreateButton(buttonRow, pageEntry.Id + "Button", pageEntry.ButtonText);
-                UIFactory.SetLayoutElement(button.Component.gameObject, minHeight: 30, minWidth: 100, flexibleWidth: 9999);
+                button.ButtonText.color = Plugin.Theme.TextPrimary;
+                button.ButtonText.fontSize = Layout.FontBody;
+                UIFactory.SetLayoutElement(button.Component.gameObject, minHeight: Layout.InlineButtonHeight,
+                    preferredHeight: Layout.InlineButtonHeight, minWidth: 100, flexibleWidth: 9999, flexibleHeight: 0);
                 button.OnClick += () => ShowPage(pageEntry.Id);
                 pageEntry.Button = button;
             }
@@ -88,7 +99,7 @@ namespace GOILauncher.Multiplayer.UI
             foreach (PageEntry page in _pages)
             {
                 bool active = page.Id == pageId;
-                page.Button.SetTabActive(active);
+                page.Button.SetSelected(active);
                 page.Page.SetActive(active);
             }
         }

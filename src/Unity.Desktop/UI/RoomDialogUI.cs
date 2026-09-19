@@ -5,6 +5,7 @@ using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.Unity;
 using GOILauncher.Multiplayer.Unity.Config;
+using GOILauncher.Multiplayer.UI.Theme;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
@@ -13,29 +14,43 @@ using UniverseLib.UI.Panels;
 
 namespace GOILauncher.Multiplayer.UI
 {
-    /// <summary>One reusable editor/password window. Only the client facade performs commands.</summary>
+    /// <summary>
+    /// One reusable editor/password window. Only the client facade performs commands.
+    ///
+    /// 三个形态（创建 / 编辑 / 输入密码）共用这一个窗口，字段靠显隐切换。
+    /// 布局上有三条规矩：
+    /// - 表单统一是"字段名：输入框"。字段名固定在左边同一列，输入框因此左边缘对齐；
+    ///   placeholder 只补充格式（"0 表示不限"），不再重复字段名。
+    /// - 密码只有一个输入框，不留空就是不改。以前那组"保持 / 设置新密码 / 移除"
+    ///   把一件事拆成三个按钮，而其中两个的默认值本来就是同一个（什么都不填）。
+    /// - 标题只说动词，房名和人数这些细节放副标题；副标题只在"加入房间"时用——
+    ///   创建和编辑的房名就在下面的输入框里，再说一遍是重复。
+    /// </summary>
     public sealed class RoomDialogUI : PanelBase
     {
         private readonly IUnityClient _client;
         private readonly MultiplayerSettings _settings;
         private RoomOperation _operation;
         private int _roomId;
-        private RoomPasswordChange _passwordChange;
         private bool _submitted;
         private int _keyboardGuardFrame = -1;
         public bool BlocksGameplayShortcuts => Enabled || _keyboardGuardFrame == Time.frameCount;
         private Text _heading;
+        private Text _subtitle;
         private Text _error;
-        private GameObject _nameRow, _capacityRow, _passwordRow, _passwordActions;
+        private GameObject _nameRow, _capacityRow;
         private InputFieldRef _name, _capacity, _password;
-        private ButtonRef _submit, _cancel, _keepPassword, _setPassword, _removePassword;
+        private ButtonRef _submit, _cancel;
         public event Action<bool> ActiveChanged;
         public override string Name => "房间操作";
-        public override int MinWidth => 460;
-        public override int MinHeight => 360;
+        public override int MinWidth => 440;
+        // 弹窗只在尺寸小于 MinHeight 时被撑大、从不收缩（PanelBase.EnsureValidSize），
+        // 所以这个值按最高的形态（创建/编辑：三行表单）给，按最矮的给会把表单裁掉。
+        // 矮形态多出来的高度由表单和按钮之间那段弹性空白吃掉，按钮始终贴着底边。
+        public override int MinHeight => 232;
         public override Vector2 DefaultAnchorMin => new Vector2(0.5f, 0.5f);
         public override Vector2 DefaultAnchorMax => new Vector2(0.5f, 0.5f);
-        public override Vector2 DefaultPosition => new Vector2(-230, 180);
+        public override Vector2 DefaultPosition => new Vector2(-220, 150);
         public override bool CanDragAndResize => true;
 
         public RoomDialogUI(UIBase owner, IUnityClient client, MultiplayerSettings settings) : base(owner)
@@ -50,104 +65,173 @@ namespace GOILauncher.Multiplayer.UI
         }
         protected override void ConstructPanelContent() { }
         protected override PanelDragger CreatePanelDragger() { return new ResponsivePanelDragger(this); }
+
         private void CreateContent()
         {
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(ContentRoot, false, false, true, true, 8, 12, 12, 10, 10);
-            _heading = UIFactory.CreateLabel(ContentRoot, "Heading", "", TextAnchor.MiddleLeft);
-            _heading.supportRichText = false;
-            UIFactory.SetLayoutElement(_heading.gameObject, minHeight: 38, flexibleHeight: 0);
-            _name = CreateInput("Name", "房间名", "输入房间名称", out _nameRow);
-            _name.Component.characterLimit = RoomConstants.MaxNameLength;
-            _capacity = CreateInput("Capacity", "人数上限", "0 表示不限", out _capacityRow);
+            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(ContentRoot, false, false, true, true, 0);
+
+            GameObject body = UIFactory.CreateVerticalGroup(
+                ContentRoot, "DialogBody", false, false, true, true,
+                Layout.SpaceSm,
+                // UIFactory 按 (top, bottom, left, right) 取这个 Vector4，不是直觉的
+                // (left, top, right, bottom)。写成后者上下会互换，正文整体偏下。
+                new Vector4(Layout.SpaceMd, Layout.SpaceLg, Layout.SpaceLg, Layout.SpaceLg),
+                Plugin.Theme.SurfaceRaised);
+            UIFactory.SetLayoutElement(body, flexibleHeight: 9999, flexibleWidth: 9999);
+
+            _heading = UIFactory.CreateLabel(body, "Heading", string.Empty, TextAnchor.MiddleLeft,
+                Plugin.Theme.TextPrimary, false, Layout.FontSection);
+            _heading.fontStyle = FontStyle.Bold;
+            UIFactory.SetLayoutElement(_heading.gameObject, minHeight: 24, preferredHeight: 24,
+                flexibleHeight: 0, flexibleWidth: 9999);
+
+            // 只有"加入房间"需要副标题：那时表单里没有房名，得靠它说明加的是哪一间。
+            // 其它两个形态它是空的，整行隐藏、不占位置。
+            _subtitle = UIFactory.CreateLabel(body, "Subtitle", string.Empty, TextAnchor.UpperLeft,
+                Plugin.Theme.TextSecondary, false, Layout.FontDetail);
+            _subtitle.horizontalOverflow = HorizontalWrapMode.Wrap;
+            UIFactory.SetLayoutElement(_subtitle.gameObject, minHeight: 0, flexibleHeight: 0, flexibleWidth: 9999);
+
+            _name = CreateField(body, "Name", "房间名", "最多 " + RoomConstants.MaxNameLength + " 个字符",
+                RoomConstants.MaxNameLength, out _nameRow);
+            _capacity = CreateField(body, "Capacity", "人数上限", "0 表示不限", 0, out _capacityRow);
             _capacity.Component.contentType = InputField.ContentType.IntegerNumber;
-            _passwordActions = UIFactory.CreateHorizontalGroup(ContentRoot, "PasswordActions", false, false, true, true, 6);
-            _keepPassword = CreatePasswordAction("Keep", "保持密码", RoomPasswordChange.Keep);
-            _setPassword = CreatePasswordAction("Set", "设置新密码", RoomPasswordChange.Set);
-            _removePassword = CreatePasswordAction("Remove", "移除密码", RoomPasswordChange.Remove);
-            _password = CreateInput("Password", "密码", "创建时留空则不设密码", out _passwordRow);
+            _password = CreateField(body, "Password", "密码", "输入房间密码",
+                RoomConstants.MaxPasswordLength, out _);
             _password.Component.contentType = InputField.ContentType.Password;
-            _password.Component.characterLimit = RoomConstants.MaxPasswordLength;
-            _error = UIFactory.CreateLabel(ContentRoot, "Status", "", TextAnchor.UpperLeft);
-            _error.color = new Color(1f, 0.65f, 0.5f);
-            _error.supportRichText = false;
-            UIFactory.SetLayoutElement(_error.gameObject, minHeight: 52, flexibleHeight: 9999);
-            var buttons = UIFactory.CreateHorizontalGroup(ContentRoot, "Buttons", false, false, true, true, 8);
-            _submit = UIFactory.CreateButton(buttons, "Submit", "确认");
-            _submit.SetConfirm();
-            UIFactory.SetLayoutElement(_submit.Component.gameObject, minHeight: 32, flexibleWidth: 9999);
+
+            // 弹性空白：三个形态的行数不一样，窗口高度按最高的那个定，
+            // 矮的形态把多出来的高度放在表单和按钮之间，按钮才不会浮在半空。
+            GameObject spacer = UIFactory.CreateUIObject("Spacer", body);
+            UIFactory.SetLayoutElement(spacer, minHeight: 0, flexibleHeight: 9999, flexibleWidth: 9999);
+
+            CreateErrorRow(body);
+            CreateButtonRow(body);
+
+            SetActive(false);
+        }
+
+        /// <summary>
+        /// 错误/进度行。固定行高，没有内容时整行隐藏。
+        ///
+        /// 以前它是 minHeight 52 且 flexibleHeight 9999 的弹性区，于是：
+        /// 打开弹窗时它就白占一块高度，提交时那行"正在等待服务器确认…"还会把按钮往下推。
+        /// </summary>
+        private void CreateErrorRow(GameObject body)
+        {
+            _error = UIFactory.CreateLabel(body, "Status", string.Empty, TextAnchor.UpperLeft,
+                Plugin.Theme.TextDanger, false, Layout.FontDetail);
+            _error.horizontalOverflow = HorizontalWrapMode.Wrap;
+            UIFactory.SetLayoutElement(_error.gameObject, minHeight: 20, preferredHeight: 20,
+                flexibleHeight: 0, flexibleWidth: 9999);
+            _error.gameObject.SetActive(false);
+        }
+
+        private void CreateButtonRow(GameObject body)
+        {
+            GameObject buttons = UIFactory.CreateHorizontalGroup(
+                body, "Buttons", false, false, true, true, Layout.SpaceMd,
+                // 上下都不留：这一行上面已经有那段弹性空白了，再给内边距等于白给。
+                new Vector4(0, 0, 0, 0), Plugin.Theme.SurfaceRaised);
+            UIFactory.SetLayoutElement(buttons, minHeight: Layout.PrimaryButtonHeight,
+                preferredHeight: Layout.PrimaryButtonHeight, flexibleHeight: 0, flexibleWidth: 9999);
+
+            _submit = UiKit.CreateConfirmButton(buttons, "Submit", "确认");
             _submit.OnClick += Submit;
-            _cancel = UIFactory.CreateButton(buttons, "Cancel", "取消");
-            _cancel.SetCancel();
-            UIFactory.SetLayoutElement(_cancel.Component.gameObject, minHeight: 32, flexibleWidth: 9999);
+            _cancel = UiKit.CreateButton(buttons, "Cancel", "取消");
             _cancel.OnClick += () => SetActive(false);
         }
-        private InputFieldRef CreateInput(string id, string title, string placeholder, out GameObject row)
+
+        /// <summary>
+        /// 表单一行：左边字段名，右边输入框。
+        /// 字段名固定宽度，所以三行的输入框左边缘天然对齐；placeholder 只补充格式。
+        /// </summary>
+        private static InputFieldRef CreateField(GameObject parent, string id, string label, string placeholder,
+            int characterLimit, out GameObject row)
         {
-            row = UIFactory.CreateHorizontalGroup(ContentRoot, id + "Row", false, false, true, true, 8);
-            UIFactory.SetLayoutElement(row, minHeight: 34, flexibleHeight: 0);
-            var label = UIFactory.CreateLabel(row, id + "Label", title, TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(label.gameObject, minWidth: 80, flexibleWidth: 0);
-            var input = UIFactory.CreateInputField(row, id + "Input", placeholder);
-            UIFactory.SetLayoutElement(input.GameObject, minHeight: 28, flexibleWidth: 9999);
+            row = UiKit.CreateFieldRow(parent, id + "Row");
+            UiKit.CreateFieldLabel(row, id + "Label", label);
+
+            InputFieldRef input = UiKit.CreateInputField(row, id + "Input", placeholder);
+            if (characterLimit > 0)
+                input.Component.characterLimit = characterLimit;
+
             return input;
         }
-        private ButtonRef CreatePasswordAction(string id, string title, RoomPasswordChange change)
-        {
-            var button = UIFactory.CreateButton(_passwordActions, id, title);
-            UIFactory.SetLayoutElement(button.Component.gameObject, minHeight: 28, flexibleWidth: 9999);
-            button.OnClick += () => SetPasswordChange(change);
-            return button;
-        }
+
         public void ShowCreate()
         {
             if (!CanOpen) return;
             _operation = RoomOperation.Create; _roomId = 0;
-            _heading.text = "创建房间 · 创建成功后自动进入";
+            _heading.text = "创建房间";
+            SetSubtitle(null);
             _name.Text = ""; _capacity.Text = "0";
             Open();
         }
+
         public void ShowEdit()
         {
-            var room = _client.CurrentRoom;
-            if (!CanOpen || room == null || room.IsLobby || room.OwnerPlayerId != _client.LocalPlayer.Id) return;
-            _operation = RoomOperation.Update; _roomId = room.Id;
-            _heading.text = "编辑房间 · " + room.Name + " · 当前 " + room.PlayerCount + " 人";
-            _name.Text = room.Name; _capacity.Text = room.MaxPlayers.ToString();
+            var current = _client.CurrentRoom;
+            if (!CanOpen || current == null || current.IsLobby || current.OwnerPlayerId != _client.LocalPlayer.Id) return;
+            _operation = RoomOperation.Update; _roomId = current.Id;
+            _heading.text = "编辑房间";
+            SetSubtitle(null);
+            _name.Text = current.Name; _capacity.Text = current.MaxPlayers.ToString();
             Open();
         }
+
         public void ShowJoin(RoomInfo room)
         {
             if (!CanOpen || room == null) return;
             _operation = RoomOperation.Join; _roomId = room.Id;
-            _heading.text = "加入房间 · " + room.Name;
+            _heading.text = "加入房间";
+            SetSubtitle(room.Name + " · " + room.PlayerCount + " / "
+                + (room.MaxPlayers == 0 ? "∞" : room.MaxPlayers.ToString()) + " 人");
             Open();
         }
+
         private bool CanOpen => _settings.Enabled && _client.IsConnected && _client.CurrentRoom != null && !_client.IsRoomOperationPending;
+
         private void Open()
         {
-            _submitted = false; _password.Text = ""; _error.text = "";
+            _submitted = false; _password.Text = ""; SetError(null);
             bool join = _operation == RoomOperation.Join;
+
             _nameRow.SetActive(!join); _capacityRow.SetActive(!join);
-            _passwordActions.SetActive(_operation == RoomOperation.Update);
-            SetPasswordChange(RoomPasswordChange.Keep);
+            SetPasswordPlaceholder(join
+                ? "输入房间密码"
+                : _operation == RoomOperation.Update ? "留空表示不修改" : "留空表示不设密码");
+
             _submit.ButtonText.text = join ? "加入" : _operation == RoomOperation.Create ? "创建并加入" : "保存";
             SetActive(true);
             RefreshControls();
             var input = join ? _password : _name;
             input.Component.Select(); input.Component.ActivateInputField();
         }
-        private void SetPasswordChange(RoomPasswordChange change)
+
+        /// <summary>
+        /// 同一个输入框在三种形态下含义不同，靠 placeholder 说清楚"留空算什么"。
+        /// 这比再来一组分段按钮便宜，也不会让"保持"和"移除"看起来像两个对等的选项。
+        /// </summary>
+        private void SetPasswordPlaceholder(string text)
         {
-            _passwordChange = change;
-            _password.Text = "";
-            _keepPassword.SetTabActive(change == RoomPasswordChange.Keep);
-            _setPassword.SetTabActive(change == RoomPasswordChange.Set);
-            _removePassword.SetTabActive(change == RoomPasswordChange.Remove);
-            _passwordRow.SetActive(_operation != RoomOperation.Update || change == RoomPasswordChange.Set);
-            var placeholder = _password.Component.placeholder as Text;
-            if (placeholder != null) placeholder.text = _operation == RoomOperation.Create ? "留空则不设密码"
-                : _operation == RoomOperation.Join ? "输入房间密码" : "输入新密码";
+            if (_password.Component.placeholder is Text placeholder)
+                placeholder.text = text;
         }
+
+        private void SetSubtitle(string text)
+        {
+            _subtitle.text = text;
+            _subtitle.gameObject.SetActive(!string.IsNullOrEmpty(text));
+        }
+
+        /// <summary><paramref name="message"/> 为 null 表示没有消息，整行隐藏而不是留一块空白。</summary>
+        private void SetError(string message)
+        {
+            _error.text = message ?? string.Empty;
+            _error.gameObject.SetActive(!string.IsNullOrEmpty(message));
+        }
+
         public override void SetActive(bool active)
         {
             bool changed = Enabled != active;
@@ -162,6 +246,7 @@ namespace GOILauncher.Multiplayer.UI
             base.SetActive(active);
             if (changed) ActiveChanged?.Invoke(active);
         }
+
         public override void Update()
         {
             if (!Enabled) return;
@@ -178,48 +263,57 @@ namespace GOILauncher.Multiplayer.UI
             }
             if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) Submit();
         }
+
         private void Submit()
         {
             if (_submitted || !_settings.Enabled || !_client.IsConnected || _client.IsRoomOperationPending) return;
             int maxPlayers = 0;
             if (_operation != RoomOperation.Join)
             {
-                if (string.IsNullOrWhiteSpace(_name.Text)) { _error.text = "房间名不能为空。"; return; }
+                if (string.IsNullOrWhiteSpace(_name.Text)) { SetError("房间名不能为空。"); return; }
                 if (!int.TryParse(_capacity.Text, out maxPlayers) || maxPlayers < 0)
-                { _error.text = "人数上限必须是非负整数，0 表示不限。"; return; }
+                { SetError("人数上限必须是非负整数，0 表示不限。"); return; }
             }
-            if (_operation == RoomOperation.Update && _passwordChange == RoomPasswordChange.Set && string.IsNullOrEmpty(_password.Text))
-            { _error.text = "请输入新密码，或选择移除密码。"; return; }
-            _submitted = true; _error.text = "正在等待服务器确认…";
+            _submitted = true; SetError("正在等待服务器确认…");
             RefreshControls();
             if (_operation == RoomOperation.Create) _client.CreateRoom(_name.Text, _password.Text, maxPlayers);
             else if (_operation == RoomOperation.Join) _client.JoinRoom(_roomId, _password.Text);
-            else _client.UpdateRoom(_roomId, _name.Text, maxPlayers, _passwordChange, _password.Text);
+            else
+            {
+                // 编辑时密码只有两种：留空 = 不动，填了 = 新密码。
+                // 门面仍然支持 RoomPasswordChange.Remove，只是界面上没有这条路。
+                RoomPasswordChange change = string.IsNullOrEmpty(_password.Text)
+                    ? RoomPasswordChange.Keep
+                    : RoomPasswordChange.Set;
+                _client.UpdateRoom(_roomId, _name.Text, maxPlayers, change, _password.Text);
+            }
         }
+
         private void RefreshControls()
         {
             bool editable = !_submitted;
             _submit.Component.interactable = editable;
             _cancel.ButtonText.text = editable ? "取消" : "关闭";
-            _name.Component.interactable = editable; _capacity.Component.interactable = editable; _password.Component.interactable = editable;
-            _keepPassword.Component.interactable = editable; _setPassword.Component.interactable = editable; _removePassword.Component.interactable = editable;
+            _name.Component.interactable = editable;
+            _capacity.Component.interactable = editable;
+            _password.Component.interactable = editable;
         }
+
         private void OnCompleted(RoomOperationResult result)
         {
             if (!Enabled || !_submitted || result.Operation != _operation) return;
             if (result.Error == RoomError.Busy && _client.IsRoomOperationPending) return;
             _submitted = false;
             if (result.IsSuccess) SetActive(false);
-            else { _error.text = RoomUiText.Error(result.Error); RefreshControls(); }
+            else { SetError(RoomUiText.Error(result.Error)); RefreshControls(); }
         }
+
         private void OnCurrentRoomChanged()
         {
             if (!Enabled) return;
             var room = _client.CurrentRoom;
             if (room == null || (_operation == RoomOperation.Update && (room.Id != _roomId || room.OwnerPlayerId != _client.LocalPlayer.Id)))
                 SetActive(false);
-            else if (_operation == RoomOperation.Update)
-                _heading.text = "编辑房间 · " + room.Name + " · 当前 " + room.PlayerCount + " 人";
         }
     }
 

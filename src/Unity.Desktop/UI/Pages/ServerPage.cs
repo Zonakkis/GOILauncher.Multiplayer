@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.Unity;
 using GOILauncher.Multiplayer.Unity.Config;
+using GOILauncher.Multiplayer.UI.Theme;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib.UI;
@@ -10,6 +11,11 @@ using UniverseLib.UI.Models;
 
 namespace GOILauncher.Multiplayer.UI.Pages
 {
+    /// <summary>
+    /// 内嵌服务端页。结构跟客户端页对齐，也是"状态 → 操作"两段：
+    /// 状态段在上、吃掉全部剩余高度，操作段（端口 + 启动/停止）固定在底部。
+    /// 两页的按钮落在同一个位置，切页时手不用重新找。
+    /// </summary>
     public class ServerPage : IPage
     {
         private readonly IUnityServer _server;
@@ -51,76 +57,73 @@ namespace GOILauncher.Multiplayer.UI.Pages
         public void CreateContent(GameObject pagesContainer)
         {
             Root = UIFactory.CreateVerticalGroup(
-                pagesContainer,
-                "ServerPage",
-                false,
-                false,
-                true,
-                true,
-                6,
-                new Vector4(8, 8, 8, 8),
-                new Color(0.12f, 0.12f, 0.12f, 0.95f));
+                pagesContainer, "ServerPage", false, false, true, true,
+                0,
+                new Vector4(Layout.SpaceMd, Layout.SpaceMd, Layout.SpaceMd, Layout.SpaceMd),
+                Plugin.Theme.SurfaceBase);
             UIFactory.SetLayoutElement(Root, flexibleHeight: 9999, flexibleWidth: 9999);
 
-            GameObject topArea = UIFactory.CreateVerticalGroup(
-                Root,
-                "ServerTopArea",
-                false,
-                false,
-                true,
-                true,
-                0,
-                new Vector4(8, 8, 8, 8),
-                new Color(0.16f, 0.16f, 0.16f, 1f));
-            UIFactory.SetLayoutElement(topArea, minHeight: 34, flexibleHeight: 9999, flexibleWidth: 9999);
-            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(topArea, false, false, true, true, 0, childAlignment: TextAnchor.MiddleCenter);
+            CreateStatusBlock();
 
-            _serverStateText = UIFactory.CreateLabel(topArea, "ServerStateText", "\u670d\u52a1\u7aef\u672a\u542f\u52a8", TextAnchor.MiddleCenter);
-            UIFactory.SetLayoutElement(_serverStateText.gameObject, minHeight: 24, preferredHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
+            // 操作段贴底，和客户端页一样：状态段在上面撑满，这里只放"改端口 + 启动/停止"。
+            GameObject section = UIFactory.CreateVerticalGroup(
+                Root, "ServerActionSection", false, false, true, true,
+                0, new Vector4(0, 0, 0, 0), Plugin.Theme.SurfaceBase);
+            UIFactory.SetLayoutElement(section, minHeight: 0, flexibleHeight: 0, flexibleWidth: 9999);
 
-            GameObject portRow = UIFactory.CreateHorizontalGroup(
-                Root,
-                "ServerPortRow",
-                false,
-                false,
-                true,
-                true,
-                6,
-                new Vector4(6, 4, 6, 4),
-                new Color(0.16f, 0.16f, 0.16f, 1f));
-            UIFactory.SetLayoutElement(portRow, minHeight: 30, flexibleHeight: 0);
-
-            Text portLabel = UIFactory.CreateLabel(portRow, "PortLabel", "\u542f\u52a8\u7aef\u53e3", TextAnchor.MiddleLeft);
-            UIFactory.SetLayoutElement(portLabel.gameObject, minWidth: 72, preferredWidth: 80, minHeight: 22, flexibleHeight: 0, flexibleWidth: 0);
-
-            portInput = UIFactory.CreateInputField(portRow, "ServerPortInput", InputFieldExtensions.FormatPort(DefaultPort));
-            portInput.Component.contentType = InputField.ContentType.IntegerNumber;
-            portInput.Text = InputFieldExtensions.FormatPort(DefaultPort);
-            UIFactory.SetLayoutElement(portInput.GameObject, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
-
-            GameObject actionRow = UIFactory.CreateHorizontalGroup(
-                Root,
-                "ServerActionRow",
-                false,
-                false,
-                true,
-                true,
-                6,
-                new Vector4(6, 4, 6, 4),
-                new Color(0.16f, 0.16f, 0.16f, 1f));
-            UIFactory.SetLayoutElement(actionRow, minHeight: 32, flexibleHeight: 0);
-
-            _startButton = UIFactory.CreateButton(actionRow, "StartServerButton", "\u542f\u52a8");
-            UIFactory.SetLayoutElement(_startButton.Component.gameObject, minWidth: 100, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
-            _startButton.SetConfirm();
-            _startButton.OnClick += OnStartClicked;
-
-            _stopButton = UIFactory.CreateButton(actionRow, "StopServerButton", "\u505c\u6b62");
-            UIFactory.SetLayoutElement(_stopButton.Component.gameObject, minWidth: 100, minHeight: 24, flexibleHeight: 0, flexibleWidth: 9999);
-            _stopButton.SetCancel();
-            _stopButton.OnClick += OnStopClicked;
+            CreatePortRow(section);
+            CreateActionRow(section);
 
             RefreshServerState();
+        }
+
+        /// <summary>
+        /// 状态块。它回答"现在怎么样了"，是整个页面的结论，所以用最深的底色沉下去。
+        /// 它撑满状态段，文字垂直居中——结论居中是读起来最舒服的位置。
+        /// </summary>
+        private void CreateStatusBlock()
+        {
+            GameObject block = UIFactory.CreateVerticalGroup(
+                Root, "ServerStatusBlock", false, false, true, true,
+                0, new Vector4(Layout.SpaceMd, Layout.SpaceMd, Layout.SpaceMd, Layout.SpaceMd),
+                Plugin.Theme.SurfaceSunken);
+            UIFactory.SetLayoutElement(block, minHeight: 64, flexibleHeight: 9999, flexibleWidth: 9999);
+            UIFactory.SetLayoutGroup<VerticalLayoutGroup>(block, false, false, true, true, 0,
+                childAlignment: TextAnchor.MiddleCenter);
+
+            _serverStateText = UIFactory.CreateLabel(block, "ServerStateText", string.Empty,
+                TextAnchor.MiddleCenter, Plugin.Theme.TextPrimary, false, Layout.FontSection);
+            UIFactory.SetLayoutElement(_serverStateText.gameObject, minHeight: 24, preferredHeight: 24,
+                flexibleHeight: 0, flexibleWidth: 9999);
+        }
+
+        /// <summary>
+        /// 端口行和按钮行同属"操作段"。端口行始终在，运行时只是变成只读——
+        /// 隐藏它会让整段矮 32，按钮跟着跳（见 RefreshServerState）。
+        /// </summary>
+        private void CreatePortRow(GameObject parent)
+        {
+            GameObject row = UiKit.CreateFieldRow(parent, "ServerPortRow");
+            UiKit.CreateFieldLabel(row, "PortLabel", "启动端口");
+            portInput = UiKit.CreateInputField(row, "ServerPortInput",
+                InputFieldExtensions.FormatPort(DefaultPort));
+            portInput.Component.contentType = InputField.ContentType.IntegerNumber;
+            portInput.Text = InputFieldExtensions.FormatPort(DefaultPort);
+        }
+
+        private void CreateActionRow(GameObject parent)
+        {
+            GameObject actionRow = UIFactory.CreateHorizontalGroup(
+                parent, "ServerActionRow", false, false, true, true, Layout.SpaceSm,
+                new Vector4(0, 0, 0, 0), Plugin.Theme.SurfaceRaised);
+            UIFactory.SetLayoutElement(actionRow, minHeight: Layout.PrimaryButtonHeight,
+                preferredHeight: Layout.PrimaryButtonHeight, flexibleHeight: 0, flexibleWidth: 9999);
+
+            _startButton = UiKit.CreateConfirmButton(actionRow, "StartServerButton", "启动");
+            _startButton.OnClick += OnStartClicked;
+
+            _stopButton = UiKit.CreateCancelButton(actionRow, "StopServerButton", "停止");
+            _stopButton.OnClick += OnStopClicked;
         }
 
         private void OnStartClicked()
@@ -138,12 +141,12 @@ namespace GOILauncher.Multiplayer.UI.Pages
             {
                 _server.Start(port);
                 _lastListenPort = port;
-                _toast.Show($"\u670d\u52a1\u7aef\u5df2\u542f\u52a8\uff0c\u76d1\u542c\u7aef\u53e3 {port}");
+                _toast.Show($"服务端已启动，监听端口 {port}");
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Failed to start server");
-                _toast.Show($"\u670d\u52a1\u7aef\u542f\u52a8\u5931\u8d25: {ex.Message}");
+                _toast.Show($"服务端启动失败: {ex.Message}");
             }
             finally
             {
@@ -162,12 +165,12 @@ namespace GOILauncher.Multiplayer.UI.Pages
             try
             {
                 _server.Stop();
-                _toast.Show("\u670d\u52a1\u7aef\u5df2\u505c\u6b62");
+                _toast.Show("服务端已停止");
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Failed to stop server");
-                _toast.Show($"\u670d\u52a1\u7aef\u505c\u6b62\u5931\u8d25: {ex.Message}");
+                _toast.Show($"服务端停止失败: {ex.Message}");
             }
             finally
             {
@@ -184,12 +187,22 @@ namespace GOILauncher.Multiplayer.UI.Pages
             bool running = multiplayerEnabled && _server.IsRunning;
             _startButton.Component.interactable = multiplayerEnabled && !running;
             _stopButton.Component.interactable = multiplayerEnabled && running;
-            portInput.Component.interactable = multiplayerEnabled && !running;
+
+            // 端口只在启动前能改。运行中不是"灰掉"也不是"藏起来"，而是只读：
+            // 它此刻显示的是服务端真正监听的端口，值得看清楚（见 InputFieldExtensions.SetReadOnly）。
+            //
+            // 别改成 SetActive(false)：操作段的高度是"端口行 + 按钮行"算出来的，
+            // 抽掉一行会让整段缩掉 32，按钮跟着往上跳、贴着上一块被裁掉一截。
+            // 而且端口行消失后，这一段的底色也跟着少一块，看着像没画完。
+            portInput.SetReadOnly(!multiplayerEnabled || running);
+
             _serverStateText.text = !multiplayerEnabled
-                ? "\u8054\u673a\u5df2\u7981\u7528"
+                ? "联机已禁用"
                 : running
-                ? $"\u670d\u52a1\u7aef\u5df2\u542f\u52a8\uff0c\u76d1\u542c\u7aef\u53e3 {_lastListenPort}"
-                : "\u670d\u52a1\u7aef\u672a\u542f\u52a8";
+                ? $"运行中 · 监听端口 {_lastListenPort}"
+                : "未启动";
+            _serverStateText.color = running ? Plugin.Theme.TextAccent
+                : multiplayerEnabled ? Plugin.Theme.TextPrimary : Plugin.Theme.TextSecondary;
         }
 
         private void OnMultiplayerEnabledChanged(bool enabled)
