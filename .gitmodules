@@ -2,3 +2,7 @@
 	path = lib/LiteNetLib
 	url = https://github.com/Zonakkis/LiteNetLib.git
 	branch = 0.9
+[submodule "lib/UniverseLib"]
+	path = lib/UniverseLib
+	url = https://github.com/yukieiji/UniverseLib.git
+	branch = main
