@@ -4,5 +4,5 @@
 	branch = 0.9
 [submodule "lib/UniverseLib"]
 	path = lib/UniverseLib
-	url = https://github.com/yukieiji/UniverseLib.git
+	url = https://github.com/Zonakkis/UniverseLib.git
 	branch = main
