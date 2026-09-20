@@ -28,5 +28,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 EXPOSE 9027/udp
+# Web UI（ASP.NET Core，端口由 WEB_PORT 环境变量覆盖，默认 9028）
+EXPOSE 9028/tcp
 
 ENTRYPOINT ["dotnet", "ConsoleServer.dll"]

@@ -20,6 +20,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Web UI走 ASP.NET Core Minimal API：框架引用随 net8.0 走，不进 NuGet，
+         也不引入 Autofac 之外的第二套 DI。官方 runtime:8.0 镜像已含此框架。 -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Web\index.html" LogicalName="ConsoleServer.Web.index.html" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Server\Server.csproj" />
   </ItemGroup>

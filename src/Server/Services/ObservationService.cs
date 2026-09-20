@@ -153,11 +153,16 @@ namespace GOILauncher.Multiplayer.Server.Services
                 ConnectionStatsObservation stats;
                 trafficById.TryGetValue(id, out stats);
 
+                // 房间归属现读于 RoomService（本方法只在 Poll 线程跑），-1 = 尚未入房。
+                RoomMembership membership;
+                var roomId = _rooms.TryGetMembership(id, out membership) ? membership.RoomId : -1;
+
                 rows.Add(new ConnectionObservation(
                     id,
                     player != null ? player.Name : null,
                     player != null ? player.Platform : default(Platform),
                     player != null && player.IsInGame,
+                    roomId,
                     state != null ? state.EndPoint : string.Empty,
                     state != null ? state.LatencyMilliseconds : (int?)null,
                     stats,

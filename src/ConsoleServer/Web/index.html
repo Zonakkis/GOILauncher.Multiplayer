@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GOI 服务器观测面板</title>
+<style>
+/* 深色主题，全部文本由 JS 以 textContent 写入，玩家内容不可能成为标记。 */
+:root {
+  --bg: #14161a; --card: #1d2027; --card2: #23262f; --line: #2c303a;
+  --fg: #d8dce4; --dim: #8a90a0; --ok: #3fb950; --warn: #d29922; --err: #f85149;
+  --accent: #58a6ff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 13px/1.5 "Consolas", "Cascadia Mono", "Microsoft YaHei UI", monospace; }
+header { display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+  padding: 8px 14px; background: var(--card2); border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; }
+header .title { font-weight: 700; }
+header .item { color: var(--dim); }
+header .item b { color: var(--fg); font-weight: 600; }
+.dot { font-size: 15px; }
+.ok { color: var(--ok); } .warn { color: var(--warn); } .err { color: var(--err); } .accent { color: var(--accent); }
+.help { margin-left: auto; color: var(--dim); font-size: 12px; }
+main { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 10px; padding: 10px 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; }
+.card.focused { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.cardhead { color: var(--dim); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cardhead .name { color: var(--fg); font-weight: 700; }
+.conns { margin: 2px 0; }
+.conn { color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conn b { color: var(--fg); font-weight: 600; }
+.chat { border-top: 1px dashed var(--line); margin-top: 6px; padding-top: 4px; }
+.msg { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg); }
+.msg .t { color: var(--dim); }
+.msg .n { color: var(--accent); }
+section#logs { margin: 0 14px 14px; background: var(--card); border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px 10px; height: 34vh; overflow-y: auto; }
+#logs .head { color: var(--dim); position: sticky; top: -8px; background: var(--card); }
+.log { white-space: pre-wrap; word-break: break-all; }
+.log .t { color: var(--dim); }
+footer { padding: 0 14px 10px; color: var(--dim); }
+</style>
+</head>
+<body>
+<header id="status"><span class="title">GOI 服务器观测面板</span></header>
+<main id="rooms"></main>
+<section id="logs"><div class="head" id="logsHead">日志</div><div id="logLines"></div></section>
+<footer id="hint">数字键 1-9 聚焦/取消房间 · L 暂停/继续日志滚动 · 界面只读，服务器不会干预任何玩家操作</footer>
+<script>
+'use strict';
+// ---------- 小工具：一律 textContent 渲染，杜绝玩家文本注入 ----------
+function h(tag, cls, text) {
+  var el = document.createElement(tag);
+  if (cls) el.className = cls;
+  if (text !== undefined && text !== null) el.textContent = text;
+  return el;
+}
+function pad(n) { return String(n).length < 2 ? '0' + n : '' + n; }
+function fmtUptime(sec) {
+  if (sec === null || sec === undefined) return '-';
+  var s = sec % 60, m = Math.floor(sec / 60) % 60, hh = Math.floor(sec / 3600);
+  return (hh ? hh + ':' : '') + pad(m) + ':' + pad(s);
+}
+function fmtClock(unix) {
+  var d = new Date(unix * 1000);
+  return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+function fmtK(n) { return n >= 10000 ? (n / 1000).toFixed(1) + 'k' : String(n); }
+function lossPct(sent, delivered) {
+  if (!sent || sent < 100) return null; // 样本太少不告警
+  return (sent - delivered) / sent * 100;
+}
+
+// ---------- 状态 ----------
+var focus = null;        // null=总览；否则为聚焦房间 Id（大厅 = 0）
+var paused = false;      // 日志暂停滚动
+var lastSeq = 0;         // 日志增量游标
+var CHAT_LIMIT_OVERVIEW = 4, CHAT_LIMIT_FOCUS = 30;
+
+var PLATFORM = { 0: 'PC', 1: 'iOS', 2: '安卓', 3: '?' };
+
+function fetchJson(url) { return fetch(url).then(function (r) { return r.json(); }); }
+
+// ---------- 渲染:状态头 ----------
+function renderStatus(s) {
+  var el = document.getElementById('status');
+  el.textContent = '';
+  el.appendChild(h('span', 'title', 'GOI 服务器观测面板'));
+  var stalled = s.maxPollGapMs > 1000;
+  var dotCls = !s.isRunning ? 'err' : (stalled ? 'warn' : 'ok');
+  el.appendChild(h('span', 'dot ' + dotCls, '●'));
+  if (!s.isRunning) el.appendChild(h('span', dotCls, '未运行'));
+  else if (stalled) el.appendChild(h('span', dotCls, '疑似卡顿'));
+  el.appendChild(h('span', 'item', '端口 ' + s.port));
+  el.appendChild(h('span', 'item', '在线 ' + s.connections.length + ' 人'));
+  el.appendChild(h('span', 'item', '房间 ' + s.rooms.length));
+  el.appendChild(h('span', 'item', '运行 ' + fmtUptime(s.uptimeSeconds)));
+  el.appendChild(h('span', 'item', 'poll心跳 ' + (stalled ? '⚠ ' : '') + s.maxPollGapMs + 'ms'));
+  var errTotal = s.unattributedErrors;
+  for (var i = 0; i < s.connections.length; i++) errTotal += s.connections[i].networkErrorCount;
+  el.appendChild(h('span', 'item ' + (errTotal ? 'err' : 'ok'), '错误 ' + errTotal));
+  el.appendChild(h('span', 'help', paused ? '日志已暂停 (L)' : ''));
+}
+
+// ---------- 渲染:单条连接 ----------
+function renderConn(c) {
+  var row = h('div', 'conn');
+  var lat = c.latencyMilliseconds;
+  var loss = c.statistics ? lossPct(c.statistics.packetsSent, c.statistics.packetsReceived) : null;
+  function chip(text, cls) { row.appendChild(h('span', cls, ' ' + text)); }
+  chip('▶', c.isInGame ? 'accent' : null);
+  row.appendChild(h('b', null, (c.name || '？') + '#' + c.playerId));
+  chip(PLATFORM[c.platform] || '?');
+  chip(c.endPoint || '-');
+  chip(lat === null || lat === undefined ? '延迟-' : '延迟' + lat + 'ms', lat > 150 ? 'warn' : null);
+  if (loss !== null) chip('丢' + loss.toFixed(1) + '%', loss > 1 ? 'warn' : null);
+  if (c.networkErrorCount > 0) chip('✗' + c.networkErrorCount, 'err');
+  if (!c.hasHandshaked) chip('握手中…', 'warn');
+  return row;
+}
+
+// ---------- 渲染:聊天块 ----------
+function renderChat(messages, emptyText, focused) {
+  var box = h('div', 'chat');
+  if (!messages || messages.length === 0) { box.appendChild(h('div', 'msg t', emptyText)); return box; }
+  var list = messages.slice();
+  list = list.slice(focused ? -CHAT_LIMIT_FOCUS : -CHAT_LIMIT_OVERVIEW);
+  for (var i = 0; i < list.length; i++) {
+    var m = list[i];
+    var row = h('div', 'msg');
+    row.appendChild(h('span', 't', fmtClock(m.timestamp) + ' '));
+    row.appendChild(h('span', 'n', m.playerName + ': '));
+    row.appendChild(h('span', null, m.content));
+    row.title = m.content; // 超长消息悬停看全文
+    box.appendChild(row);
+  }
+  return box;
+}
+
+// ---------- 渲染:房间卡片（含大厅与未入房兜底卡）----------
+function renderRoomCard(title, countText, extra, conns, chat) {
+  var isFocus = focus !== null && focus === extra.__id;
+  var card = h('div', 'card' + (isFocus ? ' focused' : ''));
+  card.dataset.roomId = String(extra.__id);
+  var head = h('div', 'cardhead');
+  head.appendChild(h('span', 'name', title));
+  head.appendChild(h('span', null, '  ' + countText));
+  if (extra.locked) head.appendChild(h('span', null, '  🔒'));
+  if (extra.owner) head.appendChild(h('span', null, '  房主:' + extra.owner));
+  if (extra.unassigned) head.appendChild(h('span', 'warn', '  （尚未入房/握手中）'));
+  card.appendChild(head);
+  var connsBox = h('div', 'conns');
+  var list = conns;
+  if (!isFocus && list.length > 8) list = list.slice(0, 8); // 非聚焦卡只展前 8 人，聚焦后看全部
+  for (var i = 0; i < list.length; i++) connsBox.appendChild(renderConn(list[i]));
+  card.appendChild(connsBox);
+  if (!isFocus && conns.length > 8)
+    card.appendChild(h('div', 'conn t', '… 其余 ' + (conns.length - 8) + ' 人（点击聚焦查看）'));
+  if (list.length === 0)
+    card.appendChild(h('div', 'conn t', extra.unassigned ? '（无）' : '（本房间暂时无人）'));
+  card.appendChild(renderChat(chat, '（暂无聊天）', isFocus));
+  card.addEventListener('click', function () { toggleFocus(extra.__id); });
+  return card;
+}
+
+function toggleFocus(id) { focus = (focus === id) ? null : id; }
+
+// ---------- 渲染:整页房间视图 ----------
+function renderRooms(s) {
+  var main = document.getElementById('rooms');
+  main.textContent = '';
+  if (!s.isRunning) { main.appendChild(h('div', 'card', '服务器未运行——重启服务器即可恢复。')); return; }
+
+  var LOBBY = 0; // RoomConstants.LobbyId
+  var byRoom = {};
+  for (var i = 0; i < s.connections.length; i++) {
+    var c = s.connections[i];
+    (byRoom[c.roomId] = byRoom[c.roomId] || []).push(c);
+  }
+
+  var cards = [];
+  var nonLobby = [];
+  for (var r = 0; r < s.rooms.length; r++) {
+    var info = s.rooms[r].info, ownerName = s.rooms[r].ownerName;
+    if (info.isLobby) {
+      cards.push(renderRoomCard(info.name, info.playerCount + '/∞',
+        { __id: LOBBY, unassigned: false }, byRoom[LOBBY] || [], s.lobbyChat));
+    } else {
+      nonLobby.push(renderRoomCard(info.name,
+        info.playerCount + '/' + (info.maxPlayers > 0 ? info.maxPlayers : '∞'),
+        { __id: info.id, locked: info.hasPassword, owner: ownerName, unassigned: false },
+        byRoom[info.id] || [], s.roomChat[info.id] || []));
+    }
+  }
+  for (var k = 0; k < nonLobby.length; k++) cards.push(nonLobby[k]);
+  var unassigned = byRoom[-1] || [];
+  if (unassigned.length)
+    cards.push(renderRoomCard('其他连接', unassigned.length + ' 人',
+      { __id: -1, unassigned: true }, unassigned, []));
+  for (var n = 0; n < cards.length; n++) main.appendChild(cards[n]);
+}
+
+// ---------- 渲染:日志 ----------
+function renderLogs(payload) {
+  if (payload.reset) { document.getElementById('logLines').textContent = ''; lastSeq = 0; }
+  var box = document.getElementById('logLines');
+  for (var i = 0; i < payload.rows.length; i++) {
+    var r = payload.rows[i];
+    var cls = r.level === 'ERROR' || r.level === 'FATAL' ? ' err' : (r.level === 'WARN' ? ' warn' : '');
+    var line = h('div', 'log' + cls);
+    line.appendChild(h('span', 't', r.time + ' '));
+    line.appendChild(h('span', cls.trim() || null, r.level + ' '));
+    line.appendChild(h('span', null, r.logger + ' ' + r.message));
+    box.appendChild(line);
+  }
+  while (box.childElementCount > 500) box.removeChild(box.firstChild);
+  lastSeq = payload.nextSeq;
+  var panel = document.getElementById('logs');
+  var nearBottom = panel.scrollHeight - panel.scrollTop - panel.clientHeight < 40;
+  if (!paused && nearBottom) panel.scrollTop = panel.scrollHeight;
+  document.getElementById('logsHead').textContent = '日志（保留最近 300 条 · ' + (paused ? '已暂停' : '滚动中') + '，L 切换）';
+}
+
+// ---------- 主循环：1 秒轮询快照 + 日志增量 ----------
+function tick() {
+  fetchJson('/api/snapshot').then(function (s) {
+    renderStatus(s); renderRooms(s);
+  }).catch(function () {
+    var el = document.getElementById('status');
+    el.textContent = '';
+    el.appendChild(h('span', 'title', 'GOI 服务器观测面板'));
+    el.appendChild(h('span', 'err', '无法连接服务器（离线？）'));
+  });
+  if (!paused) fetchJson('/api/logs?since=' + lastSeq).then(renderLogs).catch(function () {});
+}
+setInterval(tick, 1000);
+tick();
+
+// ---------- 键盘：数字键聚焦房间，L 暂停日志 ----------
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'l' || e.key === 'L') { paused = !paused; return; }
+  var n = parseInt(e.key, 10);
+  if (!isNaN(n)) {
+    var cards = document.querySelectorAll('#rooms .card');
+    var idx = n === 0 ? 9 : n - 1;
+    if (cards[idx]) toggleFocus(parseInt(cards[idx].dataset.roomId, 10));
+  }
+});
+</script>
+</body>
+</html>

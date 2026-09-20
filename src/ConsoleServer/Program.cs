@@ -1,12 +1,15 @@
 using Autofac;
+using ConsoleServer.Web;
 using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Extensions;
 using GOILauncher.Multiplayer.Server.Services;
+using Microsoft.AspNetCore.Builder;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace ConsoleServer
 {
@@ -27,8 +30,14 @@ namespace ConsoleServer
                 var observation = container.Resolve<IObservationService>();
 
                 var port = GetPort();
+
+                // 先挂日志环形 Target（早于任何业务日志），再启服务，保证启动日志也进面板。
+                var logs = WebLogTarget.Register();
+                var web = StartWeb(observation, logs, port);
+
                 serverService.Start(port);
 
+                // 快照本身线程安全，Poll 循环不加任何同步；面板挂了不影响服务器。（暂只监听 IPv4；如需 IPv6 双栈改绑定为 [::]。）
                 while (_keepRunning)
                 {
                     serverService.Poll();
@@ -38,8 +47,39 @@ namespace ConsoleServer
                     Thread.Sleep(15);
                 }
 
+                if (web != null)
+                {
+                    // 给在途请求最多 1 秒收尾（StopAsync 只认 token，超时用 CTS 实现）；
+                    // docker stop 宽限期 10s，不会卡退出。
+                    using (var stopCts = new CancellationTokenSource(TimeSpan.FromSeconds(1)))
+                    {
+                        try { web.StopAsync(stopCts.Token).GetAwaiter().GetResult(); }
+                        catch (OperationCanceledException) { /* 收尾超时，直接继续关闭 */ }
+                    }
+                }
                 serverService.Stop();
             }
+        }
+
+        private static WebApplication StartWeb(IObservationService observation, WebLogTarget logs, int gamePort)
+        {
+            var webPort = GetWebPort();
+            var app = ObservationWeb.Create(observation, logs, webPort, gamePort);
+            var thread = new Thread(() =>
+            {
+                try { app.Run(); }
+                catch (Exception ex) { Console.Error.WriteLine("[Web] 观测面板线程退出：" + ex.Message); }
+            })
+            { IsBackground = true, Name = "ObservationWeb" };
+            thread.Start();
+            Console.WriteLine("[Web] Web UI: http://localhost:" + webPort + "/");
+            return app;
+        }
+
+        private static int GetWebPort()
+        {
+            var raw = Environment.GetEnvironmentVariable("WEB_PORT");
+            return string.IsNullOrWhiteSpace(raw) ? 9028 : int.Parse(raw);
         }
 
         private static int GetPort()

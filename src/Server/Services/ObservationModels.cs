@@ -33,6 +33,8 @@ namespace GOILauncher.Multiplayer.Server.Services
         public string Name { get; }
         public Platform Platform { get; }
         public bool IsInGame { get; }
+        /// <summary>当前房间 Id；-1 表示尚未入房（握手中/房间表查不到）。</summary>
+        public int RoomId { get; }
         public string EndPoint { get; }
         /// <summary>Null until LiteNetLib reports a first latency sample.</summary>
         public int? LatencyMilliseconds { get; }
@@ -41,12 +43,12 @@ namespace GOILauncher.Multiplayer.Server.Services
         public bool HasHandshaked { get; }
 
         public ConnectionObservation(int playerId, string name, Platform platform, bool isInGame,
-            string endPoint, int? latencyMilliseconds, ConnectionStatsObservation statistics,
+            int roomId, string endPoint, int? latencyMilliseconds, ConnectionStatsObservation statistics,
             int networkErrorCount, bool hasHandshaked)
         {
             PlayerId = playerId; Name = name; Platform = platform; IsInGame = isInGame;
-            EndPoint = endPoint; LatencyMilliseconds = latencyMilliseconds; Statistics = statistics;
-            NetworkErrorCount = networkErrorCount; HasHandshaked = hasHandshaked;
+            RoomId = roomId; EndPoint = endPoint; LatencyMilliseconds = latencyMilliseconds;
+            Statistics = statistics; NetworkErrorCount = networkErrorCount; HasHandshaked = hasHandshaked;
         }
     }
 
