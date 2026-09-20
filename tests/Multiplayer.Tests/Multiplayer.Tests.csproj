@@ -57,7 +57,7 @@
     <ProjectReference Include="..\..\src\Client\Client.csproj" />
     <ProjectReference Include="..\..\src\Server\Server.csproj" />
     <ProjectReference Include="..\..\src\Unity\Unity.csproj" />
-    <ProjectReference Include="..\..\src\LiteNetLib\LiteNetLib.csproj" />
+    <ProjectReference Include="..\..\lib\LiteNetLib\LiteNetLib\LiteNetLib.csproj" />
   </ItemGroup>
 
 </Project>

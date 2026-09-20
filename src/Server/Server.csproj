@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj" />
-    <ProjectReference Include="..\LiteNetLib\LiteNetLib.csproj" />
+    <ProjectReference Include="..\..\lib\LiteNetLib\LiteNetLib\LiteNetLib.csproj" />
   </ItemGroup>
 
 </Project>

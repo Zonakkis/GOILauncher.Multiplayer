@@ -1,0 +1,4 @@
+[submodule "lib/LiteNetLib"]
+	path = lib/LiteNetLib
+	url = https://github.com/Zonakkis/LiteNetLib.git
+	branch = 0.9

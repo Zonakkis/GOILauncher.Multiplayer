@@ -13,7 +13,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "src\Core\Core.cspro
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Multiplayer.Tests", "tests\Multiplayer.Tests\Multiplayer.Tests.csproj", "{01B310AC-BE8B-46D7-A8A6-C361C7C6998F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiteNetLib", "src\LiteNetLib\LiteNetLib.csproj", "{8DA9A119-BA70-07A0-A684-02B3B08B8285}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiteNetLib", "lib\LiteNetLib\LiteNetLib\LiteNetLib.csproj", "{8DA9A119-BA70-07A0-A684-02B3B08B8285}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "src\Server\Server.csproj", "{9D509ADD-EC76-4072-99C7-907624C222CF}"
 EndProject
