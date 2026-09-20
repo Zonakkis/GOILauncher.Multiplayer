@@ -17,6 +17,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
     ///
     /// 那个勾选框不是"开关状态"，而是一个动作：按下去就请宿主加载或销毁联机模块。
     /// 联机模块现在只有"已加载"和"已销毁"两种状态，没有加载着停用的中间态。
+    /// 它下面那个"隐藏服务端页面"才是真的状态勾选框：存进设置就完事，要应用的是宿主。
     ///
     /// 布局按"设置块"分组：每块一个区块头 + 一张卡片，卡片里是若干字段行。
     /// 以前三块之间没有视觉边界，看不出哪些字段属于同一类。
@@ -28,6 +29,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private bool _loaded;
 
         private Toggle _enabledToggle;
+        private Toggle _hideServerPageToggle;
         private InputFieldRef _playerNameInput;
         private InputFieldRef _clientHostInput;
         private InputFieldRef _clientPortInput;
@@ -35,6 +37,12 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         /// <summary>玩家按了开关。参数是"要不要加载联机模块"，真正动手的是宿主。</summary>
         public event Action<bool> LoadToggled;
+
+        /// <summary>
+        /// 玩家改了"隐藏服务端页面"。参数是落盘后的新值，已经存好了；把页签收起来或放出来的是宿主。
+        /// 设置页不去动另一个页面的按钮，所以这里和 LoadToggled 一样只往上抛。
+        /// </summary>
+        public event Action<bool> HideServerPageToggled;
 
         public SettingsPage(MultiplayerSettings settings, Toast toast)
         {
@@ -85,7 +93,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         }
 
         /// <summary>
-        /// 开关单独成块并放在最上面：它不是"默认值"之一，而是决定整个联机模块加不加载的闸，
+        /// 常规块。开关单独成块并放在最上面：它不是"默认值"之一，而是决定整个联机模块加不加载的闸，
         /// 混在下面那张卡片里会和"默认主机"之类的设置看起来一样重要。
         /// </summary>
         private void CreateTogglesSection()
@@ -107,6 +115,23 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
             _enabledToggle.isOn = _loaded;
             _enabledToggle.onValueChanged.AddListener(OnToggleChanged);
+
+            // 这个勾选框和上面那个不是一类：上面那个是动作（真值在宿主那里），这个就是状态本身，
+            // 存进设置即生效，所以初值直接读 _settings，不需要宿主推过来。
+            GameObject hideRow = UiKit.CreateFieldRow(card, "HideServerPageRow", 40);
+
+            Text hideText;
+            GameObject hideToggleObject = UIFactory.CreateToggle(
+                hideRow, "HideServerPageToggle", out _hideServerPageToggle, out hideText,
+                Plugin.Theme.SurfaceHover);
+            UIFactory.SetLayoutElement(hideToggleObject, minHeight: Layout.InlineButtonHeight,
+                preferredHeight: Layout.InlineButtonHeight, flexibleHeight: 0, flexibleWidth: 9999);
+            hideText.text = "隐藏服务端页面";
+            hideText.color = Plugin.Theme.TextPrimary;
+            hideText.fontSize = Layout.FontBody;
+
+            _hideServerPageToggle.isOn = _settings.HideServerPage;
+            _hideServerPageToggle.onValueChanged.AddListener(OnHideServerPageChanged);
         }
 
         /// <summary>
@@ -182,6 +207,17 @@ namespace GOILauncher.Multiplayer.UI.Pages
             RefreshToggle();
         }
 
+        private void OnHideServerPageChanged(bool hide)
+        {
+            // 先落盘再通知：设置是这份勾选框的唯一真值，宿主应用完不会反过来改它，
+            // 所以不必像加载开关那样等回推。
+            _settings.SetHideServerPage(hide);
+
+            Action<bool> handler = HideServerPageToggled;
+            if (handler != null)
+                handler(hide);
+        }
+
         // Persisting happens when the edit ends, not per keystroke: every write rewrites the whole
         // settings file.
         // A blank name is a valid "not chosen yet" state, so clearing the field does not restore
@@ -242,6 +278,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private void RefreshFromSettings()
         {
             RefreshToggle();
+            RefreshHideServerPageToggle();
             SetInputText(_playerNameInput, _settings.PlayerName);
             SetInputText(_clientHostInput, _settings.ClientHost);
             SetInputText(_clientPortInput, InputFieldExtensions.FormatPort(_settings.ClientPort));
@@ -257,6 +294,17 @@ namespace GOILauncher.Multiplayer.UI.Pages
             _enabledToggle.isOn = _loaded;
             _enabledToggle.onValueChanged.AddListener(OnToggleChanged);
             _enabledToggle.interactable = true;
+        }
+
+        // 摘掉监听再写 isOn：从设置回读时值没变也要避免 onValueChanged 再绕一遍落盘与通知。
+        private void RefreshHideServerPageToggle()
+        {
+            if (_hideServerPageToggle == null)
+                return;
+
+            _hideServerPageToggle.onValueChanged.RemoveListener(OnHideServerPageChanged);
+            _hideServerPageToggle.isOn = _settings.HideServerPage;
+            _hideServerPageToggle.onValueChanged.AddListener(OnHideServerPageChanged);
         }
 
         private static void SetInputText(InputFieldRef input, string text)

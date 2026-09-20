@@ -12,6 +12,10 @@ namespace GOILauncher.Multiplayer.UI.Config
     /// PlayerName / ClientHost / ClientPort / ServerPort 存的是**初值**：设置页是唯一写入方，
     /// 客户端页和服务端页只拿它们填输入框；玩家在那两页临时改成别的值只影响那一次连接，不回写。
     /// <para>
+    /// HideServerPage 是 UI 可见性，不是联机开关：它只决定主面板上出不出现"服务端"页签，内嵌服务端
+    /// 照样加载。设置页里的"服务端设置"块不受它影响——那份默认端口是给页签用的，两块各有各的去留理由。
+    /// </para>
+    /// <para>
     /// Enabled 是联机开关落下来的那一份：唯一真值是 MultiplayerUnityCore.IsLoaded，宿主在每次加载与
     /// 销毁之后回写它，所以它既回答"现在开着没有"，也回答"下次启动要不要自动加载"。联机现在要么已经
     /// 加载、要么已经销毁，没有"加载着但停用"这第三种状态，两边不会各说一套。
@@ -26,6 +30,7 @@ namespace GOILauncher.Multiplayer.UI.Config
         public const string DefaultClientHost = "127.0.0.1";
         public const int DefaultClientPort = 9027;
         public const int DefaultServerPort = 9027;
+        public const bool DefaultHideServerPage = true;
 
         public const int MinPort = 1;
         public const int MaxPort = 65535;
@@ -36,6 +41,7 @@ namespace GOILauncher.Multiplayer.UI.Config
         private readonly ConfigEntry<string> _clientHost;
         private readonly ConfigEntry<int> _clientPort;
         private readonly ConfigEntry<int> _serverPort;
+        private readonly ConfigEntry<bool> _hideServerPage;
 
         public MultiplayerSettings(ConfigFile config)
         {
@@ -53,6 +59,8 @@ namespace GOILauncher.Multiplayer.UI.Config
                 "客户端页端口输入框的初值。");
             _serverPort = config.Bind(Section, "ServerPort", DefaultServerPort,
                 "服务端页启动端口输入框的初值。");
+            _hideServerPage = config.Bind(Section, "HideServerPage", DefaultHideServerPage,
+                "隐藏“服务端”页签。只影响主面板上看不看得到这个页签，内嵌服务端仍然照常加载。");
         }
 
         public event Action<string> PlayerNameChanged;
@@ -93,6 +101,12 @@ namespace GOILauncher.Multiplayer.UI.Config
         public int ServerPort
         {
             get { return NormalizePort(_serverPort.Value, DefaultServerPort); }
+        }
+
+        /// <summary>主面板上不显示"服务端"页签。默认隐藏：开服不是给普通玩家用的功能，但也不把它从模块里拆掉。</summary>
+        public bool HideServerPage
+        {
+            get { return _hideServerPage.Value; }
         }
 
         /// <summary>
@@ -148,6 +162,18 @@ namespace GOILauncher.Multiplayer.UI.Config
             _clientPort.Value = port;
             Save();
             ClientPortChanged?.Invoke(port);
+        }
+
+        /// <summary>
+        /// 页签可见性。这里只落盘，改不改 UI 由宿主决定——设置页不直接去动另一个页面的按钮。
+        /// </summary>
+        public void SetHideServerPage(bool hideServerPage)
+        {
+            if (_hideServerPage.Value == hideServerPage)
+                return;
+
+            _hideServerPage.Value = hideServerPage;
+            Save();
         }
 
         public void SetServerPort(int port)

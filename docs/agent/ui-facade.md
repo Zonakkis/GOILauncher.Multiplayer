@@ -108,11 +108,13 @@ UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerLis
 
 ## MultiplayerSettings
 
-`GOILauncher.Multiplayer.UI.Config.MultiplayerSettings` 是持久化设置的唯一所有者，整个住在宿主这一层：core 不认识这个类型，也没有为设置留任何端口。怎么存是宿主的事，PC 宿主直接用 BepInEx 的 `ConfigFile`（`Multiplayer` 节下的 `Enabled` / `PlayerName` / `ClientHost` / `ClientPort` / `ServerPort`），键名、类型、解析容错都交给它，这里只补两条它不管的规矩——端口的合法范围，和“清空主机名等于回到默认值”。
+`GOILauncher.Multiplayer.UI.Config.MultiplayerSettings` 是持久化设置的唯一所有者，整个住在宿主这一层：core 不认识这个类型，也没有为设置留任何端口。怎么存是宿主的事，PC 宿主直接用 BepInEx 的 `ConfigFile`（`Multiplayer` 节下的 `Enabled` / `PlayerName` / `ClientHost` / `ClientPort` / `ServerPort` / `HideServerPage`），键名、类型、解析容错都交给它，这里只补两条它不管的规矩——端口的合法范围，和“清空主机名等于回到默认值”。
 
 以前反过来：设置归 `src/Unity`，只把“字节落到哪”抽成 `ISettingsStore`，理由是 BepInEx 只存在于 PC 宿主、平台无关层要能读同一套设置。现在还没有第二个宿主，这套抽象换来了一个 Unity 层的 `MultiplayerUnityCore.Settings` 入口，代价比收益大，所以 `ISettingsStore` / `FileSettingsStore` 一起删了。Android / iOS 宿主真要出现，各写各的设置类型，共享的是语义而不是实现。
 
 四项初值的方向没变：`SettingsPage` 是唯一写入方，`ClientPage` / `ServerPage` 只在填输入框时读它，并订阅对应的 `XxxChanged` 在空闲时更新输入框——页面上临时改名字或地址只影响那一次连接，不回写。名字允许为空（“还没填”），空名字连接时由 `ClientPage` 弹“名字不能为空”拦下，没有兜底默认名（见 `docs/agent/game-runtime.md` 的 Multiplayer Settings）。
 
 `Enabled` 是那份开关状态落了盘。真值只有一处——`MultiplayerUnityCore.IsLoaded`，宿主在每次加载与销毁之后回写它，所以配置文件里写的、勾选框显示的、模块实际的，是同一件事；启动那次自动加载失败也一样回写成 false，不会留下一个没成真的 true。它顺带回答“下次启动要不要自动加载”，因为落盘的正是当时的状态。
+
+`HideServerPage`（默认 true）和 `Enabled` 正好相反，它不是状态的回写目标，而是 UI 自己的一个选择：设置页写它，`Plugin` 读到变化后调 `MultiplayerUI.SetServerPageVisible` 收放“服务端”页签。**它只影响页签可见性**：`ServerPage` 照旧构造、照旧被 `Bind` / `Unbind`，内嵌服务端不因为它而少加载一分；设置页里的“服务端设置”块（默认端口）也不受它影响。这也是设置页不直接去改另一个页面的按钮、而是往上抛 `HideServerPageToggled` 的理由——跨页面的应用动作归宿主。
 

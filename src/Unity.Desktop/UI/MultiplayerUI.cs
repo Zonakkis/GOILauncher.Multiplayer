@@ -30,6 +30,7 @@ namespace GOILauncher.Multiplayer.UI
         private readonly List<PageEntry> _pages;
         private readonly RoomDialogUI _roomDialog;
         private GameObject _pagesContainer;
+        private ButtonRef _serverButton;
 
         public MultiplayerUI(UIBase owner, ClientPage clientPage, ServerPage serverPage, SettingsPage settingsPage, RoomDialogUI roomDialog) : base(owner)
         {
@@ -53,6 +54,19 @@ namespace GOILauncher.Multiplayer.UI
         {
             if (!active) _roomDialog?.SetActive(false);
             base.SetActive(active);
+        }
+
+        /// <summary>
+        /// 收起或放出"服务端"页签。只关按钮的显示：服务端页面照旧建出来、照旧被 Bind，
+        /// 所以开着的内嵌服务端不会因为切了个开关就断掉。
+        /// <para>
+        /// 无需处理"玩家正站在服务端页面上"：这个勾选框在设置页里，勾它的时候玩家不可能在别的页面。
+        /// </para>
+        /// </summary>
+        public void SetServerPageVisible(bool visible)
+        {
+            if (_serverButton != null)
+                _serverButton.GameObject.SetActive(visible);
         }
 
         protected override void ConstructPanelContent()
@@ -87,6 +101,9 @@ namespace GOILauncher.Multiplayer.UI
                     preferredHeight: Layout.InlineButtonHeight, minWidth: 100, flexibleWidth: 9999, flexibleHeight: 0);
                 button.OnClick += () => ShowPage(pageEntry.Id);
                 pageEntry.Button = button;
+
+                if (pageEntry.Id == MultiplayerPage.Server)
+                    _serverButton = button;
             }
 
             _pagesContainer = UIFactory.CreateUIObject("PagesContainer", ContentRoot);

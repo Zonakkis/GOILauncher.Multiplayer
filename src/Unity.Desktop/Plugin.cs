@@ -88,6 +88,8 @@ public class Plugin : BaseUnityPlugin
         _serverPage = new ServerPage(_settings, toast);
         _settingsPage = new SettingsPage(_settings, toast);
         _multiplayerUI = new MultiplayerUI(UIBase, _clientPage, _serverPage, _settingsPage, _roomDialogUI);
+        // 页签可见性存在设置里，默认就是隐藏的：面板建好先应用一次，不用等玩家去设置页碰那个勾选框。
+        _multiplayerUI.SetServerPageVisible(!_settings.HideServerPage);
         _chatHudUI = new ChatHudUI(UIBase, messageHandler, _roomDialogUI);
         _playerListOverlayUI = new PlayerListUI(UIBase, playerListHandler);
 
@@ -97,6 +99,7 @@ public class Plugin : BaseUnityPlugin
 
         _chatHudUI.ActiveModeChanged += OnChatActiveModeChanged;
         _settingsPage.LoadToggled += OnLoadToggled;
+        _settingsPage.HideServerPageToggled += OnHideServerPageToggled;
         MultiplayerUnityCore.Initialized += OnCoreInitialized;
         MultiplayerUnityCore.Disposing += OnCoreDisposing;
 
@@ -118,6 +121,14 @@ public class Plugin : BaseUnityPlugin
             MultiplayerUnityCore.Dispose();
 
         SyncLoadedState();
+    }
+
+    /// <summary>
+    /// 收放"服务端"页签。只是 UI：设置页已经把它落盘了，这里不碰内嵌服务端的加载与销毁。
+    /// </summary>
+    private void OnHideServerPageToggled(bool hide)
+    {
+        _multiplayerUI.SetServerPageVisible(!hide);
     }
 
     /// <summary>
@@ -229,6 +240,7 @@ public class Plugin : BaseUnityPlugin
 
         _chatHudUI.ActiveModeChanged -= OnChatActiveModeChanged;
         _settingsPage.LoadToggled -= OnLoadToggled;
+        _settingsPage.HideServerPageToggled -= OnHideServerPageToggled;
         MultiplayerUnityCore.Initialized -= OnCoreInitialized;
         MultiplayerUnityCore.Disposing -= OnCoreDisposing;
 

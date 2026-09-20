@@ -147,11 +147,12 @@ PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是�
 - 设置完全归宿主：所有者是 `MultiplayerSettings`（`src/Unity.Desktop/Config`，`GOILauncher.Multiplayer.UI.Config`）。core 一层不认识它，`src/Unity` 里没有任何设置类型。
 - 落盘用 BepInEx 的 `ConfigFile`（`Plugin.Config`，节名 `Multiplayer`）。键名、类型、默认值、解析容错和写文件都归它，`MultiplayerSettings` 只补两条它不管的规矩：端口范围，和“清空主机名等于回到默认值”。
 - 换回 `ConfigFile` 的代价是这套设置只存在于 PC 宿主。以前放在 `src/Unity` 是为了三个平台共用一份键名和默认值，现在认定的边界是“怎么存是宿主自己的事”：以后的 Android / iOS 宿主各自实现自己的存储，core 不掺和。
-- 目前有五项：
+- 目前有六项：
 
   | 键 | 类型 | 默认 | 说明 |
   |---|---|---|---|
   | `Enabled` | bool | `true` | 联机开关。唯一真值是 `MultiplayerUnityCore.IsLoaded`，宿主每次加载与销毁后回写这里，所以它同时决定下次启动要不要自动加载 |
+  | `HideServerPage` | bool | `true` | 隐藏主面板上的“服务端”页签。纯 UI 可见性：`ServerPage` 照旧构造与 `Bind`，内嵌服务端照常能加载 |
   | `PlayerName` | string | （空） | 客户端页“名字”输入框的初值；空表示还没填，连接会被客户端页拦下 |
   | `ClientHost` | string | `127.0.0.1` | 客户端页“服务器地址”输入框的初值 |
   | `ClientPort` | int | `9027` | 客户端页“端口”输入框的初值 |
@@ -182,6 +183,7 @@ PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是�
 
 - 设置页那个勾选框是**动作**，不是状态：`SettingsPage` 发 `LoadToggled`，`Plugin` 去 `Initialize()` / `Dispose()`，再由 `SyncLoadedState()` 按 `IsLoaded` 回写 `Enabled` 并推 `SetLoaded`。所以 `Enabled` 总是等于现状——它是那份开关状态落了盘，不是另一个平行概念；页面也不自己去读它，等宿主推。
 - 页面感知加载与销毁靠 `Plugin` 转发的 `Bind(门面)` / `Unbind()`：`Initialized` 时绑，`Disposing` 时解。两者必须成对——漏一次 `Unbind` 不报错，只会让下一次点按钮响应两遍，所以每页的 `Bind` 在已绑定时直接抛。
+- “隐藏服务端页面”勾选框在“常规”块里、加载开关下面，与那个开关不同：它**就是状态**，`onValueChanged` 里直接 `_settings.SetHideServerPage(value)` 落盘，再发 `HideServerPageToggled`；`Plugin` 收到后调 `MultiplayerUI.SetServerPageVisible(!hide)` 把页签按钮 `SetActive(false)`。页签按钮行是 `HorizontalLayoutGroup`，inactive 对象不参与布局，剩下的“客户端”“设置”两枚自动撑满。启动时 `Plugin` 按落盘值先应用一次，所以默认安装看不到“服务端”。设置页里的“服务端设置”块不受它影响。
 - “设置”页除了那个加载开关还管四个默认值，按“客户端设置”（从上到下是“名字”一行、默认主机和默认端口同一行）和“服务端设置”（默认端口）两段排：`ClientPage` 和 `ServerPage` 从它们取输入框初值，并订阅对应的变更事件，在空闲时跟着更新（见上面 Multiplayer Settings）。这四个输入框不随加载状态变灰——联机没加载也要能先把默认值配好。落盘发生在编辑结束（`InputField.onEndEdit`）和离开设置页时，不是每敲一个字符就写一次：每次写都要整份重写配置文件。端口填了非法值会弹提示并把输入框回填成当前设置值；主机清空则归一化回默认值；名字清空就保留为空，连接时为空会弹“名字不能为空”并拦下连接。名字输入框不设占位提示，空就是空框；已知限制：uGUI 的 `InputField` 文本为空时聚焦不画光标，空名字框点进去看不到光标（未处理）。
 - F2 始终切换 `MultiplayerUI`（“连接配置”）窗口，不看联机加没加载，因此关掉之后仍能进入“设置”页重新开启。
 - `Plugin.ApplyCursorState` 使用同一判据解锁系统鼠标和把游戏 `Cursor` 刚体的 `simulated` 切为 `false`：配置窗口、房间弹窗、Tab 玩家列表 + 空格、聊天输入激活，或其他 UniverseLib UI 显示；被动聊天 HUD 不屏蔽输入。单独按住 Tab 只显示玩家列表，游戏输入照常，鼠标要 Tab 和空格一起按住才交出。UI 不再占用鼠标时把 `simulated` 切回 `true`，不修改 `PlayerControl` 的启用状态或拦截其方法。
