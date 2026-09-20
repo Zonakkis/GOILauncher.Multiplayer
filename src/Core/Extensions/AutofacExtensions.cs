@@ -82,7 +82,10 @@ namespace GOILauncher.Multiplayer.Core.Extensions
             {
                 var netManager = new NetManager(c.Resolve<NetworkServerListener>())
                 {
-                    ChannelsCount = NetworkChannels.Count
+                    ChannelsCount = NetworkChannels.Count,
+                    // Per-peer send/receive/loss counters feed the observation facade.
+                    // NetStatistics reads are Interlocked, so sampling off the Poll thread is safe.
+                    EnableStatistics = true
                 };
                 return new NetworkServer(netManager,
                     c.Resolve<IServerEventBus>(),

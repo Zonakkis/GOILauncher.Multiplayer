@@ -29,6 +29,11 @@ namespace GOILauncher.Multiplayer.Server.Extensions
                 .AsSelf()
                 .As<IStartable>()
                 .SingleInstance();
+            // Read-only diagnostics view; subscribes on the Poll thread, freezes snapshots for a host.
+            builder.RegisterType<ObservationService>()
+                .As<IObservationService>()
+                .As<IStartable>()
+                .SingleInstance();
             builder.RegisterType<PlayerStateRelay>()
                 .AsSelf()
                 .As<IStartable>()

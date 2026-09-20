@@ -28,6 +28,10 @@ namespace GOILauncher.Multiplayer.Tests.Server
         public void Poll() { }
         public void Dispose() { }
 
+        /// <summary>Tests feed the traffic rows the observation facade pulls each poll.</summary>
+        public List<PeerTraffic> PeerTraffic = new List<PeerTraffic>();
+        public List<PeerTraffic> SamplePeerTraffic() { return new List<PeerTraffic>(PeerTraffic); }
+
         public void Send(int clientId, INetSerializable packet, DeliveryMethod method)
         {
             Send(clientId, packet, NetworkChannels.Default, method);

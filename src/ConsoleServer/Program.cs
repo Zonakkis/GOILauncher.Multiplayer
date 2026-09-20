@@ -24,6 +24,7 @@ namespace ConsoleServer
             using (var container = Register())
             {
                 var serverService = container.Resolve<IServerService>();
+                var observation = container.Resolve<IObservationService>();
 
                 var port = GetPort();
                 serverService.Start(port);
@@ -31,6 +32,9 @@ namespace ConsoleServer
                 while (_keepRunning)
                 {
                     serverService.Poll();
+                    // Advances liveness counters and refreshes the read-only view the console
+                    // will render from. Cheap; the heavy cache refresh is throttled internally.
+                    observation.MarkPoll();
                     Thread.Sleep(15);
                 }
 

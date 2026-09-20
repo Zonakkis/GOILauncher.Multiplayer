@@ -124,6 +124,16 @@ ale` 无关）。没有轮询，也没有手动刷新：**游戏中途换皮肤�
 - UI 通过 `IUnityClient.Players` 读名单，拿到的是 `PlayerView`：只记 `Id` 和两个权威来源（`IPlayerService` / `IPlayerManager`），每次读属性都回去取，不保存副本。距离由 `RemotePlayer.DistanceToLocalPlayer` 单点定义，头顶标签和玩家列表共用。UI 的业务与游戏引用访问边界见 `docs/agent/ui-facade.md`。
 - 玩家列表 UI 分两种刷新节奏：名单变化时增删行（事件驱动），距离按帧节流刷新已有行的文本（可见时拉取）。距离每帧都在变，沿用"清空重建全部行"会在按住 Tab 期间每帧 `Destroy` + `Instantiate` + 重建布局。
 
+## Server Observation (host console)
+
+服务端为宿主控制台提供一个只读观测视图，与控制台呈现层（Spectre.Console 整帧重绘，待 UI 阶段实现）解耦。
+
+- 采集补齐：服务端 `NetManager` 开 `EnableStatistics = true`；`NetworkServerListener` 不再吞掉 `OnNetworkError`（改为 `Warn` 日志 + 发布 `NetworkErrorEvent`），并在 `OnNetworkLatencyUpdate` 发布 `NetworkLatencyUpdatedEvent`；`ClientConnectedEvent` 携带传输层的 `RemoteEndPoint`（IP/端口只进观测视图，不写进协议模型 `PlayerInfo`）。
+- `ObservationService` 是门面：订阅现有服务端事件、在自己的锁下维护展示副本，宿主每轮 `Poll` 后调 `MarkPoll()` 推进存活计数（poll 次数、最大 poll 间隔）并按 150ms 节流刷新目录/名单/流量缓存。流量按 `INetworkServer.SamplePeerTraffic()` 在 Poll 线程拉取（`ConnectedPeerList` 是 LiteNetLib 内部共享缓存，只能当轮复制、不可跨线程持有）。
+- 线程契约：所有写入（事件回调 + `MarkPoll`）都在服务端 Poll 线程；`Snapshot` 是唯一跨线程入口，只读不可变快照，不触碰 `PlayerService`/`RoomService` 的活字典。渲染线程因此不会在换房中途枚举到被改写的 `Dictionary`。
+- 网络错误按 endpoint 归属到连接；匹配不到活连接的计入全局 `UnattributedNetworkErrors`。
+- 该门面纯观测，不提供任何对玩家操作的干预入口，也不改变上面任何同步/房间链路的权威写入。
+
 ## Validation Workflow
 
 - 仅凭对象层级和代码无法确认最终视觉效果是否正确。

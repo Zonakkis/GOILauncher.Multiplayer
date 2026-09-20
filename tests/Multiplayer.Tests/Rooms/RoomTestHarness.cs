@@ -31,7 +31,7 @@ namespace GOILauncher.Multiplayer.Tests.Rooms
             Players = new S.PlayerService(Dispatcher, Events);
             Rooms = new S.RoomService(Players, Network, Dispatcher, Events, new Mock<ILogger<S.RoomService>>().Object);
             foreach (var module in new IStartable[] { Players, Rooms,
-                new S.ChatService(Rooms, Network, Dispatcher), new SS.PlayerStateRelay(Network, Dispatcher, Players, Rooms),
+                new S.ChatService(Rooms, Players, Network, Dispatcher, Events), new SS.PlayerStateRelay(Network, Dispatcher, Players, Rooms),
                 new SS.SkinRelay(Network, Dispatcher, Players, Rooms, Events, new Mock<ILogger<SS.SkinRelay>>().Object) }) module.Start();
         }
         public void Add(int id, bool isInGame = true)

@@ -51,6 +51,9 @@ namespace GOILauncher.Multiplayer.Tests.Server
                 // Regression guard: ChatService used to be reachable only through the
                 // Unity host's property injection, so ConsoleServer never relayed chat.
                 started.Should().Contain(typeof(ChatService));
+                // The observation view must activate on its own, or ConsoleServer's MarkPoll
+                // would drive a facade that never subscribed to the event bus.
+                started.Should().Contain(typeof(ObservationService));
             }
         }
     }

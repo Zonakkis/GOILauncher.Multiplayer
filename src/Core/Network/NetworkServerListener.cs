@@ -31,12 +31,14 @@ namespace GOILauncher.Multiplayer.Core.Network
 
         public void OnNetworkError(IPEndPoint endPoint, SocketError socketError)
         {
-
+            // Used to swallow everything silently — the one thing diagnostics can't afford.
+            _logger.Warn("Network error from {EndPoint}: {SocketError}.", endPoint, socketError);
+            _eventBus.Publish(new NetworkErrorEvent(endPoint, socketError));
         }
 
         public void OnNetworkLatencyUpdate(NetPeer peer, int latency)
         {
-
+            _eventBus.Publish(new NetworkLatencyUpdatedEvent(peer.Id, latency));
         }
 
         public void OnNetworkReceive(NetPeer peer,
@@ -55,7 +57,7 @@ namespace GOILauncher.Multiplayer.Core.Network
         public void OnPeerConnected(NetPeer peer)
         {
             _logger.Info($"Client connected: {peer.EndPoint} (ID: {peer.Id})");
-            _eventBus.Publish(new ClientConnectedEvent(peer.Id));
+            _eventBus.Publish(new ClientConnectedEvent(peer.Id, peer.EndPoint));
         }
 
         public void OnPeerDisconnected(NetPeer peer, DisconnectInfo disconnectInfo)

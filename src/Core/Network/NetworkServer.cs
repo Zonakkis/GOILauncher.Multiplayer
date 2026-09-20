@@ -54,6 +54,21 @@ namespace GOILauncher.Multiplayer.Network
             _netManager.PollEvents();
         }
 
+        public List<PeerTraffic> SamplePeerTraffic()
+        {
+            // ConnectedPeerList hands back NetManager's shared cache, so copy out the
+            // counters immediately and never retain the list. Poll-thread only by contract.
+            var traffic = new List<PeerTraffic>();
+            foreach (var peer in _netManager.ConnectedPeerList)
+            {
+                var s = peer.Statistics;
+                if (s == null) continue;
+                traffic.Add(new PeerTraffic(peer.Id, s.PacketsSent, s.PacketsReceived,
+                    s.BytesSent, s.BytesReceived, s.PacketLoss, s.PacketLossPercent));
+            }
+            return traffic;
+        }
+
         public void Send(int clientId, INetSerializable packet, DeliveryMethod method)
         {
             Send(clientId, packet, NetworkChannels.Default, method);
