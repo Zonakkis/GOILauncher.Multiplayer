@@ -1,8 +1,7 @@
 using System;
-using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.Unity;
-using GOILauncher.Multiplayer.Unity.Config;
+using GOILauncher.Multiplayer.UI.Config;
 using GOILauncher.Multiplayer.UI.Theme;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,9 +17,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
     /// </summary>
     public class ServerPage : IPage
     {
-        private readonly IUnityServer _server;
+        // 门面每轮联机都是新造的：Bind 时才有，Unbind 时清空。
+        private IUnityServer _server;
         private readonly MultiplayerSettings _settings;
-        private readonly ILogger<ServerPage> _logger;
         private readonly Toast _toast;
 
         private Text _serverStateText;
@@ -29,19 +28,35 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private ButtonRef _stopButton;
         private int _lastListenPort;
 
-        public ServerPage(
-            IUnityServer unityServer,
-            MultiplayerSettings settings,
-            ILogger<ServerPage> logger,
-            Toast toast)
+        public ServerPage(MultiplayerSettings settings, Toast toast)
         {
-            _server = unityServer;
             _settings = settings;
-            _logger = logger;
             _toast = toast;
             _lastListenPort = DefaultPort;
-            _settings.EnabledChanged += OnMultiplayerEnabledChanged;
             _settings.ServerPortChanged += OnDefaultPortChanged;
+        }
+
+        /// <summary>
+        /// 绑定这一轮的内嵌服务端。服务端门面只有命令没有事件，所以这里只需要换引用，
+        /// 不需要成对退订——但 Unbind 仍然要刷一次状态，否则界面会停在"运行中"。
+        /// </summary>
+        public void Bind(IUnityServer server)
+        {
+            if (server == null || _server != null)
+                throw new InvalidOperationException("ServerPage: Bind and Unbind must alternate.");
+
+            _server = server;
+            RefreshServerState();
+        }
+
+        public void Unbind()
+        {
+            if (_server == null)
+                return;
+
+            _server = null;
+            _lastListenPort = DefaultPort;
+            RefreshServerState();
         }
 
         public GameObject Root { get; private set; }
@@ -128,7 +143,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnStartClicked()
         {
-            if (!IsMultiplayerEnabled || _server.IsRunning)
+            if (!IsLoaded || _server.IsRunning)
             {
                 RefreshServerState();
                 return;
@@ -145,7 +160,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to start server");
+                Plugin.Logger.LogError("Failed to start server: " + ex);
                 _toast.Show($"服务端启动失败: {ex.Message}");
             }
             finally
@@ -156,7 +171,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnStopClicked()
         {
-            if (!IsMultiplayerEnabled || !_server.IsRunning)
+            if (!IsLoaded || !_server.IsRunning)
             {
                 RefreshServerState();
                 return;
@@ -169,7 +184,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to stop server");
+                Plugin.Logger.LogError("Failed to stop server: " + ex);
                 _toast.Show($"服务端停止失败: {ex.Message}");
             }
             finally
@@ -183,10 +198,10 @@ namespace GOILauncher.Multiplayer.UI.Pages
             if (_serverStateText == null || _startButton == null || _stopButton == null || portInput == null)
                 return;
 
-            bool multiplayerEnabled = IsMultiplayerEnabled;
-            bool running = multiplayerEnabled && _server.IsRunning;
-            _startButton.Component.interactable = multiplayerEnabled && !running;
-            _stopButton.Component.interactable = multiplayerEnabled && running;
+            bool loaded = IsLoaded;
+            bool running = loaded && _server.IsRunning;
+            _startButton.Component.interactable = loaded && !running;
+            _stopButton.Component.interactable = loaded && running;
 
             // 端口只在启动前能改。运行中不是"灰掉"也不是"藏起来"，而是只读：
             // 它此刻显示的是服务端真正监听的端口，值得看清楚（见 InputFieldExtensions.SetReadOnly）。
@@ -194,27 +209,23 @@ namespace GOILauncher.Multiplayer.UI.Pages
             // 别改成 SetActive(false)：操作段的高度是"端口行 + 按钮行"算出来的，
             // 抽掉一行会让整段缩掉 32，按钮跟着往上跳、贴着上一块被裁掉一截。
             // 而且端口行消失后，这一段的底色也跟着少一块，看着像没画完。
-            portInput.SetReadOnly(!multiplayerEnabled || running);
+            portInput.SetReadOnly(!loaded || running);
 
-            _serverStateText.text = !multiplayerEnabled
-                ? "联机已禁用"
+            _serverStateText.text = !loaded
+                ? "联机未启用"
                 : running
                 ? $"运行中 · 监听端口 {_lastListenPort}"
                 : "未启动";
             _serverStateText.color = running ? Plugin.Theme.TextAccent
-                : multiplayerEnabled ? Plugin.Theme.TextPrimary : Plugin.Theme.TextSecondary;
-        }
-
-        private void OnMultiplayerEnabledChanged(bool enabled)
-        {
-            RefreshServerState();
+                : loaded ? Plugin.Theme.TextPrimary : Plugin.Theme.TextSecondary;
         }
 
         // The settings page owns the default. Overwrite the field only while the server is idle: once it
         // is running the field shows the port it is actually listening on, and it is not editable anyway.
         private void OnDefaultPortChanged(int port)
         {
-            if (portInput == null || _server.IsRunning)
+            // 空闲时（包括联机没加载）端口框就是默认值的展示位；开着服时它显示真正监听的端口，不动。
+            if (portInput == null || (_server != null && _server.IsRunning))
                 return;
 
             portInput.Text = InputFieldExtensions.FormatPort(port);
@@ -232,12 +243,13 @@ namespace GOILauncher.Multiplayer.UI.Pages
         /// <summary>The listen port the page starts from, owned by the settings page.</summary>
         private int DefaultPort
         {
-            get { return _settings == null ? MultiplayerSettings.DefaultServerPort : _settings.ServerPort; }
+            get { return _settings.ServerPort; }
         }
 
-        private bool IsMultiplayerEnabled
+        /// <summary>这一轮的门面在不在。不在就是联机没加载，这一页只能看不能操作。</summary>
+        private bool IsLoaded
         {
-            get { return _settings == null || _settings.Enabled; }
+            get { return _server != null; }
         }
     }
 }

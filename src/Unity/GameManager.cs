@@ -42,8 +42,18 @@ namespace GOILauncher.Multiplayer.Unity
 
         public void OnDestroy()
         {
-            // 检测 GameManager 是否被销毁重建（不依赖注入，用 Debug.Log）
-            Debug.Log("[GOILauncher.Multiplayer] GameManager destroyed.");
+            // sceneLoaded 是静态事件，不会因为本组件被销毁就自己松开：不退订的话，
+            // 下一次加载场景就会打在已销毁的组件上。关掉联机走的就是这条路。
+            UnitySceneManager.sceneLoaded -= OnSceneLoaded;
+            StopRefreshGameResources();
+
+            // PlayerPrefab 是本类 Instantiate 出来的场景克隆，不在 _core 底下，得自己收掉。
+            if (PlayerPrefab != null)
+                Destroy(PlayerPrefab);
+
+            PlayerPrefab = null;
+            Player = null;
+            Cursor = null;
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)

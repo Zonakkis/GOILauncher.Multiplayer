@@ -19,12 +19,16 @@ namespace GOILauncher.Multiplayer.Core.Extensions
                 .AsSelf()
                 .SingleInstance();
 
+            // ExternallyOwned: the target is wired into NLog's global configuration, so disposing
+            // the container must not dispose it too. The next Initialize finds the same-named target
+            // already in that configuration and reuses it; a disposed one would swallow every log line.
             builder.Register(ctx => new ConsoleTarget()
             {
                 Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${level:uppercase=true}|${logger:shortName=true}|${message}${onexception:inner=${newline}${exception:format=tostring}}"
             })
                 .As<Target>()
-                .SingleInstance();
+                .SingleInstance()
+                .ExternallyOwned();
 
             builder.RegisterGeneric(typeof(NLogLogger<>))
                 .As(typeof(ILogger<>))

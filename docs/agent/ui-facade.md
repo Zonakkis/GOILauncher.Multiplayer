@@ -2,7 +2,7 @@
 
 UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）通过以下入口访问联机业务与游戏运行时：
 
-- `MultiplayerUnityCore` — 初始化容器，取得下面的依赖；
+- `MultiplayerUnityCore` — 联机模块的根，加载与销毁它，并取得下面的依赖；未加载时三个门面属性都是 `null`；
 - `IUnityClient` — 客户端联机业务；
 - `IUnityServer` — 内嵌服务端联机业务；
 - `IGameManager` — 游戏场景状态与游戏内对象引用，不提供联机业务。
@@ -14,13 +14,27 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）通过以下�
 - **UI 通过上述入口访问业务和游戏引用。** 不要让 UI 直接依赖 `IPlayerService`、`IPlayerManager`、`IChatService`、`IEventBus` 等内部服务。
 - **新增联机业务挂在已有客户端/服务端门面，游戏引用放在 `IGameManager`，不要新开服务根接口。** "玩家名单该由谁提供"这类问题的答案永远是 `IUnityClient`，哪怕实现要组合好几个下层服务——组合工作在 `UnityClient` 里做。
 - **UI 不订阅 `IEventBus`，事件由门面转发。** 见下面 Events 一节。
-- **`MultiplayerSettings` 不是新的服务根接口**（`GOILauncher.Multiplayer.Unity.Config`）。它和 `PlayerView` 一样，是 UI 可以使用的设置/视图类型，不是新的业务入口。见下面 MultiplayerSettings 一节。
+- **`MultiplayerSettings` 不是新的服务根接口**（`GOILauncher.Multiplayer.UI.Config`）。它和 `PlayerView` 一样，是 UI 可以使用的设置/视图类型，不是新的业务入口；而且它整个住在宿主这一层，core 不认识它。见下面 MultiplayerSettings 一节。
 
 单一数据源和这条约束不冲突：单一数据源约束的是**谁能写、有没有人存副本**，不是成员声明在哪个接口上。只要门面上的成员是读透（read-through）的、不缓存，把它放在 `IUnityClient` 上和放在一个独立接口上完全等价。`UnityClient.Players` 每次枚举现场构造 `PlayerView`，名单的唯一所有者仍然是 `Client/Services/IPlayerService`。
 
+## 加载与销毁
+
+联机模块只有两种状态：已加载、已销毁。`MultiplayerUnityCore.Initialize(Target)` 建出整张对象图，`Dispose()` 拆掉它，没有“加载着但停用”这第三种状态——关就是拆，重新开就是重建。`UnityClient` / `UnityServer` / `PlayerManager` 里因此没有 `IsMultiplayerEnabled` 之类的守卫：拿得到门面就说明这一轮是活的；闸落下去之后，三个门面属性一律返回 null。
+
+UI 不进这张对象图。`Plugin.OnInitialized` 手工组合窗口、页面和 handler，再把自己这一轮的门面递进去：
+
+- `MultiplayerUnityCore.Initialized` 触发时，`Plugin` 读 `UnityClient` / `UnityServer`，逐个 `Bind` 到 `ClientPage`、`ServerPage`、`RoomDialogUI`、`ChatHudUI`、`PlayerListUI`。
+- `MultiplayerUnityCore.Disposing` 触发时反过来逐个 `Unbind`。这个事件发出时对象图还活着，所以退订门面事件、清掉列表行上缓存的 `PlayerView`、把聊天记录归零都还来得及。
+- `Bind` / `Unbind` 必须交替：两边的订阅是成对的，漏掉一次 `-=` 就是下一轮点一次按钮弹两条消息。
+
+不进容器的理由是两套生命周期不同步。UniverseLib 的窗口按 id 注册在一张静态表里，同一个 id 建第二个会抛，所以 UI 只能活满整个进程；联机模块随开随关。塞进同一个容器，要么 UI 跟着容器一起被拆掉再也建不回来，要么容器名不副实。
+
+`Plugin` 是唯一读 `MultiplayerUnityCore` 的类，其余 UI 只认自己 `Bind` 到的那个门面。日志按同一个方向切：UI 写 `Plugin.Logger`（BepInEx 的 `ManualLogSource`），不依赖 core 的 `ILogger<T>`；core 的 NLog 落地端由宿主建一次、以外部所有的身份注册进容器，所以它不跟着联机模块一起销毁，下一轮 `Initialize` 复用的是活的 target。
+
 ## IGameManager
 
-`IGameManager` 提供 `IsInGame` 及 `Player`、`PlayerPrefab`、`Cursor` 等游戏内引用，不承载连接、房间、名单等业务。UI 可以在初始化时通过 `container.Resolve<IGameManager>()` 获取并保存它；场景中的对象会被销毁或替换，使用时从它的属性读取当前引用。
+`IGameManager` 提供 `IsInGame` 及 `Player`、`PlayerPrefab`、`Cursor` 等游戏内引用，不承载连接、房间、名单等业务。UI 通过 `MultiplayerUnityCore.GameManager` 现读，不保存它——每加载一次是一个新实例，存下来的引用在模块关掉之后就再也更新不动了。场景中的对象同样会被销毁或替换，使用时从它的属性读取当前引用。
 
 桌面 UI 占用鼠标时，`Plugin` 直接操作 `IGameManager.Cursor` 上的 `Rigidbody2D.simulated`：占用时设为 `false`，释放时设为 `true`。这是 UI 对游戏对象的交互，不必为此增加 `IUnityClient` 方法，也不让 `IGameManager` 保存 UI 状态或提供业务命令。具体运行时事实见 `game-runtime.md` 的 Cursor Object。
 
@@ -94,12 +108,11 @@ UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerLis
 
 ## MultiplayerSettings
 
-`GOILauncher.Multiplayer.Unity.Config.MultiplayerSettings` 是持久化设置的唯一所有者。UI 可以在初始化完成后通过 `MultiplayerUnityCore.Settings` 取得它，也可以使用构造注入；两种方式指向容器中的同一个单例，不新建设置或保存静态副本。UI 读属性、调 `SetXxx`、订阅变更事件，不自己存副本——和 `PlayerView` 是同一类东西：**约束限制的是"UI 要认识几个入口"，不是"UI 能出现几个类名"。**
+`GOILauncher.Multiplayer.UI.Config.MultiplayerSettings` 是持久化设置的唯一所有者，整个住在宿主这一层：core 不认识这个类型，也没有为设置留任何端口。怎么存是宿主的事，PC 宿主直接用 BepInEx 的 `ConfigFile`（`Multiplayer` 节下的 `Enabled` / `PlayerName` / `ClientHost` / `ClientPort` / `ServerPort`），键名、类型、解析容错都交给它，这里只补两条它不管的规矩——端口的合法范围，和“清空主机名等于回到默认值”。
 
-除了联机开关，它还有四项默认值（`PlayerName` / `ClientHost` / `ClientPort` / `ServerPort`）。这四项是读透的**初值来源**：`SettingsPage` 是唯一写入方，`ClientPage` / `ServerPage` 只在填输入框时读它，并订阅对应的 `XxxChanged` 在空闲时更新输入框——页面上临时改名字或地址只影响那一次连接，不回写。名字允许为空（“还没填”），空名字连接时由 `ClientPage` 弹“名字不能为空”拦下，没有兜底默认名（见 `docs/agent/game-runtime.md` 的 Multiplayer Settings）。
+以前反过来：设置归 `src/Unity`，只把“字节落到哪”抽成 `ISettingsStore`，理由是 BepInEx 只存在于 PC 宿主、平台无关层要能读同一套设置。现在还没有第二个宿主，这套抽象换来了一个 Unity 层的 `MultiplayerUnityCore.Settings` 入口，代价比收益大，所以 `ISettingsStore` / `FileSettingsStore` 一起删了。Android / iOS 宿主真要出现，各写各的设置类型，共享的是语义而不是实现。
 
-这条以前是反方向的：`IMultiplayerState` 由 UI 宿主实现（`MultiplayerStateCoordinator` 把 BepInEx 的 `ConfigEntry` 包一层暴露出来），Unity 层调用。搬到 `src/Unity` 之后方向反了过来，存储归 Unity 层、UI 只是消费者，所以"反向接口不受约束"这条理由不再成立，改按 `PlayerView` 的先例走。
+四项初值的方向没变：`SettingsPage` 是唯一写入方，`ClientPage` / `ServerPage` 只在填输入框时读它，并订阅对应的 `XxxChanged` 在空闲时更新输入框——页面上临时改名字或地址只影响那一次连接，不回写。名字允许为空（“还没填”），空名字连接时由 `ClientPage` 弹“名字不能为空”拦下，没有兜底默认名（见 `docs/agent/game-runtime.md` 的 Multiplayer Settings）。
 
-搬下来的原因是 **BepInEx 只存在于 PC 宿主**。Android / iOS 宿主没有 `ConfigFile`，要读的设置却是同一套；留在 UI 层就得每个宿主各写一遍键名、类型、默认值和变更通知。现在这些都在平台无关的 `src/Unity` 里，只把"字节落到哪"抽成 `ISettingsStore`（见 `docs/agent/game-runtime.md` 的 Multiplayer Settings）。
+`Enabled` 是那份开关状态落了盘。真值只有一处——`MultiplayerUnityCore.IsLoaded`，宿主在每次加载与销毁之后回写它，所以配置文件里写的、勾选框显示的、模块实际的，是同一件事；启动那次自动加载失败也一样回写成 false，不会留下一个没成真的 true。它顺带回答“下次启动要不要自动加载”，因为落盘的正是当时的状态。
 
-`IMultiplayerState` 还在，但已经退成 Unity 层内部的端口，UI 不再碰它。它同时提供 `Enabled` 和 `EnabledChanged`，因为下层要的是同一件事的两半：`UnityClient` / `UnityServer` 读它来拒绝关闭后的连接和启动请求，`MultiplayerLifecycleController` 和 `PlayerManager` 订阅它来撤掉已经建立的连接和玩家实例（见 `docs/agent/game-runtime.md` 的“关闭联机保证什么”）。只写 `SetXxx` 的那一面留在 `MultiplayerSettings` 上，所以下层拿不到写权限。

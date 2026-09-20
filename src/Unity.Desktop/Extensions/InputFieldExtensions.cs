@@ -1,5 +1,5 @@
 using System.Globalization;
-using GOILauncher.Multiplayer.Unity.Config;
+using GOILauncher.Multiplayer.UI.Config;
 using UniverseLib.UI.Models;
 
 namespace GOILauncher.Multiplayer.Extensions

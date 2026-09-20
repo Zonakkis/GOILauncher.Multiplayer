@@ -1,5 +1,4 @@
 ﻿using GOILauncher.Multiplayer.Server.Services;
-using GOILauncher.Multiplayer.Unity.Config;
 using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Unity
@@ -9,22 +8,20 @@ namespace GOILauncher.Multiplayer.Unity
         public IServerService ServerService { get; set; }
         public IPlayerService PlayerService { get; set; }
         public ChatService ChatService { get; set; }
-        public IMultiplayerState MultiplayerState { get; set; }
 
         /// <summary>
-        /// 读透服务端在不在跑，不掺开关状态；理由同 <see cref="UnityClient.IsConnected"/>。
+        /// 读透服务端在不在跑。门面没有"关着但还在"这种状态：整张对象图随联机一起销毁，
+        /// 所以这里不需要再 AND 一次开关。
         /// </summary>
         public bool IsRunning => ServerService.IsRunning;
 
         public void Start()
         {
-            
+
         }
+
         public void Start(int port)
         {
-            if (!IsMultiplayerEnabled)
-                return;
-
             ServerService.Start(port);
         }
 
@@ -36,11 +33,6 @@ namespace GOILauncher.Multiplayer.Unity
         public void Update()
         {
             ServerService?.Poll();
-        }
-
-        private bool IsMultiplayerEnabled
-        {
-            get { return MultiplayerState == null || MultiplayerState.Enabled; }
         }
     }
 }

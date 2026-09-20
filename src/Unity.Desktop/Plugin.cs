@@ -1,14 +1,12 @@
-using Autofac;
 using BepInEx;
 using BepInEx.Logging;
 using GOILauncher.Multiplayer.UI;
+using GOILauncher.Multiplayer.UI.Config;
 using GOILauncher.Multiplayer.UI.Pages;
 using GOILauncher.Multiplayer.UI.ScrollView.Message;
 using GOILauncher.Multiplayer.UI.ScrollView.Player;
 using GOILauncher.Multiplayer.UI.Theme;
 using GOILauncher.Multiplayer.Unity;
-using GOILauncher.Multiplayer.Unity.Config;
-using NLog;
 using NLog.Targets;
 using System.Collections.Generic;
 using System.Reflection;
@@ -30,13 +28,16 @@ public class Plugin : BaseUnityPlugin
     private static readonly FieldInfo RegisteredUisField = typeof(UniversalUI).GetField("registeredUIs", BindingFlags.Static | BindingFlags.NonPublic);
     private static readonly MethodInfo UpdateCursorControlMethod = typeof(CursorUnlocker).GetMethod("UpdateCursorControl", BindingFlags.Static | BindingFlags.NonPublic);
 
+    private MultiplayerSettings _settings;
+    private Target _logTarget;
     private MultiplayerUI _multiplayerUI;
     private RoomDialogUI _roomDialogUI;
-    private MultiplayerSettings _settings;
-    private IGameManager _gameManager;
-    private Rigidbody2D _blockedCursorBody;
+    private ClientPage _clientPage;
+    private ServerPage _serverPage;
+    private SettingsPage _settingsPage;
     private ChatHudUI _chatHudUI;
     private PlayerListUI _playerListOverlayUI;
+    private Rigidbody2D _blockedCursorBody;
     private bool _hasAppliedCursorState;
     private bool _lastCursorUnlockState;
 
@@ -55,74 +56,107 @@ public class Plugin : BaseUnityPlugin
         });
     }
 
+    /// <summary>
+    /// 手工组合 UI，不走容器。理由不是省事：这些窗口按 id 注册在 UniverseLib 的静态表里，
+    /// 第二个都建不出来，所以它们的生命周期是进程级的；而联机模块随开随关，两套生命周期
+    /// 放进同一个容器里只会互相牵制。页面要用的联机门面改成 Bind / Unbind 递进来。
+    /// <para>
+    /// 本类是唯一读 MultiplayerUnityCore 的地方：其余 UI 只认自己绑到的那个门面，
+    /// 开关按下去也是委托到这里才变成加载与销毁。
+    /// </para>
+    /// </summary>
     private void OnInitialized()
     {
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loading...");
-        var container = MultiplayerUnityCore.Initialize(Configure);
 
-        _gameManager = container.Resolve<IGameManager>();
-        _settings = container.Resolve<MultiplayerSettings>();
-        _settings.EnabledChanged += OnMultiplayerEnabledChanged;
+        _settings = new MultiplayerSettings(Config);
+        // NLog 的落地端由宿主提供，且整个进程只建一次：它挂在 NLog 的全局配置上，
+        // 不跟着联机模块一起销毁，否则下一轮 Initialize 复用到的是个已销毁的 target。
+        _logTarget = new BepInExTarget(Logger)
+        {
+            Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${level:uppercase=true}|${logger:shortName=true}|${message}${onexception:inner=${newline}${exception:format=tostring}}"
+        };
 
-        Theme = container.Resolve<ITheme>();
-        UIBase = container.Resolve<UIBase>();
-        _multiplayerUI = container.Resolve<MultiplayerUI>();
-        _roomDialogUI = container.Resolve<RoomDialogUI>();
-        _chatHudUI = container.Resolve<ChatHudUI>();
-        _playerListOverlayUI = container.Resolve<PlayerListUI>();
-        _chatHudUI.ActiveModeChanged += OnChatActiveModeChanged;
+        Theme = new DarkTheme();
+        UIBase = UniversalUI.RegisterUI<ResponsiveUIBase>(MyPluginInfo.PLUGIN_GUID, null);
+        var toast = new Toast(UIBase);
+        var messageHandler = new MessageHandler();
+        var playerListHandler = new PlayerListHandler();
+
+        _roomDialogUI = new RoomDialogUI(UIBase);
+        _clientPage = new ClientPage(_settings, toast, _roomDialogUI);
+        _serverPage = new ServerPage(_settings, toast);
+        _settingsPage = new SettingsPage(_settings, toast);
+        _multiplayerUI = new MultiplayerUI(UIBase, _clientPage, _serverPage, _settingsPage, _roomDialogUI);
+        _chatHudUI = new ChatHudUI(UIBase, messageHandler, _roomDialogUI);
+        _playerListOverlayUI = new PlayerListUI(UIBase, playerListHandler);
+
         _multiplayerUI.SetActive(false);
         _playerListOverlayUI.SetActive(false);
-        ApplyMultiplayerUiState(_settings.Enabled);
+        _chatHudUI.SetActive(false);
+
+        _chatHudUI.ActiveModeChanged += OnChatActiveModeChanged;
+        _settingsPage.LoadToggled += OnLoadToggled;
+        MultiplayerUnityCore.Initialized += OnCoreInitialized;
+        MultiplayerUnityCore.Disposing += OnCoreDisposing;
+
+        // 订阅在前、加载在后：加载成功时 Initialized 会立刻把各页面绑上，不用这里补一遍。
+        // 这是 Enabled 唯一一次被当作输入读：决定本次启动加不加载。之后它只被写，跟着现状走。
+        if (_settings.Enabled)
+            MultiplayerUnityCore.Initialize(_logTarget);
+
+        SyncLoadedState();
         ApplyCursorState();
         Logger.LogInfo($"{MyPluginInfo.PLUGIN_GUID} is loaded!");
     }
 
-    private void Configure(ContainerBuilder builder)
+    private void OnLoadToggled(bool load)
     {
-        builder.Register(_ => new BepInExTarget(Logger)
-        {
-            Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${level:uppercase=true}|${logger:shortName=true}|${message}${onexception:inner=${newline}${exception:format=tostring}}"
-        })
-           .As<Target>()
-           .SingleInstance();
-        builder.RegisterType<DarkTheme>()
-        .As<ITheme>()
-        .SingleInstance();
-        builder
-        .Register(_ => UniversalUI.RegisterUI<ResponsiveUIBase>(MyPluginInfo.PLUGIN_GUID, null))
-        .As<UIBase>()
-        .SingleInstance();
-        builder.RegisterType<Toast>()
-        .AsSelf()
-        .SingleInstance();
-        builder.RegisterType<RoomDialogUI>()
-        .AsSelf()
-        .SingleInstance();
-        builder.RegisterType<ClientPage>()
-        .AsSelf()
-        .SingleInstance();
-        builder.RegisterType<ServerPage>()
-        .AsSelf()
-        .SingleInstance();
-        builder.RegisterType<SettingsPage>()
-        .AsSelf()
-        .SingleInstance();
-        builder.RegisterType<MultiplayerUI>()
-        .AsSelf()
-        .SingleInstance();
-        builder.RegisterType<ChatHudUI>()
-        .AsSelf()
-        .SingleInstance();
-        builder.RegisterType<MessageHandler>()
-        .AsSelf()
-        .SingleInstance();
-        builder.RegisterType<PlayerListHandler>()
-        .AsSelf()
-        .SingleInstance();
-        builder.RegisterType<PlayerListUI>()
-        .AsSelf()
-        .SingleInstance();
+        if (load)
+            MultiplayerUnityCore.Initialize(_logTarget);
+        else
+            MultiplayerUnityCore.Dispose();
+
+        SyncLoadedState();
+    }
+
+    /// <summary>
+    /// 加载状态变动后统一收尾：落盘的 Enabled、勾选框、聊天窗口，全按 MultiplayerUnityCore.IsLoaded
+    /// 这个唯一真值来。启动时那次自动加载也走这里，所以配置里不会留下一个没成真的 true，
+    /// 勾选框也不会停在玩家刚点下去、其实没生效的那个值上。
+    /// </summary>
+    private void SyncLoadedState()
+    {
+        bool loaded = MultiplayerUnityCore.IsLoaded;
+        _settings.SetEnabled(loaded);
+        _settingsPage.SetLoaded(loaded);
+        ApplyMultiplayerUiState(loaded);
+    }
+
+    private void OnCoreInitialized()
+    {
+        var client = MultiplayerUnityCore.UnityClient;
+        var server = MultiplayerUnityCore.UnityServer;
+        if (client == null || server == null)
+            return;
+
+        _clientPage.Bind(client);
+        _serverPage.Bind(server);
+        _roomDialogUI.Bind(client);
+        _chatHudUI.Bind(client);
+        _playerListOverlayUI.Bind(client);
+        ApplyMultiplayerUiState(true);
+    }
+
+    private void OnCoreDisposing()
+    {
+        // 顺序反过来会漏：拆的时候门面事件已经不会再发，页面得趁还拿得到时自己退订、归零。
+        _clientPage.Unbind();
+        _serverPage.Unbind();
+        _roomDialogUI.Unbind();
+        _chatHudUI.Unbind();
+        _playerListOverlayUI.Unbind();
+        ApplyMultiplayerUiState(false);
     }
 
     private void OnLog(string message, LogType type)
@@ -147,13 +181,14 @@ public class Plugin : BaseUnityPlugin
         if (_multiplayerUI == null || _playerListOverlayUI == null)
             return;
 
+        // F2 不看联机加没加载：关着也得能进设置页把它重新打开。
         if (Input.GetKeyDown(KeyCode.F2))
         {
             _multiplayerUI.SetActive(!_multiplayerUI.Enabled);
             ApplyCursorState();
         }
 
-        if (_settings == null || !_settings.Enabled)
+        if (!MultiplayerUnityCore.IsLoaded)
         {
             if (_playerListOverlayUI.Enabled)
                 _playerListOverlayUI.SetActive(false);
@@ -192,10 +227,13 @@ public class Plugin : BaseUnityPlugin
     {
         ApplyCursorPhysicsState(false);
 
-        if (_settings != null)
-            _settings.EnabledChanged -= OnMultiplayerEnabledChanged;
-        if (_chatHudUI != null)
-            _chatHudUI.ActiveModeChanged -= OnChatActiveModeChanged;
+        _chatHudUI.ActiveModeChanged -= OnChatActiveModeChanged;
+        _settingsPage.LoadToggled -= OnLoadToggled;
+        MultiplayerUnityCore.Initialized -= OnCoreInitialized;
+        MultiplayerUnityCore.Disposing -= OnCoreDisposing;
+
+        // 先退订再拆：拆的时候不该再回调进这批跟着宿主一起销毁的窗口。
+        MultiplayerUnityCore.Dispose();
     }
 
     private void OnChatActiveModeChanged(bool active)
@@ -203,18 +241,12 @@ public class Plugin : BaseUnityPlugin
         ApplyCursorState();
     }
 
-    private void OnMultiplayerEnabledChanged(bool enabled)
-    {
-        ApplyMultiplayerUiState(enabled);
-        ApplyCursorState();
-    }
-
-    private void ApplyMultiplayerUiState(bool enabled)
+    private void ApplyMultiplayerUiState(bool loaded)
     {
         if (_chatHudUI != null)
-            _chatHudUI.SetActive(enabled);
+            _chatHudUI.SetActive(loaded);
 
-        if (!enabled && _playerListOverlayUI != null && _playerListOverlayUI.Enabled)
+        if (!loaded && _playerListOverlayUI != null && _playerListOverlayUI.Enabled)
             _playerListOverlayUI.SetActive(false);
     }
 
@@ -236,8 +268,9 @@ public class Plugin : BaseUnityPlugin
 
     private void ApplyCursorPhysicsState(bool blocked)
     {
-        // 释放只依赖已记录的刚体，Plugin 尚未初始化就被禁用时也可安全调用。
-        GameObject cursor = blocked ? _gameManager.Cursor : null;
+        // 释放只依赖已记录的刚体，所以联机模块没加载、甚至宿主还没初始化完时都能安全调用。
+        IGameManager gameManager = MultiplayerUnityCore.GameManager;
+        GameObject cursor = blocked && gameManager != null ? gameManager.Cursor : null;
         Rigidbody2D cursorBody = cursor != null ? cursor.GetComponent<Rigidbody2D>() : null;
 
         if (_blockedCursorBody != null && _blockedCursorBody != cursorBody && !_blockedCursorBody.simulated)

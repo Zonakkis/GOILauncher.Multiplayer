@@ -16,7 +16,8 @@ namespace GOILauncher.Multiplayer.UI
         private const float PassiveFadeSeconds = 0.75f;
 
         private InputFieldRef messageInput;
-        private readonly IUnityClient _client;
+        // 门面每轮联机都是新造的：Bind 时才有，Unbind 时清空。
+        private IUnityClient _client;
         private readonly RoomDialogUI _roomDialog;
         private MessageHandler _messageHandler;
         private GameObject inputRow;
@@ -24,25 +25,46 @@ namespace GOILauncher.Multiplayer.UI
         private bool isActiveMode;
         private float lastPassiveActivityTime;
 
-        public ChatHudUI(UIBase owner, MessageHandler messageHandler, IUnityClient client, RoomDialogUI roomDialog) : base(owner)
+        public ChatHudUI(UIBase owner, MessageHandler messageHandler, RoomDialogUI roomDialog) : base(owner)
         {
             ImageUtility.MakeTransparent(UIRoot);
             ImageUtility.MakeTransparent(ContentRoot);
             canvasGroup = UIRoot.GetComponent<CanvasGroup>() ?? UIRoot.AddComponent<CanvasGroup>();
             canvasGroup.alpha = 1f;
 
-            _client = client;
             _roomDialog = roomDialog;
             _roomDialog.ActiveChanged += active => { if (active && isActiveMode) SetActiveMode(false); };
             _messageHandler = messageHandler;
             _messageHandler.MessagesUpdated += OnMessagesUpdated;
             _messageHandler.Setup(ContentRoot);
             CreateInputRow();
-            _client.ChatMessageReceived += OnChatMessageReceived;
-            _client.ChatHistoryReset += OnChatHistoryReset;
             RefreshMessages();
             SetActiveMode(false);
             LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
+        }
+
+        /// <summary>绑定这一轮的客户端门面；聊天消息和记录清空都从它身上订。</summary>
+        public void Bind(IUnityClient client)
+        {
+            if (client == null || _client != null)
+                throw new InvalidOperationException("ChatHudUI: Bind and Unbind must alternate.");
+
+            _client = client;
+            _client.ChatMessageReceived += OnChatMessageReceived;
+            _client.ChatHistoryReset += OnChatHistoryReset;
+            RefreshMessages();
+        }
+
+        public void Unbind()
+        {
+            if (_client == null)
+                return;
+
+            _client.ChatMessageReceived -= OnChatMessageReceived;
+            _client.ChatHistoryReset -= OnChatHistoryReset;
+            _client = null;
+            // 上一轮的聊天记录不属于这一轮，清空而不是留着：面板展示的始终是"当前连接的记录"。
+            RefreshMessages();
         }
 
         public override string Name => "GOILauncher.Chat";
@@ -163,6 +185,9 @@ namespace GOILauncher.Multiplayer.UI
             if (string.IsNullOrWhiteSpace(text))
                 return;
 
+            if (_client == null)
+                return;
+
             _client.SendMessage(MessageType.Player, text);
             messageInput.Text = string.Empty;
             FocusInput();
@@ -186,10 +211,11 @@ namespace GOILauncher.Multiplayer.UI
 
         private void RefreshMessages()
         {
-            if (_messageHandler == null || _client == null)
+            if (_messageHandler == null)
                 return;
 
-            _messageHandler.Update(_client.ChatMessages);
+            // 没有门面就是一份空记录：Unbind 之后不留上一轮的消息，面板显示的始终是当前连接那份。
+            _messageHandler.Update(_client == null ? null : _client.ChatMessages);
         }
 
         private void OnMessagesUpdated(bool hasNewMessages)

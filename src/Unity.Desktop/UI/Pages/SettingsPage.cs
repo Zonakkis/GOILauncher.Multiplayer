@@ -1,6 +1,6 @@
 using System;
 using GOILauncher.Multiplayer.Extensions;
-using GOILauncher.Multiplayer.Unity.Config;
+using GOILauncher.Multiplayer.UI.Config;
 using GOILauncher.Multiplayer.UI.Theme;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,6 +15,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
     /// their inputs from them, and changing one over there is for that one connection only, so this
     /// page is the only writer.
     ///
+    /// 那个勾选框不是"开关状态"，而是一个动作：按下去就请宿主加载或销毁联机模块。
+    /// 联机模块现在只有"已加载"和"已销毁"两种状态，没有加载着停用的中间态。
+    ///
     /// 布局按"设置块"分组：每块一个区块头 + 一张卡片，卡片里是若干字段行。
     /// 以前三块之间没有视觉边界，看不出哪些字段属于同一类。
     /// </summary>
@@ -22,6 +25,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
     {
         private readonly MultiplayerSettings _settings;
         private readonly Toast _toast;
+        private bool _loaded;
 
         private Toggle _enabledToggle;
         private InputFieldRef _playerNameInput;
@@ -29,11 +33,26 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private InputFieldRef _clientPortInput;
         private InputFieldRef _serverPortInput;
 
+        /// <summary>玩家按了开关。参数是"要不要加载联机模块"，真正动手的是宿主。</summary>
+        public event Action<bool> LoadToggled;
+
         public SettingsPage(MultiplayerSettings settings, Toast toast)
         {
             _settings = settings;
             _toast = toast;
-            _settings.EnabledChanged += OnEnabledChanged;
+        }
+
+        /// <summary>
+        /// 刷新勾选框。真值只有一处：联机模块现在加载着没有，由宿主在动作之后推过来。
+        /// 页面不自己去读 _settings.Enabled：那份落盘值是宿主的回写目标，两处各自读就会两处各自判断。
+        /// </summary>
+        public void SetLoaded(bool loaded)
+        {
+            if (_loaded == loaded)
+                return;
+
+            _loaded = loaded;
+            RefreshToggle();
         }
 
         public GameObject Root { get; private set; }
@@ -66,7 +85,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         }
 
         /// <summary>
-        /// 开关单独成块并放在最上面：它不是"默认值"之一，而是决定整个联机功能开不开的总闸，
+        /// 开关单独成块并放在最上面：它不是"默认值"之一，而是决定整个联机模块加不加载的闸，
         /// 混在下面那张卡片里会和"默认主机"之类的设置看起来一样重要。
         /// </summary>
         private void CreateTogglesSection()
@@ -86,7 +105,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             toggleText.color = Plugin.Theme.TextPrimary;
             toggleText.fontSize = Layout.FontBody;
 
-            _enabledToggle.isOn = _settings.Enabled;
+            _enabledToggle.isOn = _loaded;
             _enabledToggle.onValueChanged.AddListener(OnToggleChanged);
         }
 
@@ -155,12 +174,11 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnToggleChanged(bool enabled)
         {
-            _settings.SetEnabled(enabled);
-            RefreshToggle();
-        }
+            Action<bool> handler = LoadToggled;
+            if (handler != null)
+                handler(enabled);
 
-        private void OnEnabledChanged(bool enabled)
-        {
+            // 勾选框停在宿主推过来的值上，不是玩家刚点下去的那个：加载没成，这里就弹回去。
             RefreshToggle();
         }
 
@@ -236,7 +254,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
                 return;
 
             _enabledToggle.onValueChanged.RemoveListener(OnToggleChanged);
-            _enabledToggle.isOn = _settings.Enabled;
+            _enabledToggle.isOn = _loaded;
             _enabledToggle.onValueChanged.AddListener(OnToggleChanged);
             _enabledToggle.interactable = true;
         }

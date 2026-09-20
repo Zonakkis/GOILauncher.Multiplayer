@@ -6,7 +6,6 @@ using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.Client.Services;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
-using GOILauncher.Multiplayer.Unity.Config;
 using GOILauncher.Multiplayer.Unity.Events;
 using GOILauncher.Multiplayer.Unity.Extensions;
 using GOILauncher.Multiplayer.Unity.Models;
@@ -21,8 +20,8 @@ namespace GOILauncher.Multiplayer.Unity
         private bool _initialized;
 
         /// <summary>
-        /// 读透当前有没有连接，不掺开关状态。关闭联机会真的断开（<see cref="MultiplayerLifecycleController"/>），
-        /// 所以不需要再 AND 一次开关——那样只会在断开失败时报出一个假的"没连接"。
+        /// 读透当前有没有连接。门面没有"关着但还在"这种状态：整张对象图随联机一起销毁，
+        /// 所以这里不需要再 AND 一次开关。
         /// </summary>
         public bool IsConnected => ClientService.IsConnected;
         public ReadOnlyCollection<Message> ChatMessages => ChatService.Messages;
@@ -40,7 +39,6 @@ namespace GOILauncher.Multiplayer.Unity
         public IClientEventBus EventBus { get; set; }
         public IGameManager GameManager { get; set; }
         public IPlayerManager PlayerManager { get; set; }
-        public IMultiplayerState MultiplayerState { get; set; }
 
         public event Action Connected;
         public event Action<string> Disconnected;
@@ -106,23 +104,20 @@ namespace GOILauncher.Multiplayer.Unity
 
         public void Connect(string host, int port, string playerName)
         {
-            if (!IsMultiplayerEnabled)
-                return;
-
             var playerInfo = new PlayerInfo(0, playerName, Application.platform.ToPlatform(), GameManager.IsInGame);
 
             PlayerService.SetLocalPlayerInfo(playerInfo);
             ClientService.Connect(host, port);
         }
 
-        public void RefreshRooms() { if (IsMultiplayerEnabled) RoomService.RefreshRooms(); }
+        public void RefreshRooms() { RoomService.RefreshRooms(); }
         public void CreateRoom(string name, string password, int maxPlayers)
-        { if (IsMultiplayerEnabled) RoomService.CreateRoom(name, password, maxPlayers); }
+        { RoomService.CreateRoom(name, password, maxPlayers); }
         public void JoinRoom(int roomId, string password)
-        { if (IsMultiplayerEnabled) RoomService.JoinRoom(roomId, password); }
-        public void LeaveRoom() { if (IsMultiplayerEnabled) RoomService.LeaveRoom(); }
+        { RoomService.JoinRoom(roomId, password); }
+        public void LeaveRoom() { RoomService.LeaveRoom(); }
         public void UpdateRoom(int roomId, string name, int maxPlayers, RoomPasswordChange passwordChange, string password)
-        { if (IsMultiplayerEnabled) RoomService.UpdateRoom(roomId, name, maxPlayers, passwordChange, password); }
+        { RoomService.UpdateRoom(roomId, name, maxPlayers, passwordChange, password); }
 
         public void Disconnect()
         {
@@ -131,9 +126,6 @@ namespace GOILauncher.Multiplayer.Unity
 
         public void SendMessage(MessageType type, string message)
         {
-            if (!IsMultiplayerEnabled)
-                return;
-
             ChatService.SendMessage(type, message);
         }
 
@@ -142,9 +134,6 @@ namespace GOILauncher.Multiplayer.Unity
         /// </summary>
         public void TeleportTo(int playerId)
         {
-            if (!IsMultiplayerEnabled)
-                return;
-
             // 本地不在游戏里时 PlayerManager.LocalPlayer 为 null；
             // 传自己的 Id 时 GetPlayer 返回的是 LocalPlayer，as RemotePlayer 自然落空，
             // 所以"能不能传"这两种情况都不用单独判。
@@ -154,11 +143,6 @@ namespace GOILauncher.Multiplayer.Unity
                 return;
 
             local.TeleportTo(target.transform);
-        }
-
-        private bool IsMultiplayerEnabled
-        {
-            get { return MultiplayerState == null || MultiplayerState.Enabled; }
         }
 
         private void OnGameStartedEvent(GameStartedEvent @event)

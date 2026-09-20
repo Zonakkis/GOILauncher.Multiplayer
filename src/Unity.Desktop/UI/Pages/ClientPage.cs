@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer;
-using GOILauncher.Multiplayer.Core.Log;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using System.Linq;
 using GOILauncher.Multiplayer.UI.Theme;
 using GOILauncher.Multiplayer.Unity;
-using GOILauncher.Multiplayer.Unity.Config;
+using GOILauncher.Multiplayer.UI.Config;
 using UnityEngine;
 using UnityEngine.UI;
 using UniverseLib;
@@ -27,9 +26,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
     /// </summary>
     public class ClientPage : IPage
     {
-        private readonly IUnityClient _client;
+        // 门面每轮联机都是新造的，所以它不是 readonly：Bind 时才有，Unbind 时清空。
+        private IUnityClient _client;
         private readonly MultiplayerSettings _settings;
-        private readonly ILogger<ClientPage> _logger;
         private readonly Toast _toast;
         private readonly RoomDialogUI _roomDialog;
 
@@ -48,30 +47,60 @@ namespace GOILauncher.Multiplayer.UI.Pages
         private string lastServerHost;
         private int lastServerPort;
 
-        public ClientPage(
-            IUnityClient unityClient,
-            MultiplayerSettings settings,
-            ILogger<ClientPage> logger,
-            Toast toast,
-            RoomDialogUI roomDialog)
+        public ClientPage(MultiplayerSettings settings, Toast toast, RoomDialogUI roomDialog)
         {
-            _client = unityClient;
             _settings = settings;
-            _logger = logger;
             _toast = toast;
             _roomDialog = roomDialog;
             _roomDialog.ActiveChanged += active => RefreshClientState();
-            _client.RoomListUpdated += OnRoomsUpdated;
-            _client.CurrentRoomChanged += OnCurrentRoomChanged;
-            _client.RoomOperationCompleted += OnRoomOperationCompleted;
             lastServerHost = DefaultServerHost;
             lastServerPort = DefaultServerPort;
-            _client.Connected += OnServerConnected;
-            _client.Disconnected += OnServerDisconnected;
-            _settings.EnabledChanged += OnMultiplayerEnabledChanged;
             _settings.PlayerNameChanged += OnDefaultNameChanged;
             _settings.ClientHostChanged += OnDefaultHostChanged;
             _settings.ClientPortChanged += OnDefaultPortChanged;
+        }
+
+        /// <summary>
+        /// 绑定这一轮的客户端门面。页面在联机没加载时也要能构造（UniverseLib 的窗口按 id 注册，
+        /// 建不出第二个），所以门面不是构造参数，而是一次周期开始时才递进来。
+        /// <para>
+        /// 订阅和退订必须成对、只在这一对方法里做：漏一次 -= 不会报错，只会让下一次点按钮响应两遍。
+        /// </para>
+        /// </summary>
+        public void Bind(IUnityClient client)
+        {
+            if (client == null || _client != null)
+                throw new InvalidOperationException("ClientPage: Bind and Unbind must alternate.");
+
+            _client = client;
+            _client.RoomListUpdated += OnRoomsUpdated;
+            _client.CurrentRoomChanged += OnCurrentRoomChanged;
+            _client.RoomOperationCompleted += OnRoomOperationCompleted;
+            _client.Connected += OnServerConnected;
+            _client.Disconnected += OnServerDisconnected;
+            PopulateRoomList();
+            RefreshClientState();
+        }
+
+        public void Unbind()
+        {
+            if (_client == null)
+                return;
+
+            _client.RoomListUpdated -= OnRoomsUpdated;
+            _client.CurrentRoomChanged -= OnCurrentRoomChanged;
+            _client.RoomOperationCompleted -= OnRoomOperationCompleted;
+            _client.Connected -= OnServerConnected;
+            _client.Disconnected -= OnServerDisconnected;
+            _client = null;
+
+            // 关闭时是先退订再断线，所以这一页收不到 Disconnected 通知，得自己把状态归零：
+            // 不然"正在连接"和上一轮的目录会一直留在屏幕上。
+            isConnecting = false;
+            disconnectRequested = false;
+            joiningRoomId = 0;
+            PopulateRoomList();
+            RefreshClientState();
         }
 
         public GameObject Root { get; private set; }
@@ -196,6 +225,10 @@ namespace GOILauncher.Multiplayer.UI.Pages
             }
             roomRows.Clear();
 
+            // 没加载时目录就是空的：上一轮的行已经清掉了，这里没有可读的来源。
+            if (_client == null)
+                return;
+
             // 目录里永远有大厅，所以"快照已到但列表为空"只可能是服务端异常，
             // 文案按真实的空来写，不用"正在等待"掩饰。
             foreach (var room in _client.Rooms)
@@ -258,6 +291,9 @@ namespace GOILauncher.Multiplayer.UI.Pages
         /// </summary>
         private void RefreshRoomRows()
         {
+            if (_client == null)
+                return;
+
             var current = _client.CurrentRoom;
             bool canOperate = CanOperateRooms;
 
@@ -324,8 +360,8 @@ namespace GOILauncher.Multiplayer.UI.Pages
         /// </summary>
         private string DescribeEmptyRoomList()
         {
-            if (!IsMultiplayerEnabled)
-                return "联机已禁用";
+            if (!IsLoaded)
+                return "联机未启用";
             else if (!_client.IsConnected)
                 return "未连接到服务器";
             return null;
@@ -402,12 +438,12 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         #region 连接状态
 
-        private bool CanOperateRooms => IsMultiplayerEnabled && _client.IsConnected && _client.CurrentRoom != null
+        private bool CanOperateRooms => IsLoaded && _client.IsConnected && _client.CurrentRoom != null
             && !_client.IsRoomOperationPending && !_roomDialog.Enabled;
 
         private void OnConnectClicked()
         {
-            if (!IsMultiplayerEnabled || _client == null || isConnecting || _client.IsConnected)
+            if (!IsLoaded || isConnecting || _client.IsConnected)
             {
                 RefreshClientState();
                 return;
@@ -439,7 +475,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             catch (Exception ex)
             {
                 isConnecting = false;
-                _logger.Error(ex, "Failed to connect to server");
+                Plugin.Logger.LogError("Failed to connect to server: " + ex);
                 _toast.Show($"连接失败: {ex.Message}");
                 RefreshClientState();
             }
@@ -447,7 +483,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnDisconnectClicked()
         {
-            if (!IsMultiplayerEnabled || _client == null || (!isConnecting && !_client.IsConnected))
+            if (!IsLoaded || (!isConnecting && !_client.IsConnected))
             {
                 RefreshClientState();
                 return;
@@ -462,7 +498,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
             catch (Exception ex)
             {
                 disconnectRequested = false;
-                _logger.Error(ex, "Failed to disconnect from server");
+                Plugin.Logger.LogError("Failed to disconnect from server: " + ex);
                 _toast.Show($"断开失败: {ex.Message}");
                 RefreshClientState();
             }
@@ -470,13 +506,8 @@ namespace GOILauncher.Multiplayer.UI.Pages
 
         private void OnServerConnected()
         {
-            if (!IsMultiplayerEnabled)
-            {
-                _client?.Disconnect();
-                RefreshClientState();
-                return;
-            }
-
+            // 这里不需要再问一次"联机还开着吗"：能收到这个通知说明门面还绑着，
+            // 而关闭时先退订再断线，通知根本不会到达。
             isConnecting = false;
             disconnectRequested = false;
             _toast.Show($"已连接 {lastServerHost}:{lastServerPort}");
@@ -490,24 +521,15 @@ namespace GOILauncher.Multiplayer.UI.Pages
             isConnecting = false;
             disconnectRequested = false;
 
-            // Turning the switch off is a deliberate disconnect too; the request just came from
-            // MultiplayerLifecycleController instead of this page. Read the switch rather than keep a
-            // flag: the setting is written before any listener is told, so this is always the current
-            // value and it does not depend on who is notified first.
-            if (!IsMultiplayerEnabled)
-                _toast.Show("联机已关闭，连接已断开");
-            else if (wasDisconnectRequested)
+            // 关闭联机不会走到这里：Unbind 先退订，Disconnect 后发生，通知发不出去。
+            // 所以剩下的三种情况都是真实的连接事件，不用再读一个开关来分辨意图。
+            if (wasDisconnectRequested)
                 _toast.Show("已断开连接");
             else if (wasConnecting)
                 _toast.Show($"连接失败: {reason}");
             else
                 _toast.Show($"连接已断开: {reason}");
 
-            RefreshClientState();
-        }
-
-        private void OnMultiplayerEnabledChanged(bool enabled)
-        {
             RefreshClientState();
         }
 
@@ -536,18 +558,18 @@ namespace GOILauncher.Multiplayer.UI.Pages
             if (connectButton == null || disconnectButton == null)
                 return;
 
-            bool multiplayerEnabled = IsMultiplayerEnabled;
-            bool connected = multiplayerEnabled && _client != null && _client.IsConnected && !isConnecting;
-            bool canEditConnection = multiplayerEnabled && !isConnecting && !connected;
+            bool loaded = IsLoaded;
+            bool connected = loaded && _client.IsConnected && !isConnecting;
+            bool canEditConnection = loaded && !isConnecting && !connected;
 
             connectButton.Component.interactable = canEditConnection;
-            disconnectButton.Component.interactable = multiplayerEnabled && (isConnecting || connected);
+            disconnectButton.Component.interactable = loaded && (isConnecting || connected);
 
             bool canOperate = CanOperateRooms;
             if (refreshButton != null) refreshButton.Component.interactable = canOperate;
             if (createRoomButton != null) createRoomButton.Component.interactable = canOperate;
 
-            var room = _client.CurrentRoom;
+            var room = _client == null ? null : _client.CurrentRoom;
             if (editRoomButton != null)
             {
                 editRoomButton.GameObject.SetActive(room != null && !room.IsLobby && room.OwnerPlayerId == _client.LocalPlayer.Id);
@@ -604,13 +626,13 @@ namespace GOILauncher.Multiplayer.UI.Pages
         /// <summary>The host the page connects to when nothing else was typed, owned by the settings page.</summary>
         private string DefaultServerHost
         {
-            get { return _settings == null ? MultiplayerSettings.DefaultClientHost : _settings.ClientHost; }
+            get { return _settings.ClientHost; }
         }
 
         /// <summary>The port the page connects to when nothing else was typed, owned by the settings page.</summary>
         private int DefaultServerPort
         {
-            get { return _settings == null ? MultiplayerSettings.DefaultClientPort : _settings.ClientPort; }
+            get { return _settings.ClientPort; }
         }
 
         // Nothing is in flight, so the address fields describe an intent rather than a live connection.
@@ -630,9 +652,10 @@ namespace GOILauncher.Multiplayer.UI.Pages
             if (serverPortInput != null)
                 serverPortInput.SetReadOnly(readOnly);
         }
-        private bool IsMultiplayerEnabled
+        /// <summary>这一轮的门面在不在。不在就是联机没加载，这一页只能看不能操作。</summary>
+        private bool IsLoaded
         {
-            get { return _settings == null || _settings.Enabled; }
+            get { return _client != null; }
         }
 
         #endregion

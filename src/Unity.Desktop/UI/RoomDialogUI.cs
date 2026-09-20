@@ -4,7 +4,6 @@ using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Extensions;
 using GOILauncher.Multiplayer.Unity;
-using GOILauncher.Multiplayer.Unity.Config;
 using GOILauncher.Multiplayer.UI.Theme;
 using UnityEngine;
 using UnityEngine.UI;
@@ -28,8 +27,8 @@ namespace GOILauncher.Multiplayer.UI
     /// </summary>
     public sealed class RoomDialogUI : PanelBase
     {
-        private readonly IUnityClient _client;
-        private readonly MultiplayerSettings _settings;
+        // 门面每轮联机都是新造的：Bind 时才有，Unbind 时清空。
+        private IUnityClient _client;
         private RoomOperation _operation;
         private int _roomId;
         private bool _submitted;
@@ -53,14 +52,38 @@ namespace GOILauncher.Multiplayer.UI
         public override Vector2 DefaultPosition => new Vector2(-220, 150);
         public override bool CanDragAndResize => true;
 
-        public RoomDialogUI(UIBase owner, IUnityClient client, MultiplayerSettings settings) : base(owner)
+        public RoomDialogUI(UIBase owner) : base(owner)
         {
-            _client = client; _settings = settings;
             CreateContent();
-            _client.Disconnected += reason => SetActive(false);
+            SetActive(false);
+        }
+
+        public void Bind(IUnityClient client)
+        {
+            if (client == null || _client != null)
+                throw new InvalidOperationException("RoomDialogUI: Bind and Unbind must alternate.");
+
+            _client = client;
+            // 断开时顺手收窗：房间操作只对当前连接有意义，连接没了窗口就该没了。
+            _client.Disconnected += OnDisconnected;
             _client.CurrentRoomChanged += OnCurrentRoomChanged;
             _client.RoomOperationCompleted += OnCompleted;
-            _settings.EnabledChanged += enabled => { if (!enabled) SetActive(false); };
+        }
+
+        public void Unbind()
+        {
+            if (_client == null)
+                return;
+
+            _client.Disconnected -= OnDisconnected;
+            _client.CurrentRoomChanged -= OnCurrentRoomChanged;
+            _client.RoomOperationCompleted -= OnCompleted;
+            _client = null;
+            SetActive(false);
+        }
+
+        private void OnDisconnected(string reason)
+        {
             SetActive(false);
         }
         protected override void ConstructPanelContent() { }
@@ -171,8 +194,9 @@ namespace GOILauncher.Multiplayer.UI
 
         public void ShowEdit()
         {
+            if (!CanOpen) return;
             var current = _client.CurrentRoom;
-            if (!CanOpen || current == null || current.IsLobby || current.OwnerPlayerId != _client.LocalPlayer.Id) return;
+            if (current == null || current.IsLobby || current.OwnerPlayerId != _client.LocalPlayer.Id) return;
             _operation = RoomOperation.Update; _roomId = current.Id;
             _heading.text = "编辑房间";
             SetSubtitle(null);
@@ -190,7 +214,7 @@ namespace GOILauncher.Multiplayer.UI
             Open();
         }
 
-        private bool CanOpen => _settings.Enabled && _client.IsConnected && _client.CurrentRoom != null && !_client.IsRoomOperationPending;
+        private bool CanOpen => _client != null && _client.IsConnected && _client.CurrentRoom != null && !_client.IsRoomOperationPending;
 
         private void Open()
         {
@@ -266,7 +290,7 @@ namespace GOILauncher.Multiplayer.UI
 
         private void Submit()
         {
-            if (_submitted || !_settings.Enabled || !_client.IsConnected || _client.IsRoomOperationPending) return;
+            if (_submitted || _client == null || !_client.IsConnected || _client.IsRoomOperationPending) return;
             int maxPlayers = 0;
             if (_operation != RoomOperation.Join)
             {

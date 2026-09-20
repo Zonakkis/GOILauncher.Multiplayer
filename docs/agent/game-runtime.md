@@ -144,58 +144,54 @@ PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是�
 
 ## Multiplayer Settings
 
-- 设置的所有者是 `MultiplayerSettings`（`src/Unity`，平台无关）：键名、类型、默认值和变更事件都在它身上，UI 只读它、调它、订阅它。
-- 落盘由 `ISettingsStore` 承担，当前唯一实现是 `FileSettingsStore`，写到 `Application.persistentDataPath` 下的 `GOILauncher.Multiplayer.cfg`。这个目录三个平台都可写且不需要权限：Windows 在 `%USERPROFILE%\AppData\LocalLow\<company>\<product>`，Android 在应用私有目录，iOS 在沙盒内。
-- 文件是 `key=value` 纯文本，按键名 Ordinal 排序后整体重写，所以行序稳定、可 diff；`#` 开头是注释，但手写的注释在下次保存时不会保留。值里的 `\`、换行和回车做转义。
-- 每次 `SetXxx` 立即写盘（写临时文件再 `File.Move` 覆盖），崩溃不会丢已经改过的设置。文件缺失、读不出来或某行格式不对都只记日志并退回默认值，不阻塞插件加载。
+- 设置完全归宿主：所有者是 `MultiplayerSettings`（`src/Unity.Desktop/Config`，`GOILauncher.Multiplayer.UI.Config`）。core 一层不认识它，`src/Unity` 里没有任何设置类型。
+- 落盘用 BepInEx 的 `ConfigFile`（`Plugin.Config`，节名 `Multiplayer`）。键名、类型、默认值、解析容错和写文件都归它，`MultiplayerSettings` 只补两条它不管的规矩：端口范围，和“清空主机名等于回到默认值”。
+- 换回 `ConfigFile` 的代价是这套设置只存在于 PC 宿主。以前放在 `src/Unity` 是为了三个平台共用一份键名和默认值，现在认定的边界是“怎么存是宿主自己的事”：以后的 Android / iOS 宿主各自实现自己的存储，core 不掺和。
 - 目前有五项：
 
   | 键 | 类型 | 默认 | 说明 |
   |---|---|---|---|
-  | `Multiplayer.Enabled` | bool | `true` | 联机总开关，见下面“关闭联机保证什么” |
-  | `Multiplayer.Client.PlayerName` | string | （空） | 客户端页“名字”输入框的初值；空表示还没填，连接会被客户端页拦下 |
-  | `Multiplayer.Client.DefaultHost` | string | `127.0.0.1` | 客户端页“服务器IP”输入框的初值 |
-  | `Multiplayer.Client.DefaultPort` | int | `9027` | 客户端页“端口”输入框的初值 |
-  | `Multiplayer.Server.DefaultPort` | int | `9027` | 服务端页“启动端口”输入框的初值 |
+  | `Enabled` | bool | `true` | 联机开关。唯一真值是 `MultiplayerUnityCore.IsLoaded`，宿主每次加载与销毁后回写这里，所以它同时决定下次启动要不要自动加载 |
+  | `PlayerName` | string | （空） | 客户端页“名字”输入框的初值；空表示还没填，连接会被客户端页拦下 |
+  | `ClientHost` | string | `127.0.0.1` | 客户端页“服务器地址”输入框的初值 |
+  | `ClientPort` | int | `9027` | 客户端页“端口”输入框的初值 |
+  | `ServerPort` | int | `9027` | 服务端页“启动端口”输入框的初值 |
 
 - 后四项存的是**默认值，不回写**：客户端页 / 服务端页拿它们填输入框初值，玩家在那儿临时改成别的值只影响那一次连接。设置页是唯一的写入方。改了默认值时，处于空闲状态（未连接 / 未开服）的页面输入框会立刻跟着更新；连接中或已开服时不动，那时输入框显示的是这条连接的实际目标。
-- 端口的合法范围是 `MultiplayerSettings.MinPort`–`MaxPort`（1–65535），判据是 `MultiplayerSettings.IsValidPort`，读侧和 UI 校验共用它，所以 UI 不会写进一个下次加载会被判为非法的值。端口的落盘和解析都走 `CultureInfo.InvariantCulture`：文件是机器写的，换个系统区域也要读回同一个值。
-- 读到解析不出来或越界的端口、空白的主机名，都只 `Warn` 一行并退回默认值；`SetClientPort` / `SetServerPort` 收到越界值则抛 `ArgumentOutOfRangeException`——校验玩家输入是 UI 的事，走到这里就是 bug。`SetClientHost` 做 trim，空白按“清空即恢复默认”处理。名字只做 trim，空白保留：空是合法状态（还没填），客户端页在连接时会弹“名字不能为空”并拒绝连接，不在这里归一化。
-- BepInEx 的 `ConfigFile` 不再参与联机设置——它只存在于 PC 宿主，而这套设置要给三个平台共用。
+- 端口的合法范围是 `MultiplayerSettings.MinPort`–`MaxPort`（1–65535），判据是 `MultiplayerSettings.IsValidPort`，读侧和 UI 的输入校验（`InputFieldExtensions.TryReadPort`）共用它，所以 UI 不会写进一个下次加载要被判为非法的值。手改配置文件填进来越界的端口按“没配过”处理，读的时候退回默认值。
+- `SetClientPort` / `SetServerPort` 收到越界值抛 `ArgumentOutOfRangeException`——校验玩家输入是 UI 的事，走到这里就是 bug。`SetClientHost` 做 trim，空白按“清空即恢复默认”处理。名字只做 trim，空白保留：空是合法状态（还没填），客户端页在连接时会弹“名字不能为空”并拒绝连接，不在这里归一化。
+- 每个 `SetXxx` 立刻 `Config.Save()` 落盘：和以前一样，每次写都重写整个配置文件，所以崩溃不会丢掉玩家已经改过的设置。
 
-### 关闭联机保证什么
+### 加载与销毁保证什么
 
-判据只有 `IMultiplayerState` 一个来源（`Enabled` 读当前值，`EnabledChanged` 等它变），两个订阅者各管一半：
+联机模块只有两种状态：`MultiplayerUnityCore.IsLoaded` 为真（整张对象图活着），或者为假（没加载，或者已经被 `Dispose` 拆掉）。**没有“已加载但停用”的中间态**，所以也不再有 `IMultiplayerState`、`MultiplayerLifecycleController`，以及 Unity 客户端 / 服务端门面里那圈 `IsMultiplayerEnabled` 守卫。
 
-- **网络那一半**归 `MultiplayerLifecycleController`：断开当前连接、停掉内嵌服务端，并拒绝之后的连接与开服请求。
-- **玩家实例那一半**归 `PlayerManager`，它把开关当成和 `GameStartedEvent` 同类的输入：
-  - 关着联机进 `Mian` 不挂 `LocalPlayer`、不预热实例池，一个 `Player` 克隆都不造；
-  - 关闭那一刻按和“退出游戏”“断线”完全相同的一套动作（`ReleaseGamePlayers`）撤掉已经建起来的实例；
-  - 重新打开时如果已经在 `Mian` 里就地补做初始化，不需要退出关卡再进。
-- **UI 那一半**归 `Plugin` 和各 `IPage`：藏掉聊天窗口和玩家列表（见下面 Multiplayer UI Lifecycle）。
-
-`PlayerManager.EnsureRemoteInstance` 除了上面的初始化入口，自己也查一次开关：关闭触发的断开要到下一次 `Poll` 才真正生效，这中间到达的包仍会走到创建实例那条路上。
-
-两件**故意不做**的事，改之前先看这里：
-
-- `GameManager.CreatePlayerPrefab` 不看开关。`GameManager` 是场景权威，只回答“什么场景、`Player` 在哪”，掺进联机开关会让它多背一个概念；代价是关着联机进游戏仍有 1 个 inactive、无碰撞的克隆（之前是 5 个），换来的是重新打开联机时 `PlayerPrefab` 已经就绪，不用重新准备。
-- 网络层的 socket 不关。`NetworkClient` 是 `IStartable`，容器 `Build()` 时就 `NetManager.Start()`，关闭联机后仍每帧 `PollEvents`。延迟开 socket 会把“现在能不能连”变成一个状态机，代价大于一次空轮询。
-
-`UnityClient.IsConnected` 和 `UnityServer.IsRunning` 都只读真实状态，不再 AND 一次开关：既然关闭会真的断开，再掺一层只会在断开失败时报出一个假的“没连接”，而 `PlayerStateSynchronizer` 那边看的是真 socket，两边就会各说一套。
+- 加载：`MultiplayerUnityCore.Initialize(logTarget)` 建 `_core` GameObject、build 容器、激活 `IStartable`，成功后发 `Initialized`。失败会回滚（销毁 `_core`、丢掉半张容器）并返回 false，不会留下一个半死不活的加载状态。
+- 销毁：`Dispose()` 的顺序是有条件的，改之前先对一遍：
+  1. 先把 `_container` 置 null——从这一刻起三个门面属性全返回 null，没人能再拿到这一轮的实例。判据必须是 `_container`，不能是对象本身：`UnityClient` 是 MonoBehaviour，`Destroy` 之后托管引用仍在，`IsConnected` 这类纯托管属性不碰 Unity API，照样返回上一轮的旧值；而按 `IUnityClient` 接口做的 `== null` 用的是 `object` 的引用相等，Unity 那套假 null 根本不参与。
+  2. 发 `Disposing`，趁对象图还活着让 UI 退订、清掉缓存。
+  3. `_core.SetActive(false)` 停掉轮询。`Destroy` 要到帧末才生效，不先关的话本帧的 `Update` 还会 `Poll` 一次，到的包能把刚清掉的远端实例重新建出来。
+  4. `Disconnect()` → `Stop()` → `PlayerManager.Dispose()`（退订 + `ReleaseGamePlayers` + 销毁挂在场景 `Player` 上的 `LocalPlayer` 组件）。
+  5. `Object.Destroy(_core)` 一次带走 `GameManager`、`UnityClient`、`UnityServer`、`PlayerStateSynchronizer`、`SkinSynchronizer`（都在 `_core` 底下）。`GameManager.OnDestroy` 负责退订静态的 `SceneManager.sceneLoaded` 并销毁自己 `Instantiate` 的 `PlayerPrefab` 克隆。
+  6. `container.Dispose()` 收掉容器创建的服务：`ClientService` / `ServerService` 连同底下的 `NetworkClient` / `NetworkServer`（`Dispose` 里 `NetManager.Stop()`，收下网络线程）。
+- NLog 的 target 注册成 `ExternallyOwned`。它挂在 NLog 的全局配置上，跟着容器一起销毁的话，下一轮 `Initialize` 会按名字复用那个已销毁的 target，日志就全哑了。`CoreManager` 本身按 target 名字去重，所以反复加载不会重复挂规则。
+- 随开随关把“关掉时把场景还原干净”从可选变成必做：`LocalPlayer` 组件、`PlayerPrefab` 克隆、`sceneLoaded` 订阅这三样都会活到下一轮，而 `PlayerManager.EnsureLocalPlayer` 的 `GetComponent<LocalPlayer>()` 分支正好会捞到上一轮那个揣着已销毁服务的组件。
+- 第二次 `Initialize` 落在 `Mian` 里是能自愈的：新建的 `GameManager.Start` 走 `if (IsInGame && Player == null)` 那一次补做，重新找 `Player`、重造 `PlayerPrefab`、补发 `GameStartedEvent`。这条路径本来就有（插件在 Loader 初始化、进游戏才补做），随开随关只是复用它。
 
 ## Multiplayer UI Lifecycle
 
-- 联机开关是 `MultiplayerSettings.Enabled`，`SettingsPage` 的勾选框读写它，`Plugin`、`ClientPage`、`ServerPage` 订阅 `EnabledChanged` 刷新自己。
-- “设置”页除了开关还管四个默认值，按“客户端设置”（从上到下是“名字”一行、默认主机和默认端口同一行）和“服务端设置”（默认端口）两段排：`ClientPage` 和 `ServerPage` 从它们取输入框初值，并订阅对应的变更事件，在空闲时跟着更新（见上面 Multiplayer Settings）。这四个输入框不随联机开关变灰——关着联机也要能先把默认值配好。落盘发生在编辑结束（`InputField.onEndEdit`）和离开设置页时，不是每敲一个字符就写一次：每次写都要整份重写配置文件。端口填了非法值会弹提示并把输入框回填成当前设置值；主机清空则归一化回默认值；名字清空就保留为空，连接时为空会弹“名字不能为空”并拦下连接。名字输入框不设占位提示，空就是空框；已知限制：uGUI 的 `InputField` 文本为空时聚焦不画光标，空名字框点进去看不到光标（未处理）。
-- F2 始终切换 `MultiplayerUI`（“连接配置”）窗口，不受联机开关影响，因此关闭联机后仍可进入“设置”页重新启用。
+- 设置页那个勾选框是**动作**，不是状态：`SettingsPage` 发 `LoadToggled`，`Plugin` 去 `Initialize()` / `Dispose()`，再由 `SyncLoadedState()` 按 `IsLoaded` 回写 `Enabled` 并推 `SetLoaded`。所以 `Enabled` 总是等于现状——它是那份开关状态落了盘，不是另一个平行概念；页面也不自己去读它，等宿主推。
+- 页面感知加载与销毁靠 `Plugin` 转发的 `Bind(门面)` / `Unbind()`：`Initialized` 时绑，`Disposing` 时解。两者必须成对——漏一次 `Unbind` 不报错，只会让下一次点按钮响应两遍，所以每页的 `Bind` 在已绑定时直接抛。
+- “设置”页除了那个加载开关还管四个默认值，按“客户端设置”（从上到下是“名字”一行、默认主机和默认端口同一行）和“服务端设置”（默认端口）两段排：`ClientPage` 和 `ServerPage` 从它们取输入框初值，并订阅对应的变更事件，在空闲时跟着更新（见上面 Multiplayer Settings）。这四个输入框不随加载状态变灰——联机没加载也要能先把默认值配好。落盘发生在编辑结束（`InputField.onEndEdit`）和离开设置页时，不是每敲一个字符就写一次：每次写都要整份重写配置文件。端口填了非法值会弹提示并把输入框回填成当前设置值；主机清空则归一化回默认值；名字清空就保留为空，连接时为空会弹“名字不能为空”并拦下连接。名字输入框不设占位提示，空就是空框；已知限制：uGUI 的 `InputField` 文本为空时聚焦不画光标，空名字框点进去看不到光标（未处理）。
+- F2 始终切换 `MultiplayerUI`（“连接配置”）窗口，不看联机加没加载，因此关掉之后仍能进入“设置”页重新开启。
 - `Plugin.ApplyCursorState` 使用同一判据解锁系统鼠标和把游戏 `Cursor` 刚体的 `simulated` 切为 `false`：配置窗口、房间弹窗、Tab 玩家列表 + 空格、聊天输入激活，或其他 UniverseLib UI 显示；被动聊天 HUD 不屏蔽输入。单独按住 Tab 只显示玩家列表，游戏输入照常，鼠标要 Tab 和空格一起按住才交出。UI 不再占用鼠标时把 `simulated` 切回 `true`，不修改 `PlayerControl` 的启用状态或拦截其方法。
-- `Plugin` 初始化时通过 `container.Resolve<IGameManager>()` 保存 GameManager，输入屏蔽直接读取它的 `Cursor`，不依赖联机开关、连接或 `LocalPlayer` 组件。刚体处理在光标状态缓存的提前返回之前执行：UI 开着进入或重载场景时也会处理新 Cursor，并释放此前记录的旧刚体（如果仍存在）。Plugin 被禁用或销毁时把已屏蔽的刚体的 `simulated` 切回 `true`。
-- 关闭联机开关时，`MultiplayerLifecycleController`（`src/Unity`）立即请求 `IUnityClient.Disconnect()` 和 `IUnityServer.Stop()`；Unity 客户端和服务端适配器也会拒绝后续的连接或启动请求。它在容器初始化末尾被显式解析一次，构造时就按持久化的值补做一遍，所以上次退出时是关闭状态的话，这次启动不会先起服务再关掉。玩家实例那一半不在它身上，见上面“关闭联机保证什么”。
-- 因为关开关也算一次主动断开，`ClientPage` 的提示按当前开关状态分支（“联机已关闭，连接已断开”），不靠标志位——设置在通知任何监听者之前就已写好，谁先收到通知都不影响读到的值。
-- 关闭联机时 `ChatHudUI` 被隐藏并退出输入激活状态，`PlayerListUI` 被隐藏，Plugin 不再响应 Tab 来显示玩家列表。
+- `Plugin` 每次要用光标时现读 `MultiplayerUnityCore.GameManager`，不缓存实例（缓存了就在关掉联机之后剩下一个已销毁的对象），输入屏蔽直接读它的 `Cursor`，不依赖连接或 `LocalPlayer` 组件。刚体处理在光标状态缓存的提前返回之前执行：UI 开着进入或重载场景时也会处理新 Cursor，并释放此前记录的旧刚体（如果仍存在）。Plugin 被禁用或销毁时把已屏蔽的刚体的 `simulated` 切回 `true`。
+- 插件启动时读一次 `Enabled`，为真才 `Initialize()`；这是它唯一一次被当作输入读，之后只被写。启动那次尝试失败同样回写成 false，配置里不会留一个没成真的 true；游戏里关掉再开是同一句 `Initialize()`。不再有“上次退出时是关闭状态，这次别先起服务”的补做逻辑——关着就是整张图不存在。玩家实例那一半在 `Dispose` 的顺序里，见上面“加载与销毁保证什么”。
+- 关闭联机时 `ClientPage` 收不到 `Disconnected`（`Unbind` 发生在断线之前），所以它自己在 `Unbind` 里把 `isConnecting`、房间目录和按钮状态归零，不留“正在连接”的残影。
+- 关闭联机时 `ChatHudUI` 被隐藏并退出输入激活状态，`PlayerListUI` 被隐藏，Plugin 不再响应 Tab 来显示玩家列表。窗口藏着不等于账清了：`RoomDialogUI` 在 `Unbind` 里关窗，`ChatHudUI` 和 `PlayerListUI` 各自把消息记录和名单行清成空——它们的刷新方法在门面为 null 时照常走，把画面落成“没有门面就没有内容”（房间两行显示未加入 / -），不留一份还能读但底下已经拆掉的 `PlayerView`。
 - Tab 玩家列表顶部是一行等宽两列的房间信息：“当前房间：名称 / 房主：名字”，大厅房主显示“无”，未入房显示“未加入 / -”；下方玩家表格的列仍为：玩家 / 信息 / 状态 / 距离 / 操作。距离读的是远端实例到本地玩家的直线距离，玩家没有场景实例时（未在游戏中、实例池已满、首个状态包未到）显示 `-`。
 - 操作列是每行的“传送”按钮，只在该玩家有距离（即有远端实例）时可点；本地玩家自己那行不显示按钮，但格子留着以保持列对齐。点它得先按住 Tab + 空格 交出鼠标，因为单独按住 Tab 不会解锁光标。
-- 重新启用联机时聊天窗口恢复为可用面板；客户端连接按钮、服务端启动按钮和对应输入控件会在页面激活或状态变更时刷新，Tab 玩家列表在下一次按键时恢复。
+- 重新加载联机时聊天窗口恢复为可用面板；`Bind` 当场刷一次目录、按钮和端口，Tab 玩家列表在下一次按键时恢复。
 
 ## Room UI Lifecycle
 

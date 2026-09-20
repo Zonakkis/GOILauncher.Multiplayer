@@ -1,3 +1,4 @@
+using System;
 using GOILauncher.Multiplayer.UI.ScrollView.Player;
 using UniverseLib.UI;
 using UniverseLib.UI.Panels;
@@ -16,26 +17,49 @@ namespace GOILauncher.Multiplayer.UI
         private const float DistanceRefreshInterval = 0.1f;
 
         private readonly PlayerListHandler playerListHandler;
-        private readonly IUnityClient client;
+        // 门面每轮联机都是新造的：Bind 时才有，Unbind 时清空。
+        private IUnityClient client;
 
         private Text currentRoomText;
         private Text roomOwnerText;
         private float _distanceTimer;
 
-        public PlayerListUI(UIBase owner, PlayerListHandler playerListHandler, IUnityClient client) : base(owner)
+        public PlayerListUI(UIBase owner, PlayerListHandler playerListHandler) : base(owner)
         {
             this.playerListHandler = playerListHandler;
-            this.client = client;
-            this.client.PlayerListUpdated += OnPlayerListUpdated;
-            this.client.CurrentRoomChanged += OnCurrentRoomChanged;
-            // 行上的按钮只发 Id，接到门面上这一步由这里做：PlayerListHandler 因此不用认识 IUnityClient。
-            this.playerListHandler.TeleportRequested += this.client.TeleportTo;
             ImageUtility.MakeTransparent(UIRoot);
             ImageUtility.MakeTransparent(ContentRoot);
             CreateRoomInfoRow();
             this.playerListHandler.Setup(ContentRoot, PanelBackgroundColor, HeaderBackgroundColor);
             RefreshPlayers();
             LayoutRebuilder.ForceRebuildLayoutImmediate(ContentRoot.GetComponent<RectTransform>());
+        }
+
+        /// <summary>
+        /// 行上的按钮只发 Id，接到门面上这一步由这里做：PlayerListHandler 因此不用认识 IUnityClient。
+        /// 也正因为接的是这一轮门面的实例方法，Unbind 必须按同一个引用退订。
+        /// </summary>
+        public void Bind(IUnityClient unityClient)
+        {
+            if (unityClient == null || client != null)
+                throw new InvalidOperationException("PlayerListUI: Bind and Unbind must alternate.");
+
+            client = unityClient;
+            client.PlayerListUpdated += OnPlayerListUpdated;
+            client.CurrentRoomChanged += OnCurrentRoomChanged;
+            playerListHandler.TeleportRequested += client.TeleportTo;
+        }
+
+        public void Unbind()
+        {
+            if (client == null)
+                return;
+
+            client.PlayerListUpdated -= OnPlayerListUpdated;
+            client.CurrentRoomChanged -= OnCurrentRoomChanged;
+            playerListHandler.TeleportRequested -= client.TeleportTo;
+            client = null;
+            RefreshPlayers();
         }
 
         public override string Name => "GOILauncher.PlayerList";
@@ -81,11 +105,13 @@ namespace GOILauncher.Multiplayer.UI
 
         public void RefreshPlayers()
         {
-            if (playerListHandler == null || client == null)
+            if (playerListHandler == null)
                 return;
 
             RefreshRoomInfo();
-            playerListHandler.SetPlayers(client.Players);
+            // 没有门面就是空名单。Unbind 之后不能把上一轮的 PlayerView 留在行上：它揣着那一轮的
+            // IPlayerService 和 IPlayerManager，看着还能读，其实底下已经是拆掉的对象。
+            playerListHandler.SetPlayers(client == null ? null : client.Players);
         }
 
         private void CreateRoomInfoRow()
@@ -110,10 +136,11 @@ namespace GOILauncher.Multiplayer.UI
 
         private void RefreshRoomInfo()
         {
-            if (currentRoomText == null || roomOwnerText == null || client == null)
+            if (currentRoomText == null || roomOwnerText == null)
                 return;
 
-            var room = client.CurrentRoom;
+            // 没加载和没入房是同一幅画面：未加入 / -
+            var room = client == null ? null : client.CurrentRoom;
             currentRoomText.text = "当前房间：" + (room == null ? "未加入" : room.Name);
             string ownerName = room == null ? "-" : "无";
             if (room != null && room.OwnerPlayerId.HasValue)
