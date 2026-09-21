@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Autofac;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Services;
@@ -82,6 +83,7 @@ namespace GOILauncher.Multiplayer.Unity.Player
         /// 建进场景里的东西撤干净——远端实例、实例池，以及挂在场景 Player 上的 LocalPlayer
         /// 组件。那个组件不在 _core 底下，不手动销毁就会活到下一轮，而下一轮的
         /// EnsureLocalPlayer 会 GetComponent 拿到它，附在它身上的却是一批已销毁的服务。
+        /// 本方法自身不能出现任何 Unity 调用，Unity 对象的销毁走 DestroyLocalPlayer。
         /// </summary>
         public void Dispose()
         {
@@ -95,10 +97,24 @@ namespace GOILauncher.Multiplayer.Unity.Player
             ReleaseGamePlayers();
             if (localPlayer != null)
             {
-                Object.Destroy(localPlayer);
+                DestroyLocalPlayer(localPlayer);
             }
         }
 
+        /// <summary>
+        /// 单独拆出来，是因为本方法碰 Unity 引擎对象（Object.Destroy）：在没有 Unity 运行时的
+        /// 进程里连进来都进不来——ECall 是在 JIT 编译整个方法时解析失败的，不是执行到那一行才
+        /// 失败，所以 Dispose 里那个空判挡不住它。Dispose 本身必须保持不含任何 Unity 调用，
+        /// 否则 PlayerManagerTests 里那两条 Dispose 测试连调用都进不去。
+        /// 同一个理由见 MultiplayerUnityCore.TearDown。
+        /// NoInlining 是必须的：本方法只有一行，JIT 会把它内联回 Dispose，
+        /// 那样 ECall 又回到 Dispose 的编译单元里，等于没拆。
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void DestroyLocalPlayer(LocalPlayer localPlayer)
+        {
+            Object.Destroy(localPlayer);
+        }
         private int LocalPlayerId
         {
             get

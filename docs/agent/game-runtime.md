@@ -82,6 +82,10 @@ Player
 
 结论：`LocalPlayer` 上按需缓存 Unity 对象（`Saviour`、`Rigidbody2D[]`）不需要失效逻辑，也不需要防"缓存指向已销毁对象"的空检查——那种检查在这里是恒不成立的死代码。唯一复用已有组件的路径是同一场景内断线重连（`EnsureLocalPlayer` 的 `GetComponent<LocalPlayer>()` 分支），那时缓存指向的还是同一个场景里的对象，同样有效。
 
+`PlayerManager.Dispose()` 里不能出现 Unity ECall（`Object.Destroy`），**包括被 JIT 内联进来的**：无 Unity 运行时的进程里整个方法编译不过（`SecurityException: ECall 方法必须打包到系统模块中`），空判挡不住它，因为失败发生在编译方法时，而不是执行到那一行时。销毁场景 `Player` 上的 `LocalPlayer` 组件因此走单独的 `DestroyLocalPlayer()`，并且**必须**标 `NoInlining`——那个方法只有一行，不标就会被内联回 `Dispose`，等于没拆。`MultiplayerUnityCore.TearDown` 是为同一个理由拆出去的（它靠方法体够大躲过内联）。往 `Dispose` 里加回内联的 Unity 调用，会让 `PlayerManagerTests` 的两条 Dispose 测试连调用都进不去。
+
+已知不对称：远端玩家的 Unity 对象生命周期在 `IPlayerInstancePool` 后面（测试整个 Mock 掉），本地玩家没有对应接缝。原因是 `PlayerBase` 是 `MonoBehaviour`，要在测试里造出一个非 null 的本地玩家，得先把 `PlayerBase` / `LocalPlayer` 抽成接口，而这会波及 `PlayerManager._players` 表、皮肤同步的 `GetPlayer(id)` 和 UI 的 `PlayerView`。等真要给本地玩家组件生命周期写覆盖时再做，不要为单条测试启动这个重构。
+
 ## Teleport
 
 `LocalPlayer.TeleportTo(Transform target)` 把本地玩家搬到目标玩家的远端实例处。除刚体配对（见 Player Prefab）外，它还用到本地 `Player` 上的 `Saviour`：
