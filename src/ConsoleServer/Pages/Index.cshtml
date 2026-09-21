@@ -1,0 +1,45 @@
+@page
+@model ConsoleServer.Web.Pages.IndexModel
+@*
+    轮询发起者是一个隐藏的空 div，刻意不作为 #dashboard 的祖先。
+    如果把 hx-get/hx-trigger 挂在 body 上，htmx 的属性继承会让每一个房间按钮都
+    也每秒轮询一次（hx-trigger 会被子节点继承），那是个很难查的坑。
+
+    这里刻意不用 hx-vals 传 room：htmx 的 hx-vals 会把不以 "{" 开头的 js: 表达式
+    强行包成 {expr}，于是 `js:dashVals()` 变成 `{dashVals()}` —— 方法简写缺函数体，
+    每次触发都抛 SyntaxError，请求直接发不出去（面板表现成"除了日志什么都不动"）。
+    改在 dashboard.js 里用 htmx:configRequest 事件加参数，普通 JS，没有表达式语法陷阱。
+*@
+<div id="poller"
+     hidden
+     hx-get="@Url.Page("/Index", "Dashboard")"
+     hx-trigger="every 1s, dash:refresh"
+     hx-target="#dashboard"
+     hx-swap="morph:innerHTML"></div>
+
+<div class="app">
+    <main id="dashboard">
+        <partial name="_Dashboard" model="Model.Dashboard"/>
+    </main>
+
+    <aside class="logs">
+        <div class="logs-head">
+            <span class="logs-title">日志</span>
+            <div class="seg" id="logLevels" role="group" aria-label="日志级别">
+                <button type="button" data-lv="ALL" class="on">全部</button>
+                <button type="button" data-lv="INFO">信息</button>
+                <button type="button" data-lv="WARN">警告</button>
+                <button type="button" data-lv="ERROR">错误</button>
+            </div>
+            <button type="button" id="logPause" class="ghost" title="快捷键 L">暂停</button>
+        </div>
+        <div class="logs-filter">
+            <input type="search" id="logSearch" placeholder="过滤文本（按 / 聚焦）" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="logs-body" id="logLines"></div>
+        <div class="logs-foot">
+            <span id="logStatus">连接中…</span>
+            <span id="logNote" class="dim"></span>
+        </div>
+    </aside>
+</div>

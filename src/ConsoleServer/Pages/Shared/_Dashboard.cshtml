@@ -1,0 +1,212 @@
+@model ConsoleServer.Web.DashboardView
+@{
+    var s = Model.Status;
+    var stateClass = !s.IsRunning ? "is-stopped" : (s.IsStalled ? "is-stalled" : "is-running");
+    var stateText = !s.IsRunning ? "未运行" : (s.IsStalled ? "疑似卡顿" : "运行中");
+}
+
+<header class="topbar @stateClass">
+    <div class="brand">
+        <span class="dot"></span>
+        <span class="brand-name">GOI 观测面板</span>
+        <span class="state">@stateText</span>
+    </div>
+
+    <div class="metrics">
+        <span class="metric"><b>@s.Port</b><i>游戏端口</i></span>
+        <span class="metric"><b>@s.OnlineCount</b><i>在线</i></span>
+        <span class="metric"><b>@s.RoomCount</b><i>房间</i></span>
+        <span class="metric" title="服务器启动于 @s.StartedAt"><b>@s.Uptime</b><i>运行时长</i></span>
+        <span class="metric @(s.IsStalled ? "bad" : null)" title="最近一次 Poll 循环里间隔的最大值">
+            <b>@(s.PollGapMs)<small>ms</small></b><i>心跳间隔</i>
+        </span>
+        <span class="metric @(s.TotalErrors > 0 ? "bad" : "ok")" title="无法归属到具体连接的错误 + 各连接的收发错误">
+            <b>@s.TotalErrors</b><i>错误</i>
+        </span>
+    </div>
+
+    <div class="topbar-right">
+        <span class="readonly">只读</span>
+        <span class="dim" title="所有时间均为服务器本地时间">@s.ServerNow · @s.TimeZoneLabel</span>
+    </div>
+</header>
+
+<aside class="rail">
+    <div class="rail-head">
+        房间<span class="badge">@Model.Rail.Count</span>
+    </div>
+    <nav class="rail-list">
+        @if (Model.Rail.Count == 0)
+        {
+            <div class="rail-empty">没有房间。服务器启动后这里会出现大厅。</div>
+        }
+        @foreach (var item in Model.Rail)
+        {
+            var cls = "room-item"
+                      + (item.IsSelected ? " active" : "")
+                      + (item.IsEmpty ? " empty" : "")
+                      + (item.IsUnassigned ? " unassigned" : "");
+            <button type="button" class="@cls" data-room="@item.Id" title="切换到 @item.Name">
+                <span class="ri-top">
+                    @if (item.KeyHint != null)
+                    {
+                        <kbd class="key">@item.KeyHint</kbd>
+                    }
+                    <span class="ri-name">@item.Name</span>
+                    @if (item.HasPassword)
+                    {
+                        <span class="ico" title="需要密码">&#128274;</span>
+                    }
+                    <span class="spacer"></span>
+                    <span class="ri-count">@item.CapacityText</span>
+                </span>
+                <span class="ri-sub">
+                    @if (item.IsUnassigned)
+                    {
+                        <text>尚未入房 / 握手中</text>
+                    }
+                    else if (item.IsLobby)
+                    {
+                        <text>公共大厅</text>
+                    }
+                    else if (!string.IsNullOrEmpty(item.OwnerName))
+                    {
+                        <text>房主 @item.OwnerName</text>
+                    }
+                    else
+                    {
+                        <text>无房主</text>
+                    }
+                </span>
+            </button>
+        }
+    </nav>
+</aside>
+
+<section class="main">
+    @if (Model.Selected == null)
+    {
+        <div class="empty-state">
+            <h2>服务器未运行</h2>
+            <p>观测快照是空的。服务器启动后这里会自动恢复，不需要刷新页面。</p>
+        </div>
+    }
+    else
+    {
+        var sel = Model.Selected;
+        <div class="main-head">
+            <h2>@sel.Name</h2>
+            @* 大厅不额外挂"大厅"标签：房间名本来就是"大厅"，那是纯噪音。 *@
+            @if (sel.HasPassword)
+            {
+                <span class="chip warn">&#128274; 有密码</span>
+            }
+            @if (!string.IsNullOrEmpty(sel.OwnerName))
+            {
+                <span class="chip">房主 @sel.OwnerName</span>
+            }
+            <span class="chip">@sel.CapacityText 人</span>
+            <span class="spacer"></span>
+            <span class="dim">@Model.Connections.Count 个连接</span>
+        </div>
+
+        <div class="conn-wrap">
+            @if (Model.Connections.Count == 0)
+            {
+                <div class="empty-inline">
+                    @(sel.IsUnassigned ? "没有未入房的连接。" : "本房间暂时没有人。")
+                </div>
+            }
+            else
+            {
+                <div class="conn-head">
+                    <span>状态</span>
+                    <span>玩家</span>
+                    <span>平台</span>
+                    <span>端点</span>
+                    <span class="num">延迟</span>
+                    <span class="num">丢包</span>
+                    <span class="num">错误</span>
+                </div>
+                @foreach (var c in Model.Connections)
+                {
+                    <details class="conn" data-pid="@c.PlayerId">
+                        <summary class="conn-row">
+                            <span class="c-state">
+                                @if (!c.HasHandshaked)
+                                {
+                                    <span class="handshake">握手中</span>
+                                }
+                                else if (c.IsInGame)
+                                {
+                                    <span class="in-game" title="游戏中">&#9654;</span>
+                                }
+                                else
+                                {
+                                    <span class="idle" title="已连接，未进入游戏">&#183;</span>
+                                }
+                            </span>
+                            <span class="c-name" title="@c.DisplayName">
+                                @c.DisplayName<span class="pid">#@c.PlayerId</span>
+                            </span>
+                            <span class="c-plat">@c.PlatformLabel</span>
+                            <span class="c-ep">@c.EndPoint</span>
+                            <span class="c-lat lat-@c.Latency.ToString().ToLowerInvariant()">@c.LatencyText</span>
+                            <span class="c-loss @(c.LossWarn ? "warn" : null)">
+                                @if (c.LossPercent.HasValue)
+                                {
+                                    <span class="lossbar"><i style="width:@(c.LossBarPercent)%"></i></span>
+                                }
+                                <span class="num">@c.LossText</span>
+                            </span>
+                            <span class="c-err @(c.NetworkErrorCount > 0 ? "bad" : null)">
+                                @(c.NetworkErrorCount > 0 ? "&#10007;" + c.NetworkErrorCount : "-")
+                            </span>
+                        </summary>
+                        <div class="conn-detail">
+                            <dl>
+                                <dt>玩家 ID</dt>
+                                <dd>@c.PlayerId</dd>
+                                <dt>端到端</dt>
+                                <dd>@c.EndPoint</dd>
+                                <dt>延迟</dt>
+                                <dd>@c.LatencyText</dd>
+                                <dt>发包 / 收包</dt>
+                                <dd>@c.PacketsSent / @c.PacketsReceived</dd>
+                                <dt>发送 / 接收字节</dt>
+                                <dd>@c.BytesSent B / @c.BytesReceived B</dd>
+                                <dt>丢包数 / 丢包率</dt>
+                                <dd>@c.PacketLoss / @c.PacketLossPercent</dd>
+                                <dt>错误计数</dt>
+                                <dd>@c.NetworkErrorCount</dd>
+                            </dl>
+                            @if (!c.HasStats)
+                            {
+                                <p class="dim">此连接还没有传输统计样本（LiteNetLib 统计未开启或刚连上）。</p>
+                            }
+                        </div>
+                    </details>
+                }
+            }
+        </div>
+
+        <div class="chat">
+            <div class="chat-head">
+                聊天<span class="dim">@Model.Chat.Count 条 · 仅内存保留 30 分钟</span>
+            </div>
+            <div class="chat-scroll" id="chatScroll">
+                @if (Model.Chat.Count == 0)
+                {
+                    <div class="chat-empty">@Model.ChatEmptyText</div>
+                }
+                @foreach (var m in Model.Chat)
+                {
+                    <div class="chat-msg">
+                        <span class="t">@m.Time</span><span class="n">@m.PlayerName</span><span class="m">@m.Content</span>
+                    </div>
+                }
+            </div>
+            <button type="button" class="chat-jump" id="chatJump" hidden>&#8595; 有新消息</button>
+        </div>
+    }
+</section>

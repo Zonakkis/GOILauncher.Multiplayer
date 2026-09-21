@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -19,14 +19,24 @@
     <PackageReference Include="NLog" Version="6.1.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!-- Web UI走 ASP.NET Core Minimal API：框架引用随 net8.0 走，不进 NuGet，
-         也不引入 Autofac 之外的第二套 DI。官方 runtime:8.0 镜像已含此框架。 -->
-    <FrameworkReference Include="Microsoft.AspNetCore.App" />
-  </ItemGroup>
+  <!--
+    Web SDK 而非 Microsoft.NET.Sdk：Razor Pages 的 .cshtml 需要 Razor 编译目标，
+    只有 Web SDK 提供。它同时隐式引用 Microsoft.AspNetCore.App，
+    所以这里不再手写 FrameworkReference（重复引用会冲突）。
+    ASP.NET Core 共享框架不在 dotnet/runtime 镜像里，容器必须用 dotnet/aspnet —— 见 Dockerfile。
+    Razor Pages 的 PageModel 构造注入由 WebApplication 自带的 IServiceCollection 提供，
+    这不是第二套 DI 框架，是 MVC 强制依赖的宿主容器；Autofac 4.9.4 无法升到能当 web 容器的版本。
+  -->
 
   <ItemGroup>
-    <EmbeddedResource Include="Web\index.html" LogicalName="ConsoleServer.Web.index.html" />
+    <!--
+      wwwroot 必须真的落在输出目录里，不能只依赖 Web SDK 的 static web assets。
+      那套机制只在 Development 环境生效（靠 {Assembly}.staticwebassets.runtime.json 指回源码目录），
+      而这个服务是直接 `dotnet ConsoleServer.dll` 起的，环境是 Production，
+      于是 WebRootPath 找不到、css/js 全 404 —— 而且只在本地跑 build 输出时出现，publish 反而正常，
+      是个很难查的不对称。显式拷贝一份，三种运行方式（build 输出 / publish / 容器）行为就一致了。
+    -->
+    <Content Update="wwwroot\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

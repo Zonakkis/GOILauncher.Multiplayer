@@ -1,0 +1,24 @@
+@*
+    外壳。三栏各自滚动，body 永不滚动——运维面板最怕滚动时把状态条和房间列表滚出视野。
+    #dashboard 是唯一被 morph 的区域；日志栏刻意留在它外面，因为日志是追加式的，
+    整块 morph 会把滚动位置和选中一起搅乱。
+*@
+<!DOCTYPE html>
+<html lang="zh-CN" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GOI 服务器观测面板</title>
+    @* 内联空图标：否则浏览器会去请求 /favicon.ico 拿一个 404。 *@
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="~/lib/bootstrap.min.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true">
+</head>
+<body hx-ext="morph">
+<div id="offline" hidden>面板与服务器失去联系，正在重试…</div>
+@RenderBody()
+<script src="~/lib/htmx.min.js"></script>
+<script src="~/lib/idiomorph-ext.min.js"></script>
+<script src="~/js/dashboard.js"></script>
+</body>
+</html>
