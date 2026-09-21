@@ -147,6 +147,9 @@ secrets.json
 node_modules/
 docs/.vitepress/dist/
 docs/.vitepress/cache/
+src/DedicatedServer/React/node_modules/
+src/DedicatedServer/wwwroot/
+*.tsbuildinfo
 
 src/UniverseLib/
 
