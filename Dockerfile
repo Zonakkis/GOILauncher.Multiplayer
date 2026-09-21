@@ -23,15 +23,13 @@ COPY . .
 
 COPY --from=webui /webui-dist ./src/DedicatedServer/wwwroot/
 
-RUN dotnet restore "src/DedicatedServer/DedicatedServer.csproj" \
-    /p:TargetNetStandard20=true
+RUN dotnet restore "src/DedicatedServer/DedicatedServer.csproj"
 
 RUN dotnet publish "src/DedicatedServer/DedicatedServer.csproj" \
     -c Release \
     -f net8.0 \
     -o /app/publish \
-    --no-restore \
-    /p:TargetNetStandard20=true
+    --no-restore
 
 
 # =========================

@@ -2,15 +2,29 @@
 
 ## Build and Test
 
-Use `scripts\build.ps1` for all repository builds and test runs. Do not invoke `dotnet build` or `dotnet test` directly.
+Use `scripts\build.ps1` for all repository builds and test runs. Do not invoke `dotnet build` or
+`dotnet test` directly — the script owns the test gate described below.
 
 - Build: `.\scripts\build.ps1 -Configuration Debug -SkipRestore`
 - Build and test: `.\scripts\build.ps1 -Configuration Debug -SkipRestore -RunTests`
+- One project: `.\scripts\build.ps1 -Project DedicatedServer -Configuration Debug -SkipRestore -RunTests`
 
-`-RunTests` is a hard gate: missing test tooling, a missing test assembly, or a run that
-executed zero tests all fail the build. If it reports missing NuGet packages, re-run without
-`-SkipRestore`. Test projects are discovered by convention — a directory ending in `.Test` or
-`.Tests` under `src\` or `tests\`, whose assembly name matches the directory name.
+`-Project` takes a project name from `src\` (`Core`, `Client`, `Server`, `Unity`, `Unity.Desktop`,
+`DedicatedServer`) and restricts the run to that project and its dependency closure. Omit it to work
+on the whole solution. Note that `Server` is a project name, not the standalone server executable —
+that one is `DedicatedServer`.
+
+Without `-Project`, every test project runs. With `-Project`, the script runs the test projects that
+transitively reference the named project: `-Project DedicatedServer` runs only `DedicatedServer.Tests`,
+while `-Project Core` runs every test project that depends on `Core`, because the selection follows
+`ProjectReference` entries rather than directory naming. Test projects themselves are still discovered
+by convention — a directory ending in `.Test` or `.Tests` under `src\` or `tests\`.
+
+`-RunTests` is a hard gate: no matching test project, a missing result file, or a run that executed
+zero tests all fail the build. If it reports missing packages, re-run without `-SkipRestore`.
+
+Building `DedicatedServer` also builds the React Web UI into `src\DedicatedServer\wwwroot`, because
+the server serves that panel; every other target skips it. `-SkipWebUI` skips it in either case.
 
 ## Collaboration Guidelines
 

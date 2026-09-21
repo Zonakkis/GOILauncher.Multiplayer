@@ -1,246 +1,312 @@
+<#
+.SYNOPSIS
+    构建和测试 GOILauncher.Multiplayer。
+
+.DESCRIPTION
+    默认处理整个解决方案。-Project 指定单个项目时，只构建该项目以及它自己的依赖闭包；
+    -RunTests 时只跑（传递）引用该项目的测试项目。测试范围按引用关系推导，不按命名约定，
+    所以 Core / Server 这类被多个测试项目依赖的项目会把它们都跑上。
+
+    全量测试很便宜（约 4 秒），慢的是构建和 React 构建，所以 -Project 的价值主要在编译一侧。
+
+.EXAMPLE
+    .\scripts\build.ps1 -Configuration Debug -SkipRestore
+    全量构建。
+
+.EXAMPLE
+    .\scripts\build.ps1 -Configuration Debug -SkipRestore -RunTests
+    全量构建并跑全部测试。
+
+.EXAMPLE
+    .\scripts\build.ps1 -Project DedicatedServer -RunTests
+    只构建 DedicatedServer 并只跑 DedicatedServer.Tests。
+    构建 DedicatedServer 会顺带构建 React Web UI（可用 -SkipWebUI 关掉）。
+
+.EXAMPLE
+    .\scripts\build.ps1 -Project Core
+    只构建 Core，不碰测试也不碰 Web UI。
+#>
 param(
+    [string]$Project,
+
     [ValidateSet("Debug", "Release")]
     [string]$Configuration = "Release",
 
-    [ValidateSet("Any CPU")]
-    [string]$Platform = "Any CPU",
-
     [switch]$SkipRestore,
     [switch]$Clean,
-    [switch]$RunTests
+    [switch]$RunTests,
+    [switch]$SkipWebUI
 )
 
 $ErrorActionPreference = "Stop"
 
-$solutionDir = Split-Path -Parent $PSScriptRoot
+$solutionDir  = Split-Path -Parent $PSScriptRoot
 $solutionFile = Join-Path $solutionDir "GOILauncher.Multiplayer.sln"
+$webRoot      = Join-Path $solutionDir "src\DedicatedServer\React"
 
-# ---------- Helper ----------
+# ---------- Helpers ----------
 function Write-Step($msg) { Write-Host "`n>> $msg" -ForegroundColor Cyan }
+function Fail($msg) {
+    Write-Host "ERROR: $msg" -ForegroundColor Red
+    exit 1
+}
 
-# ---------- Locate MSBuild ----------
-function Find-MSBuild {
-    $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-    if (Test-Path $vsWhere) {
-        $installPath = & $vsWhere -latest -products * -requires Microsoft.Component.MSBuild -property installationPath
-        if ($installPath) {
-            $msbuild = Join-Path $installPath "MSBuild\Current\Bin\MSBuild.exe"
-            if (Test-Path $msbuild) { return $msbuild }
+function Assert-DotNet {
+    $onPath = Get-Command dotnet -ErrorAction SilentlyContinue
+    if (-not $onPath) {
+        Fail "dotnet not found on PATH. Install the .NET SDK (8.0 or later)."
+    }
+    return $onPath.Source
+}
+
+# ---------- Project discovery ----------
+# A "source project" is any *.csproj directly under src\<Name>\. The name used on the
+# command line is the csproj base name, which currently matches the directory name.
+function Get-SourceProjects {
+    $srcRoot = Join-Path $solutionDir "src"
+    if (-not (Test-Path $srcRoot)) { return @() }
+
+    $projects = New-Object System.Collections.Generic.List[object]
+    foreach ($dir in (Get-ChildItem -Path $srcRoot -Directory)) {
+        foreach ($csproj in (Get-ChildItem -Path $dir.FullName -Filter *.csproj -File -ErrorAction SilentlyContinue)) {
+            $projects.Add([pscustomobject]@{ Name = $csproj.BaseName; Path = $csproj.FullName })
         }
     }
-
-    # Fallback: check PATH
-    $onPath = Get-Command MSBuild.exe -ErrorAction SilentlyContinue
-    if ($onPath) { return $onPath.Source }
-
-    return $null
+    return $projects
 }
 
-# ---------- Locate NuGet ----------
-function Find-NuGet {
-    $onPath = Get-Command nuget.exe -ErrorAction SilentlyContinue
-    if ($onPath) { return $onPath.Source }
+# Test projects keep the existing convention: a directory ending in .Test / .Tests
+# directly under src\ or tests\.
+function Get-TestProjects {
+    $roots = @("src", "tests") |
+        ForEach-Object { Join-Path $solutionDir $_ } |
+        Where-Object { Test-Path $_ }
 
-    $nugetPath = Join-Path $solutionDir ".nuget\nuget.exe"
-    if (Test-Path $nugetPath) { return $nugetPath }
-
-    return $null
-}
-
-function Find-VSTest {
-    $onPath = Get-Command vstest.console.exe -ErrorAction SilentlyContinue
-    if ($onPath) { return $onPath.Source }
-
-    $vsWhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-    if (Test-Path $vsWhere) {
-        $installPath = & $vsWhere -latest -products * -property installationPath
-        if ($installPath) {
-            $candidate = Join-Path $installPath "Common7\IDE\CommonExtensions\Microsoft\TestWindow\vstest.console.exe"
-            if (Test-Path $candidate) { return $candidate }
+    $projects = New-Object System.Collections.Generic.List[object]
+    foreach ($root in $roots) {
+        $dirs = Get-ChildItem -Path $root -Directory | Where-Object { $_.Name -match '\.Tests?$' }
+        foreach ($dir in $dirs) {
+            $csproj = Get-ChildItem -Path $dir.FullName -Filter *.csproj -File -ErrorAction SilentlyContinue |
+                Select-Object -First 1
+            if ($csproj) {
+                $projects.Add([pscustomobject]@{ Name = $csproj.BaseName; Path = $csproj.FullName })
+            }
         }
     }
-
-    return $null
+    return $projects
 }
 
-# ---------- Build Web UI ----------
+# ---------- Project reference graph ----------
+# Read straight from the csproj files rather than asking MSBuild, so the graph costs
+# nothing and works before anything is restored.
+function Get-ProjectReferences([string]$CsprojPath) {
+    [xml]$xml = Get-Content -LiteralPath $CsprojPath -Raw
+    $baseDir = Split-Path -Parent $CsprojPath
+
+    $refs = New-Object System.Collections.Generic.List[string]
+    foreach ($node in $xml.SelectNodes('//ProjectReference')) {
+        $include = $node.Include
+        if (-not $include) { continue }
+        $full = [System.IO.Path]::GetFullPath((Join-Path $baseDir $include))
+        if (Test-Path -LiteralPath $full) { $refs.Add($full) }
+    }
+    return $refs
+}
+
+# Everything the given project depends on, transitively. The root itself is not included.
+function Get-ReferenceClosure([string]$CsprojPath) {
+    $seen = @{}
+    $queue = New-Object System.Collections.Queue
+    $queue.Enqueue($CsprojPath)
+
+    while ($queue.Count -gt 0) {
+        $current = $queue.Dequeue()
+        foreach ($ref in (Get-ProjectReferences $current)) {
+            $key = $ref.ToLowerInvariant()
+            if (-not $seen.ContainsKey($key)) {
+                $seen[$key] = $ref
+                $queue.Enqueue($ref)
+            }
+        }
+    }
+    return $seen.Values
+}
+
+# ---------- Web UI ----------
 function Invoke-WebUI {
-    $webRoot = Join-Path $solutionDir "src\DedicatedServer\React"
     if (-not (Test-Path (Join-Path $webRoot "package.json"))) {
-        Write-Host "ERROR: React project not found at $webRoot" -ForegroundColor Red
-        exit 1
+        Fail "React project not found at $webRoot"
     }
 
     $pnpm = Get-Command pnpm -ErrorAction SilentlyContinue
     if (-not $pnpm) {
-        Write-Host "ERROR: pnpm not found. Install Node.js and enable Corepack before building." -ForegroundColor Red
-        exit 1
+        Fail "pnpm not found. Install Node.js and enable Corepack before building."
     }
 
     if (-not $SkipRestore) {
         Write-Step "Restoring Web UI packages"
         & pnpm --dir $webRoot install --frozen-lockfile
-        if ($LASTEXITCODE -ne 0) { Write-Host "pnpm install failed." -ForegroundColor Red; exit 1 }
+        if ($LASTEXITCODE -ne 0) { Fail "pnpm install failed." }
     } elseif (-not (Test-Path (Join-Path $webRoot "node_modules"))) {
-        Write-Host "ERROR: Web UI packages are missing and -SkipRestore was specified." -ForegroundColor Red
-        exit 1
+        Fail "Web UI packages are missing and -SkipRestore was specified."
     }
 
     Write-Step "Building Web UI"
     & pnpm --dir $webRoot build
-    if ($LASTEXITCODE -ne 0) { Write-Host "Web UI build failed." -ForegroundColor Red; exit 1 }
-
-    if ($RunTests) {
-        Write-Step "Running Web UI tests"
-        & pnpm --dir $webRoot test
-        if ($LASTEXITCODE -ne 0) { Write-Host "Web UI tests failed." -ForegroundColor Red; exit 1 }
-    }
+    if ($LASTEXITCODE -ne 0) { Fail "Web UI build failed." }
 }
 
-# ---------- Locate test assemblies ----------
-# Convention: a test project lives in a directory ending in ".Test" or ".Tests" directly
-# under src\ or tests\, and its assembly name matches that directory name. Every such
-# project must have produced an assembly; a project that exists but was not built is an
-# error, not something to skip silently.
-function Find-TestAssemblies([string]$Configuration) {
-    $roots = @("src", "tests") |
-        ForEach-Object { Join-Path $solutionDir $_ } |
-        Where-Object { Test-Path $_ }
-
-    $assemblies = New-Object System.Collections.Generic.List[string]
-    $missing = New-Object System.Collections.Generic.List[string]
-
-    foreach ($root in $roots) {
-        $projectDirs = Get-ChildItem -Path $root -Directory |
-            Where-Object { $_.Name -match '\.Tests?$' }
-
-        foreach ($projectDir in $projectDirs) {
-            $binDir = Join-Path $projectDir.FullName "bin\$Configuration"
-            $hit = $null
-            if (Test-Path $binDir) {
-                # -Recurse so SDK-style projects with a TFM subdirectory are found too.
-                $hit = Get-ChildItem -Path $binDir -Recurse -Filter "$($projectDir.Name).dll" |
-                    Select-Object -First 1
-            }
-
-            if ($hit) { $assemblies.Add($hit.FullName) }
-            else { $missing.Add($projectDir.FullName) }
-        }
-    }
-
-    return [pscustomobject]@{
-        Assemblies = $assemblies
-        Missing    = $missing
-    }
+# ---------- Tests ----------
+function Read-TrxCounters([string]$TrxPath) {
+    [xml]$trx = Get-Content -LiteralPath $TrxPath
+    return $trx.TestRun.ResultSummary.Counters
 }
 
-# ---------- Build ----------
-$msbuild = Find-MSBuild
-if (-not $msbuild) {
-    Write-Host "ERROR: MSBuild not found. Please run from a Developer PowerShell or install Visual Studio Build Tools." -ForegroundColor Red
-    exit 1
-}
-Write-Host "MSBuild: $msbuild" -ForegroundColor DarkGray
+# ============================================================
+# Resolve what to build
+# ============================================================
+$dotnet = Assert-DotNet
+Write-Host "dotnet: $dotnet" -ForegroundColor DarkGray
 
-# ---------- Restore packages ----------
-if (-not $SkipRestore) {
-    Write-Step "Restoring NuGet packages"
-    $nuget = Find-NuGet
-    if ($nuget) {
-        Write-Host "NuGet: $nuget" -ForegroundColor DarkGray
-        & $nuget restore $solutionFile
-        if ($LASTEXITCODE -ne 0) { Write-Host "NuGet restore failed." -ForegroundColor Red; exit 1 }
+$sourceProjects = Get-SourceProjects
+
+if ($Project) {
+    $match = $sourceProjects | Where-Object { $_.Name -eq $Project } | Select-Object -First 1
+    if (-not $match) {
+        $names = ($sourceProjects | ForEach-Object { $_.Name } | Sort-Object) -join ", "
+        Fail "Unknown project '$Project'. Valid names: $names"
+    }
+    $primaryTargets = @($match.Path)
+    Write-Host "Project: $($match.Name)" -ForegroundColor DarkGray
+} else {
+    $primaryTargets = @($solutionFile)
+    Write-Host "Project: (entire solution)" -ForegroundColor DarkGray
+}
+
+# Which test projects to run, and therefore also to build.
+$testProjects = @()
+if ($RunTests) {
+    $all = Get-TestProjects
+    if ($Project) {
+        $targetKey = ([System.IO.Path]::GetFullPath($primaryTargets[0])).ToLowerInvariant()
+        $testProjects = @($all | Where-Object {
+            $closure = Get-ReferenceClosure $_.Path
+            @($closure | Where-Object { $_.ToLowerInvariant() -eq $targetKey }).Count -gt 0
+        })
     } else {
-        Write-Host "nuget.exe not found, attempting MSBuild /t:Restore ..." -ForegroundColor Yellow
-        & $msbuild $solutionFile /t:Restore /p:Configuration="$Configuration" /p:Platform="$Platform" /v:minimal
-        if ($LASTEXITCODE -ne 0) { Write-Host "Restore failed." -ForegroundColor Red; exit 1 }
+        $testProjects = @($all)
     }
 }
 
-# ---------- Clean (optional) ----------
+# Building the primary target does not build test projects that depend on it, so with -Project
+# they have to be built explicitly before `dotnet test --no-build` can be used. Without -Project
+# the solution build already covers them, and adding them here would build each one twice.
+$buildTargets = New-Object System.Collections.Generic.List[object]
+foreach ($t in $primaryTargets) { $buildTargets.Add($t) }
+if ($Project) {
+    foreach ($t in $testProjects) { $buildTargets.Add($t.Path) }
+}
+
+# ============================================================
+# Restore
+# ============================================================
+if (-not $SkipRestore) {
+    Write-Step "Restoring packages"
+    foreach ($target in $buildTargets) {
+        & $dotnet restore $target
+        if ($LASTEXITCODE -ne 0) { Fail "Restore failed for $target" }
+    }
+}
+
+# ============================================================
+# Clean (optional)
+# ============================================================
 if ($Clean) {
-    Write-Step "Cleaning solution"
-    & $msbuild $solutionFile /t:Clean /p:Configuration="$Configuration" /p:Platform="$Platform" /v:minimal
-    if ($LASTEXITCODE -ne 0) { Write-Host "Clean failed." -ForegroundColor Red; exit 1 }
+    Write-Step "Cleaning"
+    foreach ($target in $buildTargets) {
+        & $dotnet clean $target -c $Configuration
+        if ($LASTEXITCODE -ne 0) { Fail "Clean failed for $target" }
+    }
 }
 
-# ---------- Build solution ----------
-Invoke-WebUI
-
-Write-Step "Building solution ($Configuration|$Platform)"
-& $msbuild $solutionFile /t:Build /p:Configuration="$Configuration" /p:Platform="$Platform" /v:minimal
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "`nBuild FAILED." -ForegroundColor Red
-    exit 1
+# ============================================================
+# Web UI
+# ============================================================
+# DedicatedServer serves the panel out of wwwroot, so building it alone without the UI
+# would produce a server with a stale or missing panel. Every other single project skips it.
+$wantsWebUI = (-not $Project) -or ($Project -eq "DedicatedServer")
+if ($wantsWebUI -and -not $SkipWebUI) {
+    Invoke-WebUI
 }
 
-# ---------- Tests (optional) ----------
-# -RunTests means the tests MUST run. Missing tooling, a missing assembly or a run that
-# executed zero tests are all hard failures: vstest.console.exe exits 0 when it discovers
-# no tests, so the executed count has to be asserted explicitly or a broken test adapter
-# would show up as a green build.
+# ============================================================
+# Build
+# ============================================================
+Write-Step "Building ($Configuration)"
+foreach ($target in $buildTargets) {
+    & $dotnet build $target -c $Configuration --no-restore
+    if ($LASTEXITCODE -ne 0) { Fail "Build failed for $target" }
+}
+
+# ============================================================
+# Tests (optional)
+# ============================================================
+# -RunTests means the tests MUST run. No test project, a missing result file, or a run
+# that executed zero tests are all hard failures: `dotnet test` exits 0 when it discovers
+# nothing, so the executed count has to be asserted explicitly or a broken adapter would
+# show up as a green build.
 if ($RunTests) {
     Write-Step "Running tests"
 
-    $vstest = Find-VSTest
-    if (-not $vstest) {
-        Write-Host "ERROR: vstest.console.exe not found, so tests could not run." -ForegroundColor Red
-        Write-Host "       Install the Visual Studio 'Testing tools core features' component," -ForegroundColor Red
-        Write-Host "       or build without -RunTests if you deliberately want no test gate." -ForegroundColor Red
-        exit 1
-    }
-    Write-Host "VSTest: $vstest" -ForegroundColor DarkGray
-
-    $discovery = Find-TestAssemblies $Configuration
-    foreach ($dir in $discovery.Missing) {
-        Write-Host "ERROR: test project '$dir' produced no assembly for configuration '$Configuration'." -ForegroundColor Red
-    }
-    if ($discovery.Missing.Count -gt 0) { exit 1 }
-
-    if ($discovery.Assemblies.Count -eq 0) {
-        Write-Host "ERROR: no test assemblies found under src\ or tests\." -ForegroundColor Red
-        Write-Host "       A test project directory must end in '.Test' or '.Tests' and its" -ForegroundColor Red
-        Write-Host "       assembly name must match the directory name." -ForegroundColor Red
-        exit 1
-    }
-
-    foreach ($assembly in $discovery.Assemblies) {
-        Write-Host "Test assembly: $assembly" -ForegroundColor DarkGray
+    if ($testProjects.Count -eq 0) {
+        if ($Project) {
+            Fail "No test project references '$Project', so -RunTests has nothing to verify."
+        }
+        Fail "No test projects found under src\ or tests\. A test project directory must end in '.Test' or '.Tests'."
     }
 
     $resultsDir = Join-Path $solutionDir "artifacts\test-results"
     if (Test-Path $resultsDir) { Remove-Item $resultsDir -Recurse -Force }
     New-Item -ItemType Directory -Path $resultsDir -Force | Out-Null
 
-    $trxName = "vstest-$Configuration.trx"
-    & $vstest @($discovery.Assemblies) "/Logger:trx;LogFileName=$trxName" "/ResultsDirectory:$resultsDir"
-    $vstestExit = $LASTEXITCODE
+    $total = 0
+    $passed = 0
+    $failed = 0
+    $notExecuted = 0
 
-    $trxPath = Join-Path $resultsDir $trxName
-    if (-not (Test-Path $trxPath)) {
-        Write-Host "`nERROR: vstest produced no result file ($trxPath); the run cannot be verified." -ForegroundColor Red
-        exit 1
+    foreach ($testProject in $testProjects) {
+        Write-Host "Test project: $($testProject.Name)" -ForegroundColor DarkGray
+
+        $trxName = "$($testProject.Name)-$Configuration.trx"
+        $trxPath = Join-Path $resultsDir $trxName
+
+        & $dotnet test $testProject.Path -c $Configuration --no-build `
+            --logger "trx;LogFileName=$trxName" --results-directory $resultsDir
+        $testExit = $LASTEXITCODE
+
+        if (-not (Test-Path -LiteralPath $trxPath)) {
+            Fail "$($testProject.Name) produced no result file ($trxPath); the run cannot be verified."
+        }
+
+        $counters = Read-TrxCounters $trxPath
+        $total        += [int]$counters.total
+        $passed       += [int]$counters.passed
+        $failed       += [int]$counters.failed + [int]$counters.error +
+                         [int]$counters.timeout + [int]$counters.aborted
+        $notExecuted  += [int]$counters.notExecuted
+
+        if ($testExit -ne 0) {
+            Write-Host "$($testProject.Name) reported failure (dotnet test exit code $testExit)." -ForegroundColor Red
+        }
     }
-
-    [xml]$trx = Get-Content -LiteralPath $trxPath
-    $counters = $trx.TestRun.ResultSummary.Counters
-    $total = [int]$counters.total
-    $passed = [int]$counters.passed
-    $notExecuted = [int]$counters.notExecuted
-    $failed = [int]$counters.failed + [int]$counters.error + [int]$counters.timeout + [int]$counters.aborted
 
     Write-Host "`nTest summary: total=$total passed=$passed failed=$failed notExecuted=$notExecuted" -ForegroundColor DarkGray
 
     if ($total -eq 0) {
-        Write-Host "ERROR: zero tests were discovered, so nothing was verified." -ForegroundColor Red
-        Write-Host "       This usually means the NUnit test adapter was not imported — run a" -ForegroundColor Red
-        Write-Host "       build without -SkipRestore to restore packages, then try again." -ForegroundColor Red
-        exit 1
+        Fail "Zero tests were discovered, so nothing was verified. Re-run without -SkipRestore to restore packages."
     }
-
-    if ($failed -gt 0 -or $vstestExit -ne 0) {
-        Write-Host "Tests FAILED (vstest exit code $vstestExit)." -ForegroundColor Red
-        exit 1
+    if ($failed -gt 0) {
+        Fail "Tests FAILED."
     }
 
     Write-Host "$passed/$total tests passed." -ForegroundColor Green
