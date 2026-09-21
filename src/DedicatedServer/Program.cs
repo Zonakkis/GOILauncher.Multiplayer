@@ -68,7 +68,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer
             var thread = new Thread(() =>
             {
                 try { app.Run(); }
-                catch (Exception ex) { Console.Error.WriteLine("[Web] 观测面板线程退出：" + ex.Message); }
+                catch (Exception ex) { Console.Error.WriteLine("[Web] Web UI线程退出：" + ex.Message); }
             })
             { IsBackground = true, Name = "ObservationWeb" };
             thread.Start();

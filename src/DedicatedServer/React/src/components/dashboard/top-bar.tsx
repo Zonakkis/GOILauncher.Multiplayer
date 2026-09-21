@@ -15,7 +15,7 @@ export function TopBar({ status }: TopBarProps) {
     <header className={cn("top-bar", `top-bar-${state}`)}>
       <div className="brand-lockup">
         <span className="status-dot" />
-        <span className="brand-name">GOI 观测面板</span>
+        <span className="brand-name">GOILauncher.Multiplayer</span>
         <span className="server-state">{stateText}</span>
       </div>
 
