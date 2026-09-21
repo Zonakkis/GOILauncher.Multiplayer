@@ -1,4 +1,18 @@
 # =========================
+# Web UI build stage
+# =========================
+FROM node:24-alpine AS webui
+
+WORKDIR /web
+
+COPY src/DedicatedServer/React/ ./
+
+RUN corepack enable \
+    && pnpm install --frozen-lockfile \
+    && VITE_OUT_DIR=/webui-dist pnpm build
+
+
+# =========================
 # Build stage
 # =========================
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
@@ -6,6 +20,8 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 
 COPY . .
+
+COPY --from=webui /webui-dist ./src/DedicatedServer/wwwroot/
 
 RUN dotnet restore "src/DedicatedServer/DedicatedServer.csproj" \
     /p:TargetNetStandard20=true
