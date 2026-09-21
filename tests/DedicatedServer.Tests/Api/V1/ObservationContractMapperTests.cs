@@ -24,6 +24,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Tests.Api.V1
                 42,
                 TimeSpan.FromMilliseconds(17),
                 2,
+                new ServerTrafficObservation(400, 300, 16000, 12000, 4, 1),
                 new ReadOnlyCollection<ConnectionObservation>(new[]
                 {
                     new ConnectionObservation(
@@ -56,6 +57,12 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Tests.Api.V1
             dto.Server.GamePort.Should().Be(9027);
             dto.Server.UtcOffsetMinutes.Should().Be(
                 (int)TimeZoneInfo.Local.GetUtcOffset(generatedAt.UtcDateTime).TotalMinutes);
+            dto.Traffic.PacketsSent.Should().Be(400);
+            dto.Traffic.PacketsReceived.Should().Be(300);
+            dto.Traffic.BytesSent.Should().Be(16000);
+            dto.Traffic.BytesReceived.Should().Be(12000);
+            dto.Traffic.PacketLoss.Should().Be(4);
+            dto.Traffic.PacketLossPercent.Should().Be(1);
             dto.Rooms.Single().MaxPlayers.Should().BeNull();
             dto.Connections.Single().RoomId.Should().BeNull();
             dto.Connections.Single().Platform.Should().Be("PC");
@@ -73,6 +80,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Tests.Api.V1
                 0,
                 TimeSpan.Zero,
                 0,
+                ServerTrafficObservation.Empty,
                 new ReadOnlyCollection<ConnectionObservation>(Array.Empty<ConnectionObservation>()),
                 new ReadOnlyCollection<RoomObservation>(Array.Empty<RoomObservation>()),
                 new ReadOnlyCollection<ChatMessageObservation>(Array.Empty<ChatMessageObservation>()),
@@ -85,6 +93,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Tests.Api.V1
             json.Should().Contain("\"schemaVersion\":1");
             json.Should().Contain("\"generatedAt\":\"1970-01-01T00:00:00+00:00\"");
             json.Should().Contain("\"utcOffsetMinutes\":");
+            json.Should().Contain("\"traffic\":{\"packetsSent\":0");
             json.Should().Contain("\"chat\":{\"0\":[]}");
         }
     }

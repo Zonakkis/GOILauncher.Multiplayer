@@ -5,6 +5,7 @@ import {
   capacityText,
   classifyLatency,
   formatClockAtOffset,
+  formatBytes,
   formatCount,
   formatTimeZoneOffset,
   formatUptime,
@@ -25,6 +26,14 @@ function snapshot(): ObservationSnapshotDto {
       unattributedNetworkErrors: 1,
       gamePort: 9027,
       utcOffsetMinutes: 480,
+    },
+    traffic: {
+      packetsSent: 400,
+      packetsReceived: 300,
+      bytesSent: 16_000,
+      bytesReceived: 12_000,
+      packetLoss: 4,
+      packetLossPercent: 1,
     },
     rooms: [
       { id: 3, name: "room-b", isLobby: false, hasPassword: false, playerCount: 1, maxPlayers: 8, ownerPlayerId: 2, ownerName: "b" },
@@ -58,6 +67,9 @@ describe("dashboard rules", () => {
   it("formats server-local values", () => {
     expect(formatUptime(93_784)).toBe("26:03:04");
     expect(formatCount(1_234_567)).toBe("1.2M");
+    expect(formatBytes(999)).toBe("999 B");
+    expect(formatBytes(1536)).toBe("1.5 KiB");
+    expect(formatBytes(2 * 1024 * 1024)).toBe("2.0 MiB");
     expect(capacityText(2, null)).toBe("2/∞");
     expect(formatTimeZoneOffset(480)).toBe("UTC+08:00");
     expect(formatClockAtOffset("2026-09-21T05:00:00Z", 480)).toBe("13:00:00");
@@ -70,6 +82,8 @@ describe("dashboard rules", () => {
     expect(view.chat[0]?.time).toBe("12:59:00");
     expect(view.status.totalErrors).toBe(2);
     expect(view.status.serverNow).toBe("13:00:00");
+    expect(view.status.traffic.bytesSent).toBe("15.6 KiB");
+    expect(view.status.traffic.totalPackets).toBe("700");
   });
 
   it("keeps unassigned connections in their pseudo room", () => {

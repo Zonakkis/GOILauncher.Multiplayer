@@ -111,6 +111,24 @@ namespace GOILauncher.Multiplayer.Tests.Server
         }
 
         [Test]
+        public void Snapshot_ExposesGlobalLiteNetLibTraffic()
+        {
+            var h = new Harness();
+            h.Network.TotalTraffic = new ServerTraffic(
+                packetsSent: 400, packetsReceived: 300, bytesSent: 16000,
+                bytesReceived: 12000, packetLoss: 4, packetLossPercent: 1);
+
+            var traffic = h.Snapshot().Traffic;
+
+            traffic.PacketsSent.Should().Be(400);
+            traffic.PacketsReceived.Should().Be(300);
+            traffic.BytesSent.Should().Be(16000);
+            traffic.BytesReceived.Should().Be(12000);
+            traffic.PacketLoss.Should().Be(4);
+            traffic.PacketLossPercent.Should().Be(1);
+        }
+
+        [Test]
         public void ConnectedWithoutHandshake_StillShowsAsHalfOpenRow()
         {
             var h = new Harness();
@@ -234,6 +252,8 @@ namespace GOILauncher.Multiplayer.Tests.Server
             snap.Connections.Should().BeEmpty();
             snap.LobbyChat.Should().BeEmpty();
             snap.PollCount.Should().Be(0);
+            snap.Traffic.BytesSent.Should().Be(0);
+            snap.Traffic.BytesReceived.Should().Be(0);
         }
     }
 }

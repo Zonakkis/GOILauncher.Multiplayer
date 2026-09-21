@@ -1,9 +1,9 @@
 import type {
   ChatMessageDto,
   ConnectionDto,
-  ConnectionTrafficDto,
   ObservationSnapshotDto,
   RoomDto,
+  TrafficDto,
 } from "@/api/contracts";
 
 export const LOBBY_ID = 0;
@@ -26,6 +26,17 @@ export interface StatusView {
   onlineCount: number;
   roomCount: number;
   totalErrors: number;
+  traffic: TrafficView;
+}
+
+export interface TrafficView {
+  bytesSent: string;
+  bytesReceived: string;
+  packetsSent: string;
+  packetsReceived: string;
+  totalPackets: string;
+  packetLoss: string;
+  packetLossPercent: string;
 }
 
 export interface RoomItemView {
@@ -92,7 +103,7 @@ export function classifyLatency(milliseconds: number | null): LatencyLevel {
   return "ok";
 }
 
-export function lossPercent(traffic: ConnectionTrafficDto | null) {
+export function lossPercent(traffic: TrafficDto | null) {
   if (!traffic || traffic.packetsSent < MIN_LOSS_SAMPLE) return null;
   return ((traffic.packetsSent - traffic.packetsReceived) / traffic.packetsSent) * 100;
 }
@@ -127,6 +138,13 @@ export function formatCount(value: number) {
   if (value < 1000) return String(value);
   if (value < 1_000_000) return `${(value / 1000).toFixed(1)}k`;
   return `${(value / 1_000_000).toFixed(1)}M`;
+}
+
+export function formatBytes(value: number) {
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KiB`;
+  if (value < 1024 * 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MiB`;
+  return `${(value / (1024 * 1024 * 1024)).toFixed(1)} GiB`;
 }
 
 export function formatTimeZoneOffset(offsetMinutes: number) {
@@ -210,6 +228,15 @@ export function buildDashboard(snapshot: ObservationSnapshotDto, requestedRoom: 
       onlineCount: snapshot.connections.length,
       roomCount: snapshot.rooms.length,
       totalErrors,
+      traffic: {
+        bytesSent: formatBytes(snapshot.traffic.bytesSent),
+        bytesReceived: formatBytes(snapshot.traffic.bytesReceived),
+        packetsSent: formatCount(snapshot.traffic.packetsSent),
+        packetsReceived: formatCount(snapshot.traffic.packetsReceived),
+        totalPackets: formatCount(snapshot.traffic.packetsSent + snapshot.traffic.packetsReceived),
+        packetLoss: formatCount(snapshot.traffic.packetLoss),
+        packetLossPercent: `${snapshot.traffic.packetLossPercent}%`,
+      },
     },
     rail,
     selected,

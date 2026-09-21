@@ -50,6 +50,7 @@ namespace GOILauncher.Multiplayer.Server.Services
 
         private List<ConnectionObservation> _cachedConnections = new List<ConnectionObservation>();
         private List<RoomObservation> _cachedRooms = new List<RoomObservation>();
+        private ServerTrafficObservation _cachedTraffic = ServerTrafficObservation.Empty;
 
         private long _pollCount;
         private int _unattributedErrors;
@@ -121,6 +122,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                         _pollCount,
                         _maxPollGap,
                         _unattributedErrors,
+                        _cachedTraffic,
                         new ReadOnlyCollection<ConnectionObservation>(_cachedConnections.ToList()),
                         new ReadOnlyCollection<RoomObservation>(_cachedRooms.ToList()),
                         new ReadOnlyCollection<ChatMessageObservation>(ChatFor(RoomConstants.LobbyId, now).ToList()),
@@ -132,6 +134,11 @@ namespace GOILauncher.Multiplayer.Server.Services
         private void RefreshCaches()
         {
             // Poll-thread only: enumerates live services and samples LiteNetLib counters.
+            var traffic = _network.SampleServerTraffic();
+            _cachedTraffic = new ServerTrafficObservation(
+                traffic.PacketsSent, traffic.PacketsReceived, traffic.BytesSent, traffic.BytesReceived,
+                traffic.PacketLoss, traffic.PacketLossPercent);
+
             var trafficById = new Dictionary<int, ConnectionStatsObservation>();
             foreach (var t in _network.SamplePeerTraffic())
                 trafficById[t.ClientId] = new ConnectionStatsObservation(
@@ -262,6 +269,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                 _connections.Clear(); _chat.Clear();
                 _cachedConnections = new List<ConnectionObservation>();
                 _cachedRooms = new List<RoomObservation>();
+                _cachedTraffic = ServerTrafficObservation.Empty;
                 _pollCount = 0; _unattributedErrors = 0;
                 _hasLastPoll = false; _lastPoll = default(DateTime); _maxPollGap = TimeSpan.Zero;
                 _nextRefresh = default(DateTime); _startedAt = null;

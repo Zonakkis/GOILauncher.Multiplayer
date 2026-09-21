@@ -23,6 +23,26 @@ namespace GOILauncher.Multiplayer.Server.Services
         }
     }
 
+    /// <summary>Aggregate LiteNetLib counters for all server connections during the current run.</summary>
+    public sealed class ServerTrafficObservation
+    {
+        public long PacketsSent { get; }
+        public long PacketsReceived { get; }
+        public long BytesSent { get; }
+        public long BytesReceived { get; }
+        public long PacketLoss { get; }
+        public long PacketLossPercent { get; }
+
+        public ServerTrafficObservation(long packetsSent, long packetsReceived, long bytesSent,
+            long bytesReceived, long packetLoss, long packetLossPercent)
+        {
+            PacketsSent = packetsSent; PacketsReceived = packetsReceived; BytesSent = bytesSent;
+            BytesReceived = bytesReceived; PacketLoss = packetLoss; PacketLossPercent = packetLossPercent;
+        }
+
+        public static ServerTrafficObservation Empty => new ServerTrafficObservation(0, 0, 0, 0, 0, 0);
+    }
+
     /// <summary>
     /// One row of the connections table: identity facts joined from PlayerService plus
     /// transport diagnostics collected by ObservationService. Immutable snapshot.
@@ -84,6 +104,7 @@ namespace GOILauncher.Multiplayer.Server.Services
         public TimeSpan MaxPollGap { get; }
         /// <summary>Socket errors that could not be matched to a live connection by endpoint.</summary>
         public int UnattributedNetworkErrors { get; }
+        public ServerTrafficObservation Traffic { get; }
         public ReadOnlyCollection<ConnectionObservation> Connections { get; }
         public ReadOnlyCollection<RoomObservation> Rooms { get; }
         public ReadOnlyCollection<ChatMessageObservation> LobbyChat { get; }
@@ -94,12 +115,14 @@ namespace GOILauncher.Multiplayer.Server.Services
         public Dictionary<int, ReadOnlyCollection<ChatMessageObservation>> RoomChat { get; }
 
         public ServerObservationSnapshot(bool isRunning, DateTime? startedAt, TimeSpan? uptime, long pollCount,
-            TimeSpan maxPollGap, int unattributedNetworkErrors, ReadOnlyCollection<ConnectionObservation> connections,
-            ReadOnlyCollection<RoomObservation> rooms, ReadOnlyCollection<ChatMessageObservation> lobbyChat,
+            TimeSpan maxPollGap, int unattributedNetworkErrors, ServerTrafficObservation traffic,
+            ReadOnlyCollection<ConnectionObservation> connections, ReadOnlyCollection<RoomObservation> rooms,
+            ReadOnlyCollection<ChatMessageObservation> lobbyChat,
             Dictionary<int, ReadOnlyCollection<ChatMessageObservation>> roomChat)
         {
             IsRunning = isRunning; StartedAt = startedAt; Uptime = uptime;
             PollCount = pollCount; MaxPollGap = maxPollGap; UnattributedNetworkErrors = unattributedNetworkErrors;
+            Traffic = traffic;
             Connections = connections; Rooms = rooms; LobbyChat = lobbyChat; RoomChat = roomChat;
         }
     }

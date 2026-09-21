@@ -36,6 +36,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Api.V1
                     snapshot.UnattributedNetworkErrors,
                     gamePort,
                     (int)utcOffset.TotalMinutes),
+                MapTraffic(snapshot.Traffic),
                 snapshot.Rooms
                     .OrderBy(room => room.Info.Id)
                     .Select(MapRoom)
@@ -76,17 +77,28 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Api.V1
                 connection.NetworkErrorCount);
         }
 
-        private static ConnectionTrafficDto MapTraffic(ConnectionStatsObservation statistics)
+        private static TrafficDto MapTraffic(ConnectionStatsObservation statistics)
         {
             if (statistics == null) return null;
 
-            return new ConnectionTrafficDto(
+            return new TrafficDto(
                 statistics.PacketsSent,
                 statistics.PacketsReceived,
                 statistics.BytesSent,
                 statistics.BytesReceived,
                 statistics.PacketLoss,
                 statistics.PacketLossPercent);
+        }
+
+        private static TrafficDto MapTraffic(ServerTrafficObservation traffic)
+        {
+            return new TrafficDto(
+                traffic.PacketsSent,
+                traffic.PacketsReceived,
+                traffic.BytesSent,
+                traffic.BytesReceived,
+                traffic.PacketLoss,
+                traffic.PacketLossPercent);
         }
 
         private static IReadOnlyList<ChatMessageDto> MapChat(IEnumerable<ChatMessageObservation> messages)

@@ -4,6 +4,7 @@ export interface ObservationSnapshotDto {
   schemaVersion: number;
   generatedAt: string;
   server: ServerStatusDto;
+  traffic: TrafficDto;
   rooms: RoomDto[];
   connections: ConnectionDto[];
   chat: Record<string, ChatMessageDto[]>;
@@ -40,11 +41,11 @@ export interface ConnectionDto {
   roomId: number | null;
   endPoint: string | null;
   latencyMs: number | null;
-  traffic: ConnectionTrafficDto | null;
+  traffic: TrafficDto | null;
   networkErrorCount: number;
 }
 
-export interface ConnectionTrafficDto {
+export interface TrafficDto {
   packetsSent: number;
   packetsReceived: number;
   bytesSent: number;

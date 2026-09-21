@@ -33,6 +33,7 @@ namespace GOILauncher.Multiplayer.Network
 
         public void Start(int port)
         {
+            _netManager.Statistics.Reset();
             _netManager.Start(port);
             _logger.Info($"Server started on {port}.");
         }
@@ -67,6 +68,18 @@ namespace GOILauncher.Multiplayer.Network
                     s.BytesSent, s.BytesReceived, s.PacketLoss, s.PacketLossPercent));
             }
             return traffic;
+        }
+
+        public ServerTraffic SampleServerTraffic()
+        {
+            var statistics = _netManager.Statistics;
+            return new ServerTraffic(
+                statistics.PacketsSent,
+                statistics.PacketsReceived,
+                statistics.BytesSent,
+                statistics.BytesReceived,
+                statistics.PacketLoss,
+                statistics.PacketLossPercent);
         }
 
         public void Send(int clientId, INetSerializable packet, DeliveryMethod method)

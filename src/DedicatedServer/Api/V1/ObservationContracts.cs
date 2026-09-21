@@ -11,6 +11,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Api.V1
         int SchemaVersion,
         DateTimeOffset GeneratedAt,
         ServerStatusDto Server,
+        TrafficDto Traffic,
         IReadOnlyList<RoomDto> Rooms,
         IReadOnlyList<ConnectionDto> Connections,
         IReadOnlyDictionary<int, IReadOnlyList<ChatMessageDto>> Chat);
@@ -44,10 +45,10 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Api.V1
         int? RoomId,
         string EndPoint,
         int? LatencyMs,
-        ConnectionTrafficDto Traffic,
+        TrafficDto Traffic,
         int NetworkErrorCount);
 
-    public sealed record ConnectionTrafficDto(
+    public sealed record TrafficDto(
         long PacketsSent,
         long PacketsReceived,
         long BytesSent,

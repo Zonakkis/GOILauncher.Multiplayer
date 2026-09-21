@@ -1,4 +1,4 @@
-import { Activity, Clock3, DoorOpen, HeartPulse, Network, TriangleAlert, Users } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, Clock3, DoorOpen, HeartPulse, Network, Package, TriangleAlert, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { StatusView } from "@/lib/dashboard";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,24 @@ export function TopBar({ status }: TopBarProps) {
         <Metric icon={Network} value={status?.port ?? "-"} label="游戏端口" />
         <Metric icon={Users} value={status?.onlineCount ?? "-"} label="在线" />
         <Metric icon={DoorOpen} value={status?.roomCount ?? "-"} label="房间" />
+        <Metric
+          icon={ArrowUp}
+          value={status?.traffic.bytesSent ?? "-"}
+          label="累计发送"
+          title={status ? `累计发送 ${status.traffic.packetsSent} 个包；丢包 ${status.traffic.packetLoss}（${status.traffic.packetLossPercent}）` : undefined}
+        />
+        <Metric
+          icon={ArrowDown}
+          value={status?.traffic.bytesReceived ?? "-"}
+          label="累计接收"
+          title={status ? `累计接收 ${status.traffic.packetsReceived} 个包` : undefined}
+        />
+        <Metric
+          icon={Package}
+          value={status?.traffic.totalPackets ?? "-"}
+          label="累计包数"
+          title={status ? `发送 ${status.traffic.packetsSent} / 接收 ${status.traffic.packetsReceived}` : undefined}
+        />
         <Metric icon={Clock3} value={status?.uptime ?? "-"} label="运行时长" title={status ? `服务器启动于 ${status.startedAt}` : undefined} />
         <Metric
           icon={HeartPulse}

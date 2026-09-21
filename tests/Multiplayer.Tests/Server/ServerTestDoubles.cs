@@ -32,6 +32,9 @@ namespace GOILauncher.Multiplayer.Tests.Server
         public List<PeerTraffic> PeerTraffic = new List<PeerTraffic>();
         public List<PeerTraffic> SamplePeerTraffic() { return new List<PeerTraffic>(PeerTraffic); }
 
+        public ServerTraffic TotalTraffic = ServerTraffic.Empty;
+        public ServerTraffic SampleServerTraffic() { return TotalTraffic; }
+
         public void Send(int clientId, INetSerializable packet, DeliveryMethod method)
         {
             Send(clientId, packet, NetworkChannels.Default, method);

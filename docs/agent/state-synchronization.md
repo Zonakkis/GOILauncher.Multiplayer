@@ -130,13 +130,13 @@ ale` 无关）。没有轮询，也没有手动刷新：**游戏中途换皮肤�
 
 - `DedicatedServer` 是独立服务端进程的组合根，负责游戏 UDP 服务端、Poll 循环、日志、HTTP API 与同源托管的 React 静态资源。`Server` 仍是可复用的业务实现。
 - 端口分别由 `GOI_SERVER_PORT` 和 `GOI_WEB_PORT` 配置。默认值仍为 `9027` 和 `9028`。
-- HTTP 契约位于 `/api/v1`。`GET /api/v1/snapshot` 返回原始状态、房间、连接和聊天；`GET /api/v1/logs?after={seq}&limit={count}` 返回带游标的日志批次。React 面板直接消费这两个接口。
+- HTTP 契约位于 `/api/v1`。`GET /api/v1/snapshot` 返回原始状态、LiteNetLib 全局累计流量、房间、连接和聊天；`GET /api/v1/logs?after={seq}&limit={count}` 返回带游标的日志批次。React 面板直接消费这两个接口。
 - HTTP DTO 与 `ServerObservationSnapshot` 分离，平台输出字符串，时间输出 ISO 8601，`maxPlayers = 0` 输出为 `null`。展示格式、告警阈值和排序属于前端，不进入观测服务。`utcOffsetMinutes` 只表达服务器时区事实，前端据此显示服务器本地时间。
 - React 源码位于 `src/DedicatedServer/React`，由 Vite 构建到 `src/DedicatedServer/wwwroot`。开发时可单独启动 Vite 并代理 `/api` 到 ASP.NET；生产构建和容器中不启动 Node，最终仍由同一个 ASP.NET Core 进程提供 API、首页与静态资源。
 - 认证尚未实现，但所有 API 已集中在同一个 `/api/v1` group 下，后续可以在 group 层统一加授权，不需要改观测服务。
 
 - 采集补齐：DedicatedServer 的 `NetManager` 开 `EnableStatistics = true`；`NetworkServerListener` 不再吞掉 `OnNetworkError`（改为 `Warn` 日志 + 发布 `NetworkErrorEvent`），并在 `OnNetworkLatencyUpdate` 发布 `NetworkLatencyUpdatedEvent`；`ClientConnectedEvent` 携带传输层的 `RemoteEndPoint`（IP/端口只进观测视图，不写进协议模型 `PlayerInfo`）。
-- `ObservationService` 是门面：订阅现有服务端事件、在自己的锁下维护展示副本，宿主每轮 `Poll` 后调 `MarkPoll()` 推进存活计数（poll 次数、最大 poll 间隔）并按 150ms 节流刷新目录/名单/流量缓存。流量按 `INetworkServer.SamplePeerTraffic()` 在 Poll 线程拉取（`ConnectedPeerList` 是 LiteNetLib 内部共享缓存，只能当轮复制、不可跨线程持有）。
+- `ObservationService` 是门面：订阅现有服务端事件、在自己的锁下维护展示副本，宿主每轮 `Poll` 后调 `MarkPoll()` 推进存活计数（poll 次数、最大 poll 间隔）并按 150ms 节流刷新目录/名单/流量缓存。每连接流量按 `INetworkServer.SamplePeerTraffic()` 在 Poll 线程拉取（`ConnectedPeerList` 是 LiteNetLib 内部共享缓存，只能当轮复制、不可跨线程持有）；服务器总流量按 `INetworkServer.SampleServerTraffic()` 读取 `NetManager.Statistics`，统计范围是当前这次服务器启动以来的累计值，不是速率。
 - 线程契约：所有写入（事件回调 + `MarkPoll`）都在服务端 Poll 线程；`Snapshot` 是唯一跨线程入口，只读不可变快照，不触碰 `PlayerService`/`RoomService` 的活字典。渲染线程因此不会在换房中途枚举到被改写的 `Dictionary`。
 - 网络错误按 endpoint 归属到连接；匹配不到活连接的计入全局 `UnattributedNetworkErrors`。
 - 该门面纯观测，不提供任何对玩家操作的干预入口，也不改变上面任何同步/房间链路的权威写入。

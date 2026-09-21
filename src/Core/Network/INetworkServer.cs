@@ -30,5 +30,11 @@ namespace GOILauncher.Multiplayer.Network
         /// Returns List rather than IReadOnlyList because Core also builds against net35.
         /// </summary>
         List<PeerTraffic> SamplePeerTraffic();
+
+        /// <summary>
+        /// Aggregate LiteNetLib statistics for all server connections. The values are cumulative
+        /// for the current server run. Empty unless statistics collection is enabled.
+        /// </summary>
+        ServerTraffic SampleServerTraffic();
     }
 }
