@@ -29,8 +29,11 @@
   
   <ItemGroup>
     <ProjectReference Include="..\Unity\Unity.csproj" />
-    <!-- UniverseLib 改用 lib/UniverseLib 子模块（Zonakkis fork）源码，强制走 Release_Mono 配置 -->
-    <ProjectReference Include="..\..\lib\UniverseLib\src\UniverseLib.csproj" SetConfiguration="Release_Mono" />
+    <!-- UniverseLib 改用 lib/UniverseLib 子模块（Zonakkis fork）源码。它自己会把 Debug/Release
+         归一到 Release_Mono（见 UniverseLib.csproj 的 TreatAsLocalProperty），解决方案级的配置映射
+         也指向 Release_Mono。这里不能再写 SetConfiguration：那会让单独构建本项目（不经解决方案）
+         时 MSBuild 收到一个残缺的 Properties 值，直接 MSB3100 失败。 -->
+    <ProjectReference Include="..\..\lib\UniverseLib\src\UniverseLib.csproj" />
   </ItemGroup>
   
   <ItemGroup>
