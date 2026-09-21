@@ -1,4 +1,5 @@
 using GOILauncher.Multiplayer.Server.Services;
+using GOILauncher.Multiplayer.DedicatedServer.Api.V1;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +11,7 @@ using System;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 
-namespace ConsoleServer.Web
+namespace GOILauncher.Multiplayer.DedicatedServer.Web
 {
     /// <summary>
     /// 递进 Razor Pages 的宿主参数。游戏端口要在状态条上显示，但它不属于 web 层，
@@ -37,11 +38,13 @@ namespace ConsoleServer.Web
     {
         public static WebApplication Create(IObservationService observation, WebLogTarget logs, int webPort, int gamePort)
         {
-            var builder = WebApplication.CreateBuilder();
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                ContentRootPath = AppContext.BaseDirectory
+            });
 
-            // 内容根必须钉在程序集目录。默认是当前工作目录，那样 `dotnet ConsoleServer.dll`
+            // 内容根必须钉在程序集目录。默认是当前工作目录，那样 `dotnet GOILauncher.Multiplayer.DedicatedServer.dll`
             // 从别的目录启动时 wwwroot 就会找不到，静态资源全部 404。
-            builder.WebHost.UseContentRoot(AppContext.BaseDirectory);
             builder.WebHost.UseUrls($"http://0.0.0.0:{webPort}");
 
             // 服务器每 15ms Poll 一次、面板每秒轮询一次，默认的 Information 级请求日志
@@ -70,13 +73,7 @@ namespace ConsoleServer.Web
             var app = builder.Build();
             app.UseStaticFiles();
 
-            // 日志是带游标的机器接口（?since=seq，环形缓冲淘汰时回 reset 信号），不是页面，
-            // 所以留在 Minimal API 上，由 wwwroot/js/dashboard.js 直接拉。
-            app.MapGet("/api/logs", (long? since) =>
-            {
-                var rows = logs.Fetch(since ?? 0, out var nextSeq, out var reset);
-                return Results.Json(new { rows, nextSeq, reset });
-            });
+            app.MapObservationApi(observation, logs, gamePort);
 
             app.MapRazorPages();
             return app;

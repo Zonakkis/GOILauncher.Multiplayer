@@ -1,7 +1,7 @@
 using Autofac;
-using ConsoleServer.Web;
 using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Core.Extensions;
+using GOILauncher.Multiplayer.DedicatedServer.Web;
 using GOILauncher.Multiplayer.Server.Extensions;
 using GOILauncher.Multiplayer.Server.Services;
 using Microsoft.AspNetCore.Builder;
@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ConsoleServer
+namespace GOILauncher.Multiplayer.DedicatedServer
 {
     internal class Program
     {
@@ -78,13 +78,13 @@ namespace ConsoleServer
 
         private static int GetWebPort()
         {
-            var raw = Environment.GetEnvironmentVariable("WEB_PORT");
+            var raw = Environment.GetEnvironmentVariable("GOI_WEB_PORT");
             return string.IsNullOrWhiteSpace(raw) ? 9028 : int.Parse(raw);
         }
 
         private static int GetPort()
         {
-            var raw = Environment.GetEnvironmentVariable("PORT");
+            var raw = Environment.GetEnvironmentVariable("GOI_SERVER_PORT");
             return string.IsNullOrWhiteSpace(raw) ? 9027 : int.Parse(raw);
         }
 
@@ -119,9 +119,9 @@ namespace ConsoleServer
         {
             var builder = new ContainerBuilder();
 
-            // RegisterMultiplayerCore supplies CoreManager and ILogger<>; WithServer supplies IServerEventBus;
-            // WithServer only registers the server role on top of them.
-            builder.RegisterMultiplayerCore().WithServer();
+            // RegisterMultiplayerCore supplies CoreManager and ILogger<>. DedicatedServer owns the
+            // diagnostics facade and the per-peer statistics that feed it.
+            builder.RegisterMultiplayerCore().WithServer(enableDiagnostics: true);
 
             var container = builder.Build();
 

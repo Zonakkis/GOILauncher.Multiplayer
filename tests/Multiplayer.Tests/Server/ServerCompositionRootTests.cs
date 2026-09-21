@@ -25,6 +25,13 @@ namespace GOILauncher.Multiplayer.Tests.Server
             return builder.Build();
         }
 
+        private IContainer BuildDiagnosticsContainer()
+        {
+            var builder = new ContainerBuilder();
+            builder.RegisterMultiplayerCore().WithServer(enableDiagnostics: true);
+            return builder.Build();
+        }
+
         [Test]
         public void ServerContainer_Builds()
         {
@@ -49,11 +56,23 @@ namespace GOILauncher.Multiplayer.Tests.Server
                 started.Should().Contain(typeof(RoomService));
                 started.Should().Contain(typeof(SkinRelay));
                 // Regression guard: ChatService used to be reachable only through the
-                // Unity host's property injection, so ConsoleServer never relayed chat.
+                // Unity host's property injection, so DedicatedServer never relayed chat.
                 started.Should().Contain(typeof(ChatService));
-                // The observation view must activate on its own, or ConsoleServer's MarkPoll
-                // would drive a facade that never subscribed to the event bus.
+                started.Should().NotContain(typeof(ObservationService));
+            }
+        }
+
+        [Test]
+        public void Diagnostics_IsOptedInByTheHost()
+        {
+            using (var container = BuildDiagnosticsContainer())
+            {
+                var started = container.Resolve<IEnumerable<IStartable>>()
+                    .Select(s => s.GetType())
+                    .ToList();
+
                 started.Should().Contain(typeof(ObservationService));
+                container.Resolve<IObservationService>().Should().NotBeNull();
             }
         }
     }

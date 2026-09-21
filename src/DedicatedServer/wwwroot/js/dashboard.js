@@ -146,7 +146,7 @@
 
     function pollLogs() {
         if (log.paused) return;
-        fetch('/api/logs?since=' + log.seq)
+    fetch('/api/v1/logs?after=' + log.seq + '&limit=600')
             .then(function (r) { return r.json(); })
             .then(function (p) {
                 // reset = 请求的位置已被环形缓冲淘汰。服务端返回的已经是它保留的最老一段，

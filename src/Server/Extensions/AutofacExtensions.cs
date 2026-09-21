@@ -7,9 +7,9 @@ namespace GOILauncher.Multiplayer.Server.Extensions
 {
     public static class AutofacExtensions
     {
-        public static ContainerBuilder WithServer(this ContainerBuilder builder)
+        public static ContainerBuilder WithServer(this ContainerBuilder builder, bool enableDiagnostics = false)
         {
-            builder.RegisterServerCore();
+            builder.RegisterServerCore(enableDiagnostics);
             // Every module below registers its packet callbacks and event subscriptions in
             // IStartable.Start(), so the container activates them at Build() time. Composition
             // roots must not resolve them by hand.
@@ -29,11 +29,15 @@ namespace GOILauncher.Multiplayer.Server.Extensions
                 .AsSelf()
                 .As<IStartable>()
                 .SingleInstance();
-            // Read-only diagnostics view; subscribes on the Poll thread, freezes snapshots for a host.
-            builder.RegisterType<ObservationService>()
-                .As<IObservationService>()
-                .As<IStartable>()
-                .SingleInstance();
+            if (enableDiagnostics)
+            {
+                // Read-only diagnostics view; subscribes on the Poll thread and freezes snapshots
+                // for a host. This is opt-in because Unity embeds the same server implementation.
+                builder.RegisterType<ObservationService>()
+                    .As<IObservationService>()
+                    .As<IStartable>()
+                    .SingleInstance();
+            }
             builder.RegisterType<PlayerStateRelay>()
                 .AsSelf()
                 .As<IStartable>()

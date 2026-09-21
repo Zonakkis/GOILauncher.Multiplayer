@@ -1,9 +1,9 @@
-using ConsoleServer.Web;
+using GOILauncher.Multiplayer.DedicatedServer.Web;
 using GOILauncher.Multiplayer.Server.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace ConsoleServer.Web.Pages
+namespace GOILauncher.Multiplayer.DedicatedServer.Web.Pages
 {
     /// <summary>
     /// 面板只有一个页面。选中哪个房间是唯一的界面状态，放在查询串里而不是 JS 变量里——

@@ -3,8 +3,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>ConsoleServer</AssemblyName>
-    <RootNamespace>ConsoleServer</RootNamespace>
+    <AssemblyName>GOILauncher.Multiplayer.DedicatedServer</AssemblyName>
+    <RootNamespace>GOILauncher.Multiplayer.DedicatedServer</RootNamespace>
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ProjectGuid>{858EE83C-5E77-42AF-9E0F-A29983265D7E}</ProjectGuid>
@@ -32,7 +32,7 @@
     <!--
       wwwroot 必须真的落在输出目录里，不能只依赖 Web SDK 的 static web assets。
       那套机制只在 Development 环境生效（靠 {Assembly}.staticwebassets.runtime.json 指回源码目录），
-      而这个服务是直接 `dotnet ConsoleServer.dll` 起的，环境是 Production，
+      而这个服务是直接 `dotnet GOILauncher.Multiplayer.DedicatedServer.dll` 起的，环境是 Production，
       于是 WebRootPath 找不到、css/js 全 404 —— 而且只在本地跑 build 输出时出现，publish 反而正常，
       是个很难查的不对称。显式拷贝一份，三种运行方式（build 输出 / publish / 容器）行为就一致了。
     -->

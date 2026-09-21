@@ -4,7 +4,7 @@ using System.Globalization;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Server.Services;
 
-namespace ConsoleServer.Web
+namespace GOILauncher.Multiplayer.DedicatedServer.Web
 {
     /// <summary>延迟档位。视图只认这个，阈值调整不会漏到 cshtml 里。</summary>
     public enum LatencyLevel
@@ -21,7 +21,7 @@ namespace ConsoleServer.Web
     /// 不碰观察快照也不碰 HTML，所以能被测试直接驱动。
     ///
     /// 本文件被 tests/Multiplayer.Tests 以 &lt;Compile Link&gt; 引入（该测试项目是 net481，
-    /// 引用不了 net8.0 的 ConsoleServer）。代价是这里只能出现 Server/Core 的类型和 BCL，
+    /// 引用不了 net8.0 的 DedicatedServer）。代价是这里只能出现 Server/Core 的类型和 BCL，
     /// 不能引用 DashboardView 里的展示类型，也不能用 record / init（net481 没有 IsExternalInit）。
     /// 这正是把规则和投影分开的原因。
     /// </summary>

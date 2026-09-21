@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ConsoleServer.Web;
+using GOILauncher.Multiplayer.DedicatedServer.Web;
 using FluentAssertions;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Server.Services;

@@ -61,14 +61,14 @@
   </ItemGroup>
 
   <!--
-    ConsoleServer 是 net8.0 的 exe，本测试项目是 net481，引用不了它，
+    DedicatedServer 是 net8.0 的 exe，本测试项目是 net481，引用不了它，
     所以把面板的判断层源文件链接进来单独编译。
     代价：DashboardRules.cs 里只能出现 Server/Core 的类型和 BCL，
     不能引用 DashboardView 的展示类型，也不能用 record / init（net481 没有 IsExternalInit）。
     这正是把"判断"和"投影"分成两个文件的原因。
   -->
   <ItemGroup>
-    <Compile Include="..\..\src\ConsoleServer\Web\DashboardRules.cs" Link="Web\DashboardRules.cs" />
+    <Compile Include="..\..\src\DedicatedServer\Web\DashboardRules.cs" Link="Web\DashboardRules.cs" />
   </ItemGroup>
 
 </Project>

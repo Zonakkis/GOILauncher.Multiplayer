@@ -67,7 +67,7 @@ namespace GOILauncher.Multiplayer.Core.Extensions
             return builder;
         }
 
-        public static ContainerBuilder RegisterServerCore(this ContainerBuilder builder)
+        public static ContainerBuilder RegisterServerCore(this ContainerBuilder builder, bool enableDiagnostics = false)
         {
             builder.RegisterType<ServerEventBus>().As<IServerEventBus>().SingleInstance();
             builder.Register(c => new ServerPacketDispatcher(
@@ -83,9 +83,9 @@ namespace GOILauncher.Multiplayer.Core.Extensions
                 var netManager = new NetManager(c.Resolve<NetworkServerListener>())
                 {
                     ChannelsCount = NetworkChannels.Count,
-                    // Per-peer send/receive/loss counters feed the observation facade.
-                    // NetStatistics reads are Interlocked, so sampling off the Poll thread is safe.
-                    EnableStatistics = true
+                    // Diagnostics hosts need per-peer counters. Embedded servers keep this off so
+                    // observation-only bookkeeping stays out of the gameplay process.
+                    EnableStatistics = enableDiagnostics
                 };
                 return new NetworkServer(netManager,
                     c.Resolve<IServerEventBus>(),

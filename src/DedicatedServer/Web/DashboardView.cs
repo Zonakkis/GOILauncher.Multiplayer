@@ -4,7 +4,7 @@ using System.Globalization;
 using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Server.Services;
 
-namespace ConsoleServer.Web
+namespace GOILauncher.Multiplayer.DedicatedServer.Web
 {
     /// <summary>顶部状态条。</summary>
     public sealed class StatusView

@@ -2,14 +2,15 @@ using NLog;
 using NLog.Common;
 using NLog.Config;
 using NLog.Targets;
+using System;
 using System.Collections.Generic;
-using System.Threading;
+using GOILauncher.Multiplayer.DedicatedServer.Api.V1;
 
-namespace ConsoleServer.Web
+namespace GOILauncher.Multiplayer.DedicatedServer.Web
 {
     /// <summary>
     /// 内存环形日志 Target：与 stdout 的 ConsoleTarget 并存（NLog 允许同一 rule 挂多个 target），
-    /// Web UI 通过 /api/logs?since=seq 增量拉取。
+    /// Web UI 通过 /api/v1/logs?after=seq 增量拉取。
     /// 行格式约定为 "HH:mm:ss|LEVEL|logger|消息"，拆列时只切前三个分隔符，消息里的竖线保持原样。
     /// NLog 6 下必须继承 TargetWithLayout（Layout 属性在其上），重写同步 Write 并在结尾发 continuation。
     /// </summary>
@@ -18,6 +19,7 @@ namespace ConsoleServer.Web
         private sealed class Entry
         {
             public long Seq;
+            public DateTimeOffset Timestamp;
             public string Time;
             public string Level;
             public string Logger;
@@ -40,21 +42,27 @@ namespace ConsoleServer.Web
         {
             var target = new WebLogTarget { Name = "WebLogRing" };
             var config = LogManager.Configuration ?? new LoggingConfiguration();
-            if (config.FindTargetByName(target.Name) == null)
-            {
-                config.AddTarget(target);
-                config.AddRuleForAllLevels(target);
-                LogManager.Configuration = config;
-                LogManager.ReconfigExistingLoggers();
-            }
+            var existing = config.FindTargetByName(target.Name) as WebLogTarget;
+            if (existing != null) return existing;
+
+            if (config.FindTargetByName(target.Name) != null)
+                throw new InvalidOperationException("NLog target 'WebLogRing' already exists with another type.");
+
+            config.AddTarget(target);
+            config.AddRuleForAllLevels(target);
+            LogManager.Configuration = config;
+            LogManager.ReconfigExistingLoggers();
             return target;
         }
 
         /// <summary>
         /// 取 seq 大于 since 的行；若 since 已被环形淘汰，reset=true 通知客户端清空重拉。
         /// </summary>
-        public List<object> Fetch(long since, out long nextSeq, out bool reset)
+        public List<LogEntryDto> Fetch(long since, int limit, out long nextSeq, out bool reset)
         {
+            if (limit <= 0) limit = 1;
+            if (limit > Capacity) limit = Capacity;
+
             lock (_gate)
             {
                 reset = false;
@@ -64,11 +72,12 @@ namespace ConsoleServer.Web
                     reset = true;
                     since = _oldestSeq - 1;
                 }
-                var result = new List<object>();
+                var result = new List<LogEntryDto>();
                 foreach (var e in _entries)
                 {
                     if (e.Seq <= since) continue;
-                    result.Add(new { seq = e.Seq, time = e.Time, level = e.Level, logger = e.Logger, message = e.Message });
+                    result.Add(new LogEntryDto(e.Seq, e.Timestamp, e.Time, e.Level, e.Logger, e.Message));
+                    if (result.Count >= limit) break;
                 }
                 nextSeq = _seq;
                 return result;
@@ -78,7 +87,7 @@ namespace ConsoleServer.Web
         protected override void Write(AsyncLogEventInfo logEvent)
         {
             var rendered = Layout.Render(logEvent.LogEvent);
-            var entry = new Entry { Seq = Interlocked.Increment(ref _seq) };
+            var entry = new Entry { Timestamp = new DateTimeOffset(logEvent.LogEvent.TimeStamp) };
             var parts = rendered.Split(new[] { '|' }, 4);
             entry.Time = parts.Length > 0 ? parts[0] : string.Empty;
             entry.Level = parts.Length > 1 ? parts[1] : string.Empty;
@@ -87,6 +96,7 @@ namespace ConsoleServer.Web
 
             lock (_gate)
             {
+                entry.Seq = ++_seq;
                 _entries.AddLast(entry);
                 while (_entries.Count > Capacity)
                 {
