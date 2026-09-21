@@ -20,12 +20,8 @@
   </ItemGroup>
 
   <!--
-    Web SDK 而非 Microsoft.NET.Sdk：Razor Pages 的 .cshtml 需要 Razor 编译目标，
-    只有 Web SDK 提供。它同时隐式引用 Microsoft.AspNetCore.App，
-    所以这里不再手写 FrameworkReference（重复引用会冲突）。
-    ASP.NET Core 共享框架不在 dotnet/runtime 镜像里，容器必须用 dotnet/aspnet —— 见 Dockerfile。
-    Razor Pages 的 PageModel 构造注入由 WebApplication 自带的 IServiceCollection 提供，
-    这不是第二套 DI 框架，是 MVC 强制依赖的宿主容器；Autofac 4.9.4 无法升到能当 web 容器的版本。
+    Web SDK 提供 ASP.NET Core 共享框架和静态资源发布能力。React/Vite 的构建由
+    scripts/build.ps1 和 Dockerfile 显式执行，产物再进入 wwwroot。
   -->
 
   <ItemGroup>

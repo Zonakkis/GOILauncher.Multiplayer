@@ -54,6 +54,8 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Tests.Api.V1
             dto.SchemaVersion.Should().Be(1);
             dto.GeneratedAt.Should().Be(generatedAt);
             dto.Server.GamePort.Should().Be(9027);
+            dto.Server.UtcOffsetMinutes.Should().Be(
+                (int)TimeZoneInfo.Local.GetUtcOffset(generatedAt.UtcDateTime).TotalMinutes);
             dto.Rooms.Single().MaxPlayers.Should().BeNull();
             dto.Connections.Single().RoomId.Should().BeNull();
             dto.Connections.Single().Platform.Should().Be("PC");
@@ -82,6 +84,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Tests.Api.V1
 
             json.Should().Contain("\"schemaVersion\":1");
             json.Should().Contain("\"generatedAt\":\"1970-01-01T00:00:00+00:00\"");
+            json.Should().Contain("\"utcOffsetMinutes\":");
             json.Should().Contain("\"chat\":{\"0\":[]}");
         }
     }

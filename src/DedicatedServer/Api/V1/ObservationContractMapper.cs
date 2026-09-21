@@ -15,6 +15,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Api.V1
             int gamePort,
             DateTimeOffset generatedAt)
         {
+            var utcOffset = TimeZoneInfo.Local.GetUtcOffset(generatedAt.UtcDateTime);
             var chat = new Dictionary<int, IReadOnlyList<ChatMessageDto>>
             {
                 [RoomConstants.LobbyId] = MapChat(snapshot.LobbyChat)
@@ -33,7 +34,8 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Api.V1
                     snapshot.PollCount,
                     (long)snapshot.MaxPollGap.TotalMilliseconds,
                     snapshot.UnattributedNetworkErrors,
-                    gamePort),
+                    gamePort,
+                    (int)utcOffset.TotalMinutes),
                 snapshot.Rooms
                     .OrderBy(room => room.Info.Id)
                     .Select(MapRoom)

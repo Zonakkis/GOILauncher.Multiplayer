@@ -22,7 +22,8 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Api.V1
         long PollCount,
         long MaxPollGapMs,
         int UnattributedNetworkErrors,
-        int GamePort);
+        int GamePort,
+        int UtcOffsetMinutes);
 
     public sealed record RoomDto(
         int Id,
