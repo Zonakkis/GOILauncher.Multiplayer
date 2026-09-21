@@ -21,7 +21,10 @@ RUN dotnet publish "src/ConsoleServer/ConsoleServer.csproj" \
 # =========================
 # Runtime stage
 # =========================
-FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
+# 必须是 aspnet 而不是 runtime：dotnet/runtime 只含 Microsoft.NETCore.App，
+# ASP.NET Core 共享框架（Kestrel/Razor）不在里面，用 runtime 镜像会在启动时
+# 直接报 "It was not possible to find any compatible framework version"。
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 
 WORKDIR /app
 
