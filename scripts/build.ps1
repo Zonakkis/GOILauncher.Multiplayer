@@ -63,6 +63,40 @@ function Find-VSTest {
     return $null
 }
 
+# ---------- Build Web UI ----------
+function Invoke-WebUI {
+    $webRoot = Join-Path $solutionDir "src\DedicatedServer\React"
+    if (-not (Test-Path (Join-Path $webRoot "package.json"))) {
+        Write-Host "ERROR: React project not found at $webRoot" -ForegroundColor Red
+        exit 1
+    }
+
+    $pnpm = Get-Command pnpm -ErrorAction SilentlyContinue
+    if (-not $pnpm) {
+        Write-Host "ERROR: pnpm not found. Install Node.js and enable Corepack before building." -ForegroundColor Red
+        exit 1
+    }
+
+    if (-not $SkipRestore) {
+        Write-Step "Restoring Web UI packages"
+        & pnpm --dir $webRoot install --frozen-lockfile
+        if ($LASTEXITCODE -ne 0) { Write-Host "pnpm install failed." -ForegroundColor Red; exit 1 }
+    } elseif (-not (Test-Path (Join-Path $webRoot "node_modules"))) {
+        Write-Host "ERROR: Web UI packages are missing and -SkipRestore was specified." -ForegroundColor Red
+        exit 1
+    }
+
+    Write-Step "Building Web UI"
+    & pnpm --dir $webRoot build
+    if ($LASTEXITCODE -ne 0) { Write-Host "Web UI build failed." -ForegroundColor Red; exit 1 }
+
+    if ($RunTests) {
+        Write-Step "Running Web UI tests"
+        & pnpm --dir $webRoot test
+        if ($LASTEXITCODE -ne 0) { Write-Host "Web UI tests failed." -ForegroundColor Red; exit 1 }
+    }
+}
+
 # ---------- Locate test assemblies ----------
 # Convention: a test project lives in a directory ending in ".Test" or ".Tests" directly
 # under src\ or tests\, and its assembly name matches that directory name. Every such
@@ -131,6 +165,8 @@ if ($Clean) {
 }
 
 # ---------- Build solution ----------
+Invoke-WebUI
+
 Write-Step "Building solution ($Configuration|$Platform)"
 & $msbuild $solutionFile /t:Build /p:Configuration="$Configuration" /p:Platform="$Platform" /v:minimal
 if ($LASTEXITCODE -ne 0) {
