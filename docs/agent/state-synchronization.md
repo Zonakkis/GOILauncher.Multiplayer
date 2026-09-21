@@ -128,10 +128,11 @@ ale` 无关）。没有轮询，也没有手动刷新：**游戏中途换皮肤�
 
 独立宿主 `DedicatedServer` 提供一个只读观测视图，并与具体呈现层解耦。Unity 内嵌服务端不注册该观测服务，也不开启仅供诊断使用的网络统计；DedicatedServer 通过 `WithServer(enableDiagnostics: true)` 显式启用。
 
-- `DedicatedServer` 是独立服务端进程的组合根，负责游戏 UDP 服务端、Poll 循环、日志、HTTP API 与以后同源部署的 React 静态资源。`Server` 仍是可复用的业务实现。
+- `DedicatedServer` 是独立服务端进程的组合根，负责游戏 UDP 服务端、Poll 循环、日志、HTTP API 与同源托管的 React 静态资源。`Server` 仍是可复用的业务实现。
 - 端口分别由 `GOI_SERVER_PORT` 和 `GOI_WEB_PORT` 配置。默认值仍为 `9027` 和 `9028`。
-- HTTP 契约位于 `/api/v1`。`GET /api/v1/snapshot` 返回原始状态、房间、连接和聊天；`GET /api/v1/logs?after={seq}&limit={count}` 返回带游标的日志批次。当前 Razor 面板也使用该日志接口。
-- HTTP DTO 与 `ServerObservationSnapshot` 分离，平台输出字符串，时间输出 ISO 8601，`maxPlayers = 0` 输出为 `null`。展示格式、告警阈值和排序属于前端，不进入观测服务。
+- HTTP 契约位于 `/api/v1`。`GET /api/v1/snapshot` 返回原始状态、房间、连接和聊天；`GET /api/v1/logs?after={seq}&limit={count}` 返回带游标的日志批次。React 面板直接消费这两个接口。
+- HTTP DTO 与 `ServerObservationSnapshot` 分离，平台输出字符串，时间输出 ISO 8601，`maxPlayers = 0` 输出为 `null`。展示格式、告警阈值和排序属于前端，不进入观测服务。`utcOffsetMinutes` 只表达服务器时区事实，前端据此显示服务器本地时间。
+- React 源码位于 `src/DedicatedServer/React`，由 Vite 构建到 `src/DedicatedServer/wwwroot`。开发时可单独启动 Vite 并代理 `/api` 到 ASP.NET；生产构建和容器中不启动 Node，最终仍由同一个 ASP.NET Core 进程提供 API、首页与静态资源。
 - 认证尚未实现，但所有 API 已集中在同一个 `/api/v1` group 下，后续可以在 group 层统一加授权，不需要改观测服务。
 
 - 采集补齐：DedicatedServer 的 `NetManager` 开 `EnableStatistics = true`；`NetworkServerListener` 不再吞掉 `OnNetworkError`（改为 `Warn` 日志 + 发布 `NetworkErrorEvent`），并在 `OnNetworkLatencyUpdate` 发布 `NetworkLatencyUpdatedEvent`；`ClientConnectedEvent` 携带传输层的 `RemoteEndPoint`（IP/端口只进观测视图，不写进协议模型 `PlayerInfo`）。
