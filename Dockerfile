@@ -7,10 +7,10 @@ WORKDIR /app
 
 COPY . .
 
-RUN dotnet restore "src/ConsoleServer/ConsoleServer.csproj" \
+RUN dotnet restore "src/DedicatedServer/DedicatedServer.csproj" \
     /p:TargetNetStandard20=true
 
-RUN dotnet publish "src/ConsoleServer/ConsoleServer.csproj" \
+RUN dotnet publish "src/DedicatedServer/DedicatedServer.csproj" \
     -c Release \
     -f net8.0 \
     -o /app/publish \
@@ -31,7 +31,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 EXPOSE 9027/udp
-# Web UI（ASP.NET Core，端口由 WEB_PORT 环境变量覆盖，默认 9028）
+# Web UI（ASP.NET Core，端口由 GOI_WEB_PORT 环境变量覆盖，默认 9028）
 EXPOSE 9028/tcp
 
-ENTRYPOINT ["dotnet", "ConsoleServer.dll"]
+ENTRYPOINT ["dotnet", "GOILauncher.Multiplayer.DedicatedServer.dll"]
