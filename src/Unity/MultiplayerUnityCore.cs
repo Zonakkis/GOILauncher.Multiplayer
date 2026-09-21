@@ -231,6 +231,7 @@ namespace GOILauncher.Multiplayer.Unity
             builder.RegisterComponent<PlayerStateSynchronizer>(playerStateSynchronizer => 
                 {
                     playerStateSynchronizer.transform.SetParent(_core.transform);
+                    playerStateSynchronizer.Init();
                 }).
                 AsSelf()
                 .SingleInstance();
