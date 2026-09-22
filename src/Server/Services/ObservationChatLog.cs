@@ -7,8 +7,8 @@ using GOILauncher.Multiplayer.Core.Utils;
 namespace GOILauncher.Multiplayer.Server.Services
 {
     /// <summary>
-    /// Per-room chat history for the observation facade: append with a per-room cap, drop messages
-    /// past the retention window, and drop a room's history once that room is gone.
+    /// Per-room chat history for the observation facade: append messages, drop those past the
+    /// retention window, and drop a room's history once that room is gone.
     ///
     /// Not thread-safe by design — <see cref="ObservationService"/> holds the only instance and calls
     /// every member under its own <c>_gate</c>, so the Poll-thread contract stays in one place instead
@@ -16,9 +16,9 @@ namespace GOILauncher.Multiplayer.Server.Services
     /// </summary>
     internal sealed class ObservationChatLog
     {
-        // Display budget. Tuned for a mod server with a handful of players, not scale.
-        private const int MaxMessagesPerRoom = 200;
-        private static readonly TimeSpan Retention = TimeSpan.FromMinutes(30);
+        // Age window the dashboard shows; history is bounded by time only, no per-room count cap.
+        // A mod server with a handful of players stays small over 24h.
+        private static readonly TimeSpan Retention = TimeSpan.FromHours(24);
 
         private readonly Dictionary<int, List<ChatMessageObservation>> _byRoom
             = new Dictionary<int, List<ChatMessageObservation>>();
@@ -29,8 +29,6 @@ namespace GOILauncher.Multiplayer.Server.Services
             if (!_byRoom.TryGetValue(roomId, out history))
                 _byRoom[roomId] = history = new List<ChatMessageObservation>();
             history.Add(message);
-            if (history.Count > MaxMessagesPerRoom)
-                history.RemoveRange(0, history.Count - MaxMessagesPerRoom);
         }
 
         /// <summary>Drops expired messages and rooms that no longer exist — chat dies with its room.</summary>

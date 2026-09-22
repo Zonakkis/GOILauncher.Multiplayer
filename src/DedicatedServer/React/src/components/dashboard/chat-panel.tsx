@@ -32,7 +32,7 @@ export function ChatPanel({ selectedRoomId, messages, emptyText }: ChatPanelProp
     <section className="chat-panel">
       <div className="panel-heading chat-heading">
         <span className="heading-with-icon"><MessageSquareText className="size-3.5" />聊天</span>
-        <span>{messages.length} 条 · 仅内存保留 30 分钟</span>
+        <span>{messages.length} 条</span>
       </div>
       <div
         ref={viewportRef}
