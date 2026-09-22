@@ -7,7 +7,6 @@ using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Event;
 using GOILauncher.Multiplayer.Core.Log;
-using GOILauncher.Multiplayer.Core.Utils;
 using GOILauncher.Multiplayer.Network;
 using GOILauncher.Multiplayer.Server.Events;
 
@@ -34,8 +33,6 @@ namespace GOILauncher.Multiplayer.Server.Services
 
         // Display budget. Tuned for a mod server with a handful of players, not scale.
         private const int RefreshIntervalMs = 150;
-        private const int MaxChatMessagesPerRoom = 200;
-        private static readonly TimeSpan ChatRetention = TimeSpan.FromMinutes(30);
 
         private readonly IPlayerService _players;
         private readonly IRoomService _rooms;
@@ -46,7 +43,7 @@ namespace GOILauncher.Multiplayer.Server.Services
 
         private readonly object _gate = new object();
         private readonly Dictionary<int, ConnState> _connections = new Dictionary<int, ConnState>();
-        private readonly Dictionary<int, List<ChatMessageObservation>> _chat = new Dictionary<int, List<ChatMessageObservation>>();
+        private readonly ObservationChatLog _chatLog = new ObservationChatLog();
 
         private List<ConnectionObservation> _cachedConnections = new List<ConnectionObservation>();
         private List<RoomObservation> _cachedRooms = new List<RoomObservation>();
@@ -114,7 +111,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                 var now = _clock();
                 lock (_gate)
                 {
-                    PruneChat(now);
+                    _chatLog.Prune(now, new HashSet<int>(_cachedRooms.Select(r => r.Info.Id)));
                     return new ServerObservationSnapshot(
                         _network.IsRunning,
                         _startedAt,
@@ -125,8 +122,8 @@ namespace GOILauncher.Multiplayer.Server.Services
                         _cachedTraffic,
                         new ReadOnlyCollection<ConnectionObservation>(_cachedConnections.ToList()),
                         new ReadOnlyCollection<RoomObservation>(_cachedRooms.ToList()),
-                        new ReadOnlyCollection<ChatMessageObservation>(ChatFor(RoomConstants.LobbyId, now).ToList()),
-                        BuildRoomChat(now));
+                        new ReadOnlyCollection<ChatMessageObservation>(_chatLog.For(RoomConstants.LobbyId).ToList()),
+                        _chatLog.ByRoomExcept(RoomConstants.LobbyId));
                 }
             }
         }
@@ -252,21 +249,14 @@ namespace GOILauncher.Multiplayer.Server.Services
         private void OnChat(ChatRelayedEvent e)
         {
             lock (_gate)
-            {
-                List<ChatMessageObservation> history;
-                if (!_chat.TryGetValue(e.RoomId, out history))
-                    _chat[e.RoomId] = history = new List<ChatMessageObservation>();
-                history.Add(new ChatMessageObservation(e.Timestamp, e.PlayerId, e.PlayerName, e.Content));
-                if (history.Count > MaxChatMessagesPerRoom)
-                    history.RemoveRange(0, history.Count - MaxChatMessagesPerRoom);
-            }
+                _chatLog.Record(e.RoomId, new ChatMessageObservation(e.Timestamp, e.PlayerId, e.PlayerName, e.Content));
         }
 
         private void Reset()
         {
             lock (_gate)
             {
-                _connections.Clear(); _chat.Clear();
+                _connections.Clear(); _chatLog.Clear();
                 _cachedConnections = new List<ConnectionObservation>();
                 _cachedRooms = new List<RoomObservation>();
                 _cachedTraffic = ServerTrafficObservation.Empty;
@@ -276,35 +266,5 @@ namespace GOILauncher.Multiplayer.Server.Services
             }
         }
 
-        // Drops expired messages and rooms that no longer exist — chat dies with its room.
-        private void PruneChat(DateTime now)
-        {
-            var cutoff = now.ToUnixTimeSeconds() - (long)ChatRetention.TotalSeconds;
-            var aliveRoomIds = new HashSet<int>(_cachedRooms.Select(r => r.Info.Id));
-            var deadRooms = new List<int>();
-            foreach (var kv in _chat)
-            {
-                kv.Value.RemoveAll(m => m.Timestamp < cutoff);
-                if (!aliveRoomIds.Contains(kv.Key) || kv.Value.Count == 0) deadRooms.Add(kv.Key);
-            }
-            foreach (var id in deadRooms) _chat.Remove(id);
-        }
-
-        private IEnumerable<ChatMessageObservation> ChatFor(int roomId, DateTime now)
-        {
-            List<ChatMessageObservation> history;
-            return _chat.TryGetValue(roomId, out history) ? history : Enumerable.Empty<ChatMessageObservation>();
-        }
-
-        private Dictionary<int, ReadOnlyCollection<ChatMessageObservation>> BuildRoomChat(DateTime now)
-        {
-            var result = new Dictionary<int, ReadOnlyCollection<ChatMessageObservation>>();
-            foreach (var kv in _chat)
-            {
-                if (kv.Key == RoomConstants.LobbyId) continue; // surfaced as LobbyChat instead
-                result[kv.Key] = new ReadOnlyCollection<ChatMessageObservation>(kv.Value.ToList());
-            }
-            return result;
-        }
     }
 }
