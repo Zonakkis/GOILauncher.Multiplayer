@@ -23,6 +23,28 @@ namespace GOILauncher.Multiplayer.UI
     {
         private static ITheme Theme => Plugin.Theme;
 
+        /// <summary>
+        /// 隐藏滚动视图的滑块（保留滚轮/拖动），并收回它占的那条槽。兼容 UIFactory 的两种滚动构造：
+        /// CreateScrollPool 生成名为 "SliderContainer" 的滑块，CreateScrollView 生成 "AutoSliderScrollbar"。
+        /// 同一个滚动视图只会有其中一个,另一个 Find 返回 null 被跳过。
+        /// </summary>
+        public static void HideScrollbar(GameObject scrollView)
+        {
+            HideChild(scrollView, "SliderContainer");
+            HideChild(scrollView, "AutoSliderScrollbar");
+
+            RectTransform viewport = scrollView.transform.Find("Viewport")?.GetComponent<RectTransform>();
+            if (viewport != null)
+                viewport.offsetMax = Vector2.zero;
+        }
+
+        private static void HideChild(GameObject parent, string childName)
+        {
+            Transform child = parent.transform.Find(childName);
+            if (child != null)
+                child.gameObject.SetActive(false);
+        }
+
         #region 结构
 
         /// <summary>改掉 Group 自带的那张背景图（UIFactory 不传底色时是 0.17 灰）。</summary>

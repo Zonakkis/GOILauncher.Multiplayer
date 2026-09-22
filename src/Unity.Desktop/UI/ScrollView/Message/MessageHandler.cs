@@ -31,7 +31,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
             UIFactory.SetLayoutElement(scrollView, minWidth: 400, minHeight: 120, flexibleWidth: 9999, flexibleHeight: 9999);
 
             _scrollPool.Initialize(this);
-            HideScrollbar(scrollView);
+            UiKit.HideScrollbar(scrollView);
         }
 
         private static void HideMaskGraphic(GameObject gameObject)
@@ -42,19 +42,6 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
             Mask mask = gameObject.GetComponent<Mask>();
             if (mask != null)
                 mask.showMaskGraphic = false;
-        }
-
-        private static void HideScrollbar(GameObject scrollView)
-        {
-            Transform sliderContainer = scrollView.transform.Find("SliderContainer");
-            if (sliderContainer != null)
-                sliderContainer.gameObject.SetActive(false);
-
-            RectTransform viewport = scrollView.transform.Find("Viewport")?.GetComponent<RectTransform>();
-            if (viewport == null)
-                return;
-
-            viewport.offsetMax = Vector2.zero;
         }
 
         public void OnCellBorrowed(MessageCell cell)

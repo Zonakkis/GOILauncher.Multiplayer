@@ -65,7 +65,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
                 out playerListContent,
                 out playerListScrollbar,
                 backgroundColor);
-            HideScrollbar(playerScroll);
+            UiKit.HideScrollbar(playerScroll);
             UIFactory.SetLayoutElement(playerScroll, minHeight: 120, flexibleHeight: 9999, flexibleWidth: 9999);
             UIFactory.SetLayoutGroup<VerticalLayoutGroup>(
                 playerListContent,
@@ -309,19 +309,6 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
         private static string GetPlayerName(PlayerView player)
         {
             return string.IsNullOrEmpty(player.Name) ? "Player " + player.Id : player.Name;
-        }
-
-        private static void HideScrollbar(GameObject scrollView)
-        {
-            Transform scrollbar = scrollView.transform.Find("AutoSliderScrollbar");
-            if (scrollbar != null)
-                scrollbar.gameObject.SetActive(false);
-
-            RectTransform viewport = scrollView.transform.Find("Viewport")?.GetComponent<RectTransform>();
-            if (viewport == null)
-                return;
-
-            viewport.offsetMax = Vector2.zero;
         }
 
         private sealed class PlayerRow
