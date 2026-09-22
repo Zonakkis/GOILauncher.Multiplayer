@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net35;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net35;net40;netstandard2.0</TargetFrameworks>
     <AssemblyName>GOILauncher.Multiplayer.Core</AssemblyName>
     <RootNamespace>GOILauncher.Multiplayer.Core</RootNamespace>
     <LangVersion>latest</LangVersion>
