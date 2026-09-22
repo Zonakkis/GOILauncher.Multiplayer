@@ -6,8 +6,10 @@ namespace GOILauncher.Multiplayer.Core.Event
 {
     public class EventBus : IEventBus
     {
-        private readonly Dictionary<Type, List<Delegate>> _subscribers
-            = new Dictionary<Type, List<Delegate>>();
+        // Copy-on-write: each event type maps to an immutable handler array. Subscribe/Unsubscribe
+        // swap in a new array under the lock; Publish reads the current one and iterates it lock-free.
+        private readonly Dictionary<Type, Delegate[]> _subscribers
+            = new Dictionary<Type, Delegate[]>();
 
         private readonly object _lock = new object();
         private readonly ILogger<EventBus> _logger;
@@ -25,11 +27,18 @@ namespace GOILauncher.Multiplayer.Core.Event
             var eventType = typeof(TEvent);
             lock (_lock)
             {
-                if (!_subscribers.ContainsKey(eventType))
+                Delegate[] handlers;
+                if (_subscribers.TryGetValue(eventType, out handlers))
                 {
-                    _subscribers[eventType] = new List<Delegate>();
+                    var updated = new Delegate[handlers.Length + 1];
+                    Array.Copy(handlers, updated, handlers.Length);
+                    updated[handlers.Length] = handler;
+                    _subscribers[eventType] = updated;
                 }
-                _subscribers[eventType].Add(handler);
+                else
+                {
+                    _subscribers[eventType] = new Delegate[] { handler };
+                }
             }
 
             return new Subscription(() => Unsubscribe(eventType, handler));
@@ -38,30 +47,26 @@ namespace GOILauncher.Multiplayer.Core.Event
         public void Publish<TEvent>(TEvent @event)
         {
             var eventType = typeof(TEvent);
-            List<Delegate> handlers = null;
+            Delegate[] handlers;
             lock (_lock)
             {
-                if(_subscribers.ContainsKey(eventType))
-                {
-                    // Create a copy of the handlers to avoid issues if handlers are added/removed during invocation
-                    handlers = new List<Delegate>(_subscribers[eventType]);
-                }
+                if (!_subscribers.TryGetValue(eventType, out handlers))
+                    return;
             }
-            if (handlers != null)
+
+            // handlers is an immutable snapshot: Subscribe/Unsubscribe replace the array rather than
+            // mutate it, so iterating here without the lock stays safe even if a handler (un)subscribes
+            // mid-publish. Every delegate stored under typeof(TEvent) is an Action<TEvent>, so the cast
+            // always succeeds; a failure would surface through the logger rather than be swallowed.
+            foreach (var handler in handlers)
             {
-                foreach (var handler in handlers)
+                try
                 {
-                    if (handler is Action<TEvent> eventHandler)
-                    {
-                        try
-                        {
-                            eventHandler(@event);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Error(ex, $"Error handling event {eventType.Name}");
-                        }
-                    }
+                    ((Action<TEvent>)handler)(@event);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, $"Error handling event {eventType.Name}");
                 }
             }
         }
@@ -70,14 +75,26 @@ namespace GOILauncher.Multiplayer.Core.Event
         {
             lock (_lock)
             {
-                List<Delegate> handlers;
+                Delegate[] handlers;
                 if (!_subscribers.TryGetValue(eventType, out handlers))
                     return;
 
-                handlers.Remove(handler);
+                // Remove the first matching subscription, mirroring List.Remove. Swap in a new array
+                // so any Publish already iterating the old one is unaffected.
+                var index = Array.IndexOf(handlers, handler);
+                if (index < 0)
+                    return;
 
-                if (handlers.Count == 0)
+                if (handlers.Length == 1)
+                {
                     _subscribers.Remove(eventType);
+                    return;
+                }
+
+                var updated = new Delegate[handlers.Length - 1];
+                Array.Copy(handlers, 0, updated, 0, index);
+                Array.Copy(handlers, index + 1, updated, index, handlers.Length - index - 1);
+                _subscribers[eventType] = updated;
             }
         }
 
