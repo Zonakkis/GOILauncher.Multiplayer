@@ -37,16 +37,6 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
             return UIRoot;
         }
 
-        private static void MakeImageTransparent(GameObject gameObject)
-        {
-            Image image = gameObject.GetComponent<Image>();
-            if (image == null)
-                return;
-
-            image.color = Color.clear;
-            image.raycastTarget = false;
-        }
-
         public void ConfigureCell(Client.Models.Message message)
         {
             _message = message;

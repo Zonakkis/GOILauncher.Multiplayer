@@ -47,14 +47,6 @@ namespace GOILauncher.Multiplayer.UI
 
         #region 结构
 
-        /// <summary>改掉 Group 自带的那张背景图（UIFactory 不传底色时是 0.17 灰）。</summary>
-        public static void SetBackground(GameObject target, Color color)
-        {
-            Image image = target.GetComponent<Image>();
-            if (image != null)
-                image.color = color;
-        }
-
         /// <summary>
         /// 卡片内部的分隔线。做成 1px 高的空对象而不是给相邻容器画边框——Unity 的 Image
         /// 不能只画一条边，用独立一行最省事，也不会打乱两边的 padding。

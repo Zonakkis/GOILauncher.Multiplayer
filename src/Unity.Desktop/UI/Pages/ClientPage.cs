@@ -143,23 +143,17 @@ namespace GOILauncher.Multiplayer.UI.Pages
             // 三个动作都只对"已入房"有意义，所以和它们作用的对象（目录）放在同一个区块头里，
             // 不再和连接按钮挤在一起。
             GameObject header = UiKit.CreateSectionHeader(section, "RoomDirectoryHeader", "房间列表");
-            createRoomButton = CreateHeaderButton(header, "CreateRoom", "创建房间", 96);
+            createRoomButton = UiKit.CreateButton(header, "CreateRoom", "创建房间", 96);
             createRoomButton.SetConfirm();
             createRoomButton.OnClick += () => _roomDialog.ShowCreate();
 
-            editRoomButton = CreateHeaderButton(header, "EditRoom", "房间设置", 88);
+            editRoomButton = UiKit.CreateButton(header, "EditRoom", "房间设置", 88);
             editRoomButton.OnClick += () => _roomDialog.ShowEdit();
 
-            refreshButton = CreateHeaderButton(header, "RefreshRoomList", "刷新", 64);
+            refreshButton = UiKit.CreateButton(header, "RefreshRoomList", "刷新", 64);
             refreshButton.OnClick += OnRefreshClicked;
 
             CreateRoomTable(section);
-        }
-
-        private static ButtonRef CreateHeaderButton(GameObject header, string name, string text, int width)
-        {
-            ButtonRef button = UiKit.CreateButton(header, name, text, width);
-            return button;
         }
 
         /// <summary>

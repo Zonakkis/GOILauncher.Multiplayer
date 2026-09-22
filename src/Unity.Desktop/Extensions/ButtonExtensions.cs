@@ -24,10 +24,6 @@ namespace GOILauncher.Multiplayer.Extensions
             button.SetColor(Theme.ConfirmButtonColor);
         }
 
-        public static void SetCancel(this ButtonRef button)
-        {
-            button.SetColor(Theme.CancelButtonColor);
-        }
 
         public static void SetColor(this ButtonRef button, Color color)
         {
