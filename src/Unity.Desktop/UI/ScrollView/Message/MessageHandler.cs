@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UniverseLib.Input;
 using UniverseLib.UI;
 using UniverseLib.UI.Widgets.ScrollView;
 
@@ -78,7 +79,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Message
         public bool IsPointerInside()
         {
             return _scrollViewRect != null &&
-                   RectTransformUtility.RectangleContainsScreenPoint(_scrollViewRect, Input.mousePosition);
+                   RectTransformUtility.RectangleContainsScreenPoint(_scrollViewRect, InputManager.MousePosition);
         }
 
         private void ScrollToBottom()

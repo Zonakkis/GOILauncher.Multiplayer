@@ -1,6 +1,7 @@
 using System;
 using GOILauncher.Multiplayer.Client.Models;
 using GOILauncher.Multiplayer.UI.ScrollView.Message;
+using UniverseLib.Input;
 using UniverseLib.UI;
 using UniverseLib.UI.Models;
 using UniverseLib.UI.Panels;
@@ -125,7 +126,7 @@ namespace GOILauncher.Multiplayer.UI
             if (!isActiveMode)
             {
                 if (UiInputFocus.IsEditing) { UpdatePassiveFade(); return; }
-                if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+                if (InputManager.GetKeyDown(KeyCode.Return) || InputManager.GetKeyDown(KeyCode.KeypadEnter))
                 {
                     SetActiveMode(true);
                     return;
@@ -135,19 +136,19 @@ namespace GOILauncher.Multiplayer.UI
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.Escape))
+            if (InputManager.GetKeyDown(KeyCode.Escape))
             {
                 SetActiveMode(false);
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            if (InputManager.GetKeyDown(KeyCode.Return) || InputManager.GetKeyDown(KeyCode.KeypadEnter))
             {
                 OnSendClicked();
                 return;
             }
 
-            if (Input.GetMouseButtonDown(0) && !IsPointerInside(Rect))
+            if (InputManager.GetMouseButtonDown(0) && !IsPointerInside(Rect))
                 SetActiveMode(false);
         }
 
@@ -285,7 +286,7 @@ namespace GOILauncher.Multiplayer.UI
         private static bool IsPointerInside(RectTransform rect)
         {
             return rect != null &&
-                   RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition);
+                   RectTransformUtility.RectangleContainsScreenPoint(rect, InputManager.MousePosition);
         }
     }
 }

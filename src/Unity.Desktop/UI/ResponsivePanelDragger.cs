@@ -1,4 +1,5 @@
 using UnityEngine;
+using UniverseLib.Input;
 using UniverseLib.UI.Panels;
 
 namespace GOILauncher.Multiplayer.UI
@@ -115,13 +116,13 @@ namespace GOILauncher.Multiplayer.UI
         private Vector2 GetMousePositionInRoot()
         {
             ResponsivePanelManager manager = UIPanel.Owner.Panels as ResponsivePanelManager;
-            return manager != null ? manager.MousePositionInRoot : (Vector2)Input.mousePosition;
+            return manager != null ? manager.MousePositionInRoot : (Vector2)InputManager.MousePosition;
         }
 
         private Vector2 GetMousePositionInCanvas()
         {
             ResponsivePanelManager manager = UIPanel.Owner.Panels as ResponsivePanelManager;
-            return manager != null ? manager.MousePositionInCanvas : (Vector2)Input.mousePosition;
+            return manager != null ? manager.MousePositionInCanvas : (Vector2)InputManager.MousePosition;
         }
 
         private void UpdateResizeCursorPosition()

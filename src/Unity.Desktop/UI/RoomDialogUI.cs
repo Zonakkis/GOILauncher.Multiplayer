@@ -7,6 +7,7 @@ using GOILauncher.Multiplayer.Unity;
 using GOILauncher.Multiplayer.UI.Theme;
 using UnityEngine;
 using UnityEngine.UI;
+using UniverseLib.Input;
 using UniverseLib.UI;
 using UniverseLib.UI.Models;
 using UniverseLib.UI.Panels;
@@ -274,18 +275,18 @@ namespace GOILauncher.Multiplayer.UI
         public override void Update()
         {
             if (!Enabled) return;
-            if (Input.GetKeyDown(KeyCode.Escape)) { SetActive(false); return; }
-            if (Input.GetKeyDown(KeyCode.Tab) && !_submitted)
+            if (InputManager.GetKeyDown(KeyCode.Escape)) { SetActive(false); return; }
+            if (InputManager.GetKeyDown(KeyCode.Tab) && !_submitted)
             {
                 var inputs = new List<InputFieldRef>();
                 foreach (var input in new[] { _name, _capacity, _password })
                     if (input.GameObject.activeInHierarchy) inputs.Add(input);
                 int index = inputs.FindIndex(input => input.Component.isFocused);
-                int direction = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) ? -1 : 1;
+                int direction = InputManager.GetKey(KeyCode.LeftShift) || InputManager.GetKey(KeyCode.RightShift) ? -1 : 1;
                 var next = inputs[(index + direction + inputs.Count) % inputs.Count];
                 next.Component.Select(); next.Component.ActivateInputField();
             }
-            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) Submit();
+            if (InputManager.GetKeyDown(KeyCode.Return) || InputManager.GetKeyDown(KeyCode.KeypadEnter)) Submit();
         }
 
         private void Submit()

@@ -193,7 +193,7 @@ public class Plugin : BaseUnityPlugin
             return;
 
         // F2 不看联机加没加载：关着也得能进设置页把它重新打开。
-        if (Input.GetKeyDown(KeyCode.F2))
+        if (InputManager.GetKeyDown(KeyCode.F2))
         {
             _multiplayerUI.SetActive(!_multiplayerUI.Enabled);
             ApplyCursorState();
@@ -215,12 +215,12 @@ public class Plugin : BaseUnityPlugin
             return;
         }
 
-        if (Input.GetKeyDown(KeyCode.Tab))
+        if (InputManager.GetKeyDown(KeyCode.Tab))
         {
             _playerListOverlayUI.SetActive(true);
             ApplyCursorState();
         }
-        else if (Input.GetKeyUp(KeyCode.Tab))
+        else if (InputManager.GetKeyUp(KeyCode.Tab))
         {
             _playerListOverlayUI.SetActive(false);
             ApplyCursorState();
@@ -306,7 +306,7 @@ public class Plugin : BaseUnityPlugin
     {
         return _playerListOverlayUI != null
             && _playerListOverlayUI.Enabled
-            && Input.GetKey(KeyCode.Space);
+            && InputManager.GetKey(KeyCode.Space);
     }
 
     private bool IsOtherUniverseUiShowing()
