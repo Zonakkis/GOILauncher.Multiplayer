@@ -47,7 +47,7 @@ namespace GOILauncher.Multiplayer.Server.Services
 
         private List<ConnectionObservation> _cachedConnections = new List<ConnectionObservation>();
         private List<RoomObservation> _cachedRooms = new List<RoomObservation>();
-        private ServerTrafficObservation _cachedTraffic = ServerTrafficObservation.Empty;
+        private TrafficObservation _cachedTraffic = TrafficObservation.Empty;
 
         private long _pollCount;
         private int _unattributedErrors;
@@ -132,13 +132,13 @@ namespace GOILauncher.Multiplayer.Server.Services
         {
             // Poll-thread only: enumerates live services and samples LiteNetLib counters.
             var traffic = _network.SampleServerTraffic();
-            _cachedTraffic = new ServerTrafficObservation(
+            _cachedTraffic = new TrafficObservation(
                 traffic.PacketsSent, traffic.PacketsReceived, traffic.BytesSent, traffic.BytesReceived,
                 traffic.PacketLoss, traffic.PacketLossPercent);
 
-            var trafficById = new Dictionary<int, ConnectionStatsObservation>();
+            var trafficById = new Dictionary<int, TrafficObservation>();
             foreach (var t in _network.SamplePeerTraffic())
-                trafficById[t.ClientId] = new ConnectionStatsObservation(
+                trafficById[t.ClientId] = new TrafficObservation(
                     t.PacketsSent, t.PacketsReceived, t.BytesSent, t.BytesReceived, t.PacketLoss, t.PacketLossPercent);
 
             // A connection can exist before its handshake (PlayerService entry), and vice versa for
@@ -154,7 +154,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                 PlayerInfo player;
                 _players.Players.TryGetValue(id, out player);
 
-                ConnectionStatsObservation stats;
+                TrafficObservation stats;
                 trafficById.TryGetValue(id, out stats);
 
                 // 房间归属现读于 RoomService（本方法只在 Poll 线程跑），-1 = 尚未入房。
@@ -259,7 +259,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                 _connections.Clear(); _chatLog.Clear();
                 _cachedConnections = new List<ConnectionObservation>();
                 _cachedRooms = new List<RoomObservation>();
-                _cachedTraffic = ServerTrafficObservation.Empty;
+                _cachedTraffic = TrafficObservation.Empty;
                 _pollCount = 0; _unattributedErrors = 0;
                 _hasLastPoll = false; _lastPoll = default(DateTime); _maxPollGap = TimeSpan.Zero;
                 _nextRefresh = default(DateTime); _startedAt = null;

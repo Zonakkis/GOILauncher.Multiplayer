@@ -77,21 +77,12 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Api.V1
                 connection.NetworkErrorCount);
         }
 
-        private static TrafficDto MapTraffic(ConnectionStatsObservation statistics)
+        // Null-tolerant so it serves both callers: a connection's Statistics may be null (no sample
+        // yet → null DTO), while the server aggregate is never null (Empty when absent).
+        private static TrafficDto MapTraffic(TrafficObservation traffic)
         {
-            if (statistics == null) return null;
+            if (traffic == null) return null;
 
-            return new TrafficDto(
-                statistics.PacketsSent,
-                statistics.PacketsReceived,
-                statistics.BytesSent,
-                statistics.BytesReceived,
-                statistics.PacketLoss,
-                statistics.PacketLossPercent);
-        }
-
-        private static TrafficDto MapTraffic(ServerTrafficObservation traffic)
-        {
             return new TrafficDto(
                 traffic.PacketsSent,
                 traffic.PacketsReceived,

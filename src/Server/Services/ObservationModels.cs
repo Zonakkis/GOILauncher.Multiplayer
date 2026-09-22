@@ -5,8 +5,12 @@ using GOILauncher.Multiplayer.Core.Data.Models;
 
 namespace GOILauncher.Multiplayer.Server.Services
 {
-    /// <summary>Packet counters sampled from LiteNetLib; only present while statistics are enabled.</summary>
-    public sealed class ConnectionStatsObservation
+    /// <summary>
+    /// LiteNetLib packet/byte counters, only populated while statistics are enabled. Used both
+    /// per-connection (a connection may have no sample yet, so that field is nullable) and as the
+    /// server-wide aggregate for the current run (absent → <see cref="Empty"/>, never null).
+    /// </summary>
+    public sealed class TrafficObservation
     {
         public long PacketsSent { get; }
         public long PacketsReceived { get; }
@@ -15,32 +19,14 @@ namespace GOILauncher.Multiplayer.Server.Services
         public long PacketLoss { get; }
         public long PacketLossPercent { get; }
 
-        public ConnectionStatsObservation(long packetsSent, long packetsReceived, long bytesSent,
-            long bytesReceived, long packetLoss, long packetLossPercent)
-        {
-            PacketsSent = packetsSent; PacketsReceived = packetsReceived; BytesSent = bytesSent;
-            BytesReceived = bytesReceived; PacketLoss = packetLoss; PacketLossPercent = packetLossPercent;
-        }
-    }
-
-    /// <summary>Aggregate LiteNetLib counters for all server connections during the current run.</summary>
-    public sealed class ServerTrafficObservation
-    {
-        public long PacketsSent { get; }
-        public long PacketsReceived { get; }
-        public long BytesSent { get; }
-        public long BytesReceived { get; }
-        public long PacketLoss { get; }
-        public long PacketLossPercent { get; }
-
-        public ServerTrafficObservation(long packetsSent, long packetsReceived, long bytesSent,
+        public TrafficObservation(long packetsSent, long packetsReceived, long bytesSent,
             long bytesReceived, long packetLoss, long packetLossPercent)
         {
             PacketsSent = packetsSent; PacketsReceived = packetsReceived; BytesSent = bytesSent;
             BytesReceived = bytesReceived; PacketLoss = packetLoss; PacketLossPercent = packetLossPercent;
         }
 
-        public static ServerTrafficObservation Empty => new ServerTrafficObservation(0, 0, 0, 0, 0, 0);
+        public static TrafficObservation Empty => new TrafficObservation(0, 0, 0, 0, 0, 0);
     }
 
     /// <summary>
@@ -58,12 +44,12 @@ namespace GOILauncher.Multiplayer.Server.Services
         public string EndPoint { get; }
         /// <summary>Null until LiteNetLib reports a first latency sample.</summary>
         public int? LatencyMilliseconds { get; }
-        public ConnectionStatsObservation Statistics { get; }
+        public TrafficObservation Statistics { get; }
         public int NetworkErrorCount { get; }
         public bool HasHandshaked { get; }
 
         public ConnectionObservation(int playerId, string name, Platform platform, bool isInGame,
-            int roomId, string endPoint, int? latencyMilliseconds, ConnectionStatsObservation statistics,
+            int roomId, string endPoint, int? latencyMilliseconds, TrafficObservation statistics,
             int networkErrorCount, bool hasHandshaked)
         {
             PlayerId = playerId; Name = name; Platform = platform; IsInGame = isInGame;
@@ -104,7 +90,7 @@ namespace GOILauncher.Multiplayer.Server.Services
         public TimeSpan MaxPollGap { get; }
         /// <summary>Socket errors that could not be matched to a live connection by endpoint.</summary>
         public int UnattributedNetworkErrors { get; }
-        public ServerTrafficObservation Traffic { get; }
+        public TrafficObservation Traffic { get; }
         public ReadOnlyCollection<ConnectionObservation> Connections { get; }
         public ReadOnlyCollection<RoomObservation> Rooms { get; }
         public ReadOnlyCollection<ChatMessageObservation> LobbyChat { get; }
@@ -115,7 +101,7 @@ namespace GOILauncher.Multiplayer.Server.Services
         public Dictionary<int, ReadOnlyCollection<ChatMessageObservation>> RoomChat { get; }
 
         public ServerObservationSnapshot(bool isRunning, DateTime? startedAt, TimeSpan? uptime, long pollCount,
-            TimeSpan maxPollGap, int unattributedNetworkErrors, ServerTrafficObservation traffic,
+            TimeSpan maxPollGap, int unattributedNetworkErrors, TrafficObservation traffic,
             ReadOnlyCollection<ConnectionObservation> connections, ReadOnlyCollection<RoomObservation> rooms,
             ReadOnlyCollection<ChatMessageObservation> lobbyChat,
             Dictionary<int, ReadOnlyCollection<ChatMessageObservation>> roomChat)

@@ -24,7 +24,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Tests.Api.V1
                 42,
                 TimeSpan.FromMilliseconds(17),
                 2,
-                new ServerTrafficObservation(400, 300, 16000, 12000, 4, 1),
+                new TrafficObservation(400, 300, 16000, 12000, 4, 1),
                 new ReadOnlyCollection<ConnectionObservation>(new[]
                 {
                     new ConnectionObservation(
@@ -35,7 +35,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Tests.Api.V1
                         -1,
                         "127.0.0.1:9027",
                         null,
-                        new ConnectionStatsObservation(120, 118, 4800, 4600, 2, 1),
+                        new TrafficObservation(120, 118, 4800, 4600, 2, 1),
                         1,
                         true)
                 }),
@@ -80,7 +80,7 @@ namespace GOILauncher.Multiplayer.DedicatedServer.Tests.Api.V1
                 0,
                 TimeSpan.Zero,
                 0,
-                ServerTrafficObservation.Empty,
+                TrafficObservation.Empty,
                 new ReadOnlyCollection<ConnectionObservation>(Array.Empty<ConnectionObservation>()),
                 new ReadOnlyCollection<RoomObservation>(Array.Empty<RoomObservation>()),
                 new ReadOnlyCollection<ChatMessageObservation>(Array.Empty<ChatMessageObservation>()),
