@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Shared.Extensions;
@@ -12,7 +13,9 @@ namespace GOILauncher.Multiplayer.Unity.Models
 
         public GameObject LocalPlayer { get; set; }
         private Renderer[] _renderers;
-        private Material _potMaterial;
+
+        // 按槽位缓存 material 副本：罐子和身体是两个 Renderer，各自那份独立材质跟着本实例活着。
+        private readonly Dictionary<byte, Material> _materials = new Dictionary<byte, Material>();
 
         /// <summary>
         /// 到本地玩家的直线距离（米）。头顶标签和玩家列表共用这一处定义，
@@ -94,8 +97,9 @@ namespace GOILauncher.Multiplayer.Unity.Models
         }
 
          /// <summary>
-        /// 换掉罐子的贴图和金度。<paramref name="texture"/> 为 null 时只改金度。
-        /// 返回 false 表示这个实例上找不到罐子的 MeshRenderer，外观没动过。
+        /// 换掉某个槽位（罐子 / 身体）的贴图和金度。<paramref name="texture"/> 为 null 时只改金度；
+        /// 身体材质没有 <c>_Goldness</c>，那一步靠 <c>HasProperty</c> 兜住，是空操作。
+        /// 返回 false 表示这个实例上找不到该槽位的 Renderer，外观没动过。
         /// </summary>
         /// <remarks>
         /// 只写 <c>material</c>（每个 Renderer 自己那份），绝不写 <c>sharedMaterial</c>：
@@ -103,9 +107,9 @@ namespace GOILauncher.Multiplayer.Unity.Models
         /// 等于把本地玩家也换掉。读 <c>material</c> 这一下就已经让 Unity 拷出独立副本了，
         /// 副本归本实例所有，销毁时要自己收（见 <see cref="OnDestroy"/>）。
         /// </remarks>
-        public bool ApplySkin(Texture2D texture, float goldness)
+        public bool ApplySkin(byte slot, Texture2D texture, float goldness)
         {
-            var material = GetPotMaterial();
+            var material = GetMaterial(slot);
             if (material == null)
             {
                 return false;
@@ -124,23 +128,33 @@ namespace GOILauncher.Multiplayer.Unity.Models
 
         public void OnDestroy()
         {
-            // 这份材质是读 material 时 Unity 为本实例拷出来的，没人替我们回收。
-            if (_potMaterial != null)
+            // 这些材质是读 material 时 Unity 为本实例拷出来的，没人替我们回收。
+            foreach (var material in _materials.Values)
             {
-                Destroy(_potMaterial);
-                _potMaterial = null;
+                if (material != null)
+                {
+                    Destroy(material);
+                }
             }
+            _materials.Clear();
         }
 
-        private Material GetPotMaterial()
+        private Material GetMaterial(byte slot)
         {
-            // 实例本身在池里反复借还，材质副本跟着实例活着，所以只拷一次。
-            if (_potMaterial != null)
+            // 实例本身在池里反复借还，材质副本跟着实例活着，所以每槽位只拷一次。
+            Material material;
+            if (_materials.TryGetValue(slot, out material) && material != null)
             {
-                return _potMaterial;
+                return material;
             }
 
-            var mesh = transform.Find(GameConstants.PotMeshPath);
+            var path = GameConstants.SkinMeshPath(slot);
+            if (path == null)
+            {
+                return null;
+            }
+
+            var mesh = transform.Find(path);
             if (mesh == null)
             {
                 return null;
@@ -152,8 +166,9 @@ namespace GOILauncher.Multiplayer.Unity.Models
                 return null;
             }
 
-            _potMaterial = renderer.material;
-            return _potMaterial;
+            material = renderer.material;
+            _materials[slot] = material;
+            return material;
         }
 
         private bool TryCaptureState(out PlayerState state)

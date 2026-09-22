@@ -11,12 +11,17 @@ namespace GOILauncher.Multiplayer.Core.Data.Packets
     {
         public RoomPacketScope Scope { get; set; }
         public int PlayerId { get; set; }
+
+        /// <summary>是哪个槽位拿不到，收端据此只把那个部件回退到原版。</summary>
+        public byte Slot { get; set; }
+
         public SkinHash Hash { get; set; }
 
         public void Serialize(NetDataWriter writer)
         {
             writer.Put(Scope);
             writer.Put(PlayerId);
+            writer.Put(Slot);
             writer.Put(Hash);
         }
 
@@ -24,6 +29,7 @@ namespace GOILauncher.Multiplayer.Core.Data.Packets
         {
             Scope = reader.Get<RoomPacketScope>();
             PlayerId = reader.GetInt();
+            Slot = reader.GetByte();
             Hash = reader.Get<SkinHash>();
         }
     }

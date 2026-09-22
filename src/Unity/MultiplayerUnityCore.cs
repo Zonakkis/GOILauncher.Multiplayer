@@ -240,7 +240,7 @@ namespace GOILauncher.Multiplayer.Unity
         }
         private static ContainerBuilder RegisterSkinSynchronizer(this ContainerBuilder builder)
         {
-            builder.RegisterType<VanillaPotTexture>()
+            builder.RegisterType<VanillaSkins>()
                 .AsSelf()
                 .SingleInstance();
             builder.RegisterType<LocalSkinReader>()

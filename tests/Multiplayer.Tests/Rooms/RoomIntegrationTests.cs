@@ -3,6 +3,7 @@ using System.Linq;
 using FluentAssertions;
 using GOILauncher.Multiplayer.Client.Events;
 using GOILauncher.Multiplayer.Client.Models;
+using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Core.Data.Packets;
 using GOILauncher.Multiplayer.Core.Event;
@@ -168,7 +169,7 @@ namespace GOILauncher.Multiplayer.Tests.Rooms
             var scope = new RoomPacketScope(a.Players.LocalMembershipId, b.Players.LocalMembershipId);
             a.Rooms.CreateRoom("away", null, 0); link.Pump();
             SkinState skin; byte[] bytes;
-            a.Skin.TryGetSkin(2, out skin, out bytes).Should().BeFalse();
+            a.Skin.TryGetSkin(2, SkinConstants.PotSlot, out skin, out bytes).Should().BeFalse();
             int states = 0, skins = 0;
             a.Events.Subscribe<PlayerStateReceivedEvent>(e => states++); a.Events.Subscribe<PlayerSkinReceivedEvent>(e => skins++);
             a.Dispatcher.Receive(new S2CPlayerJoinedPacket { Scope = scope, PlayerId = 2, PlayerName = "late", IsInGame = true });
@@ -179,7 +180,7 @@ namespace GOILauncher.Multiplayer.Tests.Rooms
             states.Should().Be(0); skins.Should().Be(0); AssertRoomEntryMessage(a, "away");
             a.Players.Players.Select(p => p.Id).Should().Equal(1);
             a.Rooms.LeaveRoom(); link.Pump();
-            a.Skin.TryGetSkin(2, out skin, out bytes).Should().BeTrue(); bytes.Should().Equal(payload);
+            a.Skin.TryGetSkin(2, SkinConstants.PotSlot, out skin, out bytes).Should().BeTrue(); bytes.Should().Equal(payload);
             skins = 0;
             a.Dispatcher.Receive(new S2CPlayerLeftPacket { Scope = scope, PlayerId = 2 });
             a.Dispatcher.Receive(new S2CPlayerStatePacket { Scope = scope, PlayerId = 2, Sequence = 1000 });
@@ -224,7 +225,7 @@ namespace GOILauncher.Multiplayer.Tests.Rooms
             a.Rooms.CreateRoom("new", null, 0); link.Pump(); b.Rooms.JoinRoom(a.Rooms.CurrentRoom.Id, null); link.Pump();
             a.SentHistory.OfType<C2SSkinDataPacket>().Should().HaveCount(uploads);
             SkinState state; byte[] received;
-            b.Skin.TryGetSkin(1, out state, out received).Should().BeTrue(); received.Should().Equal(payload);
+            b.Skin.TryGetSkin(1, SkinConstants.PotSlot, out state, out received).Should().BeTrue(); received.Should().Equal(payload);
         }
         [Test]
         public void UploadInFlightDuringRoomChange_CompletesOnlyInTheCurrentRoom()
@@ -239,8 +240,8 @@ namespace GOILauncher.Multiplayer.Tests.Rooms
             a.Rooms.JoinRoom(b.Rooms.CurrentRoom.Id, null); link.Pump();
             link.Server.Dispatcher.Receive(upload, 1); link.Pump();
             SkinState state; byte[] received;
-            b.Skin.TryGetSkin(1, out state, out received).Should().BeTrue(); received.Should().Equal(payload);
-            c.Skin.TryGetSkin(1, out state, out received).Should().BeFalse();
+            b.Skin.TryGetSkin(1, SkinConstants.PotSlot, out state, out received).Should().BeTrue(); received.Should().Equal(payload);
+            c.Skin.TryGetSkin(1, SkinConstants.PotSlot, out state, out received).Should().BeFalse();
         }
         [Test]
         public void SceneChangeQueuedAfterRoomRequest_IsNotOverwrittenByEntrySnapshot()

@@ -132,6 +132,17 @@ PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是�
 最多撞一次。
 - 因此没装皮肤时的基线不是"读到的贴图"，而是插件内嵌的一张原版贴图（`src/Unity/Resources/VanillaPot.png`），再叠上传过来的 `_Goldness`。
 
+## Body Skin（Diogenes）
+
+罐子之外的第二个可同步部件是玩家身体，社区称 Diogenes：
+
+- 对应对象相对 `Player` 根的完整路径是 `dude/Body`（`dude` 的直接子物体，见上面 Player Object Hierarchy）。它挂的是 **`SkinnedMeshRenderer`**，不是 `MeshRenderer`——但 `SkinnedMeshRenderer` 同样继承自 `Renderer`，皮肤读写全走 `GetComponent<Renderer>()` + `.material`/`.sharedMaterial`/`.mainTexture`，对它一视同仁，不需要为 skinned 特判。
+- 皮肤 Mod 换身体皮肤的机制与罐子**完全一致**：最终都把这个 renderer 材质的 `mainTexture` 换成一张 `Texture2D`。同步读的也是那张贴图本身，不认任何 Mod 的实现。
+- **`_Goldness` 是罐子材质专属的，身体材质没有。** 读端 `LocalSkinReader` 用 `HasProperty` 取金度（身体读到 0），写端 `RemotePlayer.ApplySkin` 也用 `HasProperty` 兜底（给身体写金度是空操作），所以 `SkinState.Goldness` 对身体槽位天然惰性。
+- 没装身体皮肤时的原版基线是内嵌的 `src/Unity/Resources/VanillaDiogenes.png`，道理和 `VanillaPot.png` 一样：远端实例从本地 `Player` 克隆而来，不带一张原版身体贴图的话，没装皮肤的远端玩家会顶着本地玩家的身体贴图。
+
+同步链路做成**按槽位通用**：`SkinConstants.Slots`（`PotSlot=0`、`BodySlot=1`）列出所有已知槽位，`GameConstants.SkinMeshPath(slot)` 把槽位映射到上面这两条 mesh 路径，收发两端按 `(playerId, slot)` 独立宣告、缓存、下发。加第三个部件只是往 `Slots` 和 `SkinMeshPath` 各加一行，并补一张原版基线贴图。
+
 ## Room Membership and Scene Independence
 
 - “大厅”是默认 Room，不是 `Loader`；大厅成员也可同时位于 `Mian` 并正常同步。玩家列表的非游戏状态显示为“未在游戏中”。

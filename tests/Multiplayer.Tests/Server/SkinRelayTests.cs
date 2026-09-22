@@ -61,11 +61,84 @@ namespace GOILauncher.Multiplayer.Tests.Server
             AddPlayer(OtherId);
 
             var state = SkinTestData.State(SkinTestData.Png(0x01));
-            state.Slot = SkinConstants.PotSlot + 1;
+            state.Slot = (byte)(SkinConstants.BodySlot + 1); // 已知槽位到 BodySlot 为止，再高一个就是未知
 
             Announce(SenderId, state);
 
             _networkServer.Sent.Should().BeEmpty();
+        }
+
+        /// <summary>
+        /// 罐子和身体是两个独立槽位：各自缓存、各自下发，一个的字节不会顶掉另一个。
+        /// </summary>
+        [Test]
+        public void TwoSlots_AreCachedAndServedIndependently()
+        {
+            AddPlayer(SenderId);
+            AddPlayer(OtherId);
+            var pot = SkinTestData.Png(0x01);
+            var body = SkinTestData.Png(0x02);
+
+            Announce(SenderId, SkinTestData.State(pot, 0f, SkinConstants.PotSlot));
+            Upload(SenderId, pot, SkinConstants.PotSlot);
+            Announce(SenderId, SkinTestData.State(body, 0f, SkinConstants.BodySlot));
+            Upload(SenderId, body, SkinConstants.BodySlot);
+
+            Request(OtherId, SenderId, SkinHash.Compute(pot), SkinConstants.PotSlot);
+            var servedPot = LastDataFor(OtherId);
+            servedPot.Slot.Should().Be(SkinConstants.PotSlot);
+            servedPot.Blob.Data.Should().Equal(pot);
+
+            Request(OtherId, SenderId, SkinHash.Compute(body), SkinConstants.BodySlot);
+            var servedBody = LastDataFor(OtherId);
+            servedBody.Slot.Should().Be(SkinConstants.BodySlot);
+            servedBody.Blob.Data.Should().Equal(body);
+        }
+
+        /// <summary>
+        /// 换其中一个槽位的皮肤不该动到另一个槽位缓存的字节。
+        /// </summary>
+        [Test]
+        public void ChangingOneSlot_LeavesTheOtherSlotIntact()
+        {
+            AddPlayer(SenderId);
+            AddPlayer(OtherId);
+            var pot = SkinTestData.Png(0x01);
+            var body = SkinTestData.Png(0x02);
+
+            Announce(SenderId, SkinTestData.State(pot, 0f, SkinConstants.PotSlot));
+            Upload(SenderId, pot, SkinConstants.PotSlot);
+            Announce(SenderId, SkinTestData.State(body, 0f, SkinConstants.BodySlot));
+            Upload(SenderId, body, SkinConstants.BodySlot);
+
+            // 罐子换成另一张，身体那份不受影响。
+            Announce(SenderId, SkinTestData.State(SkinTestData.Png(0x03), 0f, SkinConstants.PotSlot));
+
+            Request(OtherId, SenderId, SkinHash.Compute(body), SkinConstants.BodySlot);
+            LastDataFor(OtherId).Blob.Data.Should().Equal(body);
+        }
+
+        [Test]
+        public void Disconnect_ForgetsEverySlot()
+        {
+            AddPlayer(SenderId);
+            AddPlayer(OtherId);
+            var pot = SkinTestData.Png(0x01);
+            var body = SkinTestData.Png(0x02);
+            Announce(SenderId, SkinTestData.State(pot, 0f, SkinConstants.PotSlot));
+            Upload(SenderId, pot, SkinConstants.PotSlot);
+            Announce(SenderId, SkinTestData.State(body, 0f, SkinConstants.BodySlot));
+            Upload(SenderId, body, SkinConstants.BodySlot);
+
+            _playerService.Players.Remove(SenderId);
+            _eventBus.Publish(new ClientDisconnectedEvent(SenderId, "left"));
+            _networkServer.Sent.Clear();
+
+            AddPlayer(SenderId);
+            Request(OtherId, SenderId, SkinHash.Compute(pot), SkinConstants.PotSlot);
+            LastPacketFor(OtherId).Should().BeOfType<S2CSkinUnavailablePacket>();
+            Request(OtherId, SenderId, SkinHash.Compute(body), SkinConstants.BodySlot);
+            LastPacketFor(OtherId).Should().BeOfType<S2CSkinUnavailablePacket>();
         }
 
         [Test]
@@ -284,17 +357,32 @@ namespace GOILauncher.Multiplayer.Tests.Server
 
         private void Upload(int senderId, byte[] payload)
         {
-            _dispatcher.Receive(new C2SSkinDataPacket { Blob = SkinTestData.Blob(payload) }, senderId);
+            Upload(senderId, payload, SkinConstants.PotSlot);
+        }
+
+        private void Upload(int senderId, byte[] payload, byte slot)
+        {
+            _dispatcher.Receive(new C2SSkinDataPacket { Slot = slot, Blob = SkinTestData.Blob(payload) }, senderId);
         }
 
         private void Request(int senderId, int ownerId, SkinHash hash)
         {
-            _dispatcher.Receive(new C2SSkinRequestPacket { Scope = new RoomPacketScope((ulong)senderId + 1, (ulong)ownerId + 1), PlayerId = ownerId, Hash = hash }, senderId);
+            Request(senderId, ownerId, hash, SkinConstants.PotSlot);
+        }
+
+        private void Request(int senderId, int ownerId, SkinHash hash, byte slot)
+        {
+            _dispatcher.Receive(new C2SSkinRequestPacket { Scope = new RoomPacketScope((ulong)senderId + 1, (ulong)ownerId + 1), PlayerId = ownerId, Slot = slot, Hash = hash }, senderId);
         }
 
         private object LastPacketFor(int clientId)
         {
             return _networkServer.Sent.Last(s => s.ClientId == clientId).Packet;
+        }
+
+        private S2CSkinDataPacket LastDataFor(int clientId)
+        {
+            return (S2CSkinDataPacket)_networkServer.Sent.Last(s => s.ClientId == clientId && s.Packet is S2CSkinDataPacket).Packet;
         }
 
         private void AddPlayer(int id)

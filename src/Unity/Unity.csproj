@@ -53,10 +53,11 @@
 
   <ItemGroup>
     <!--
-      原版罐子贴图。文件缺失时不参与编译，VanillaPotTexture 会退化成"不改贴图"并警告一行——
-      少一张图不该让整个仓库编不过。
+      原版皮肤基线贴图，每个槽位一张。文件缺失时不参与编译，VanillaPotTexture 会退化成
+      "不改贴图"并警告一行——少一张图不该让整个仓库编不过。
     -->
     <EmbeddedResource Include="Resources\VanillaPot.png" Condition="Exists('Resources\VanillaPot.png')" />
+    <EmbeddedResource Include="Resources\VanillaDiogenes.png" Condition="Exists('Resources\VanillaDiogenes.png')" />
   </ItemGroup>
 
   <ItemGroup>

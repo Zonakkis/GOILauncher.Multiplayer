@@ -32,8 +32,9 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
         private readonly IServerEventBus _eventBus;
         private readonly ILogger<SkinRelay> _logger;
 
-        private readonly Dictionary<int, SkinState> _manifests = new Dictionary<int, SkinState>();
-        private readonly Dictionary<int, SkinBlob> _blobs = new Dictionary<int, SkinBlob>();
+        // 按 (玩家, 槽位) 存：一名玩家可能同时有罐子和身体两份皮肤，各占一条。
+        private readonly Dictionary<SkinKey, SkinState> _manifests = new Dictionary<SkinKey, SkinState>();
+        private readonly Dictionary<SkinKey, SkinBlob> _blobs = new Dictionary<SkinKey, SkinBlob>();
 
         public SkinRelay(INetworkServer networkServer,
             IServerPacketDispatcher dispatcher,
@@ -65,27 +66,27 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
             if (!IsKnownPlayer(sender.Id)) return;
 
             var state = packet.State;
-            if (state.Slot != SkinConstants.PotSlot)
+            if (!SkinConstants.IsKnownSlot(state.Slot))
             {
-                // 槽位是为了以后加部件留的，现在只认 Pot。收到别的槽位说明对面比本服务端新，
-                // 转发出去也没人渲染得了。
+                // 收到本 build 不认识的槽位说明对面比本服务端新，转发出去也没人渲染得了。
                 _logger.Warn("Player {PlayerId} announced unknown skin slot {Slot}, ignored.",
                     sender.Id, state.Slot);
                 return;
             }
 
-            _manifests[sender.Id] = state;
+            var key = new SkinKey(sender.Id, state.Slot);
+            _manifests[key] = state;
 
             // 换了皮肤就把旧字节扔掉：留着只会让别人请求到过期内容。
             SkinBlob stored;
-            if (_blobs.TryGetValue(sender.Id, out stored) && !stored.Hash.Equals(state.Hash))
+            if (_blobs.TryGetValue(key, out stored) && !stored.Hash.Equals(state.Hash))
             {
-                _blobs.Remove(sender.Id);
+                _blobs.Remove(key);
             }
 
             // Do not announce a custom hash until its bytes can actually be served. A request
             // arriving between manifest and upload must not strand a peer on vanilla forever.
-            BroadcastManifest(sender.Id);
+            BroadcastManifest(sender.Id, state.Slot);
         }
 
         private void OnData(C2SSkinDataPacket packet, PacketSender sender)
@@ -94,11 +95,12 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
 
             // 只收当前宣告的那张。先宣告后上传是协议规定的顺序，否则服务端存的字节就没有
             // 任何东西能证明它属于哪张皮肤。
+            var key = new SkinKey(sender.Id, packet.Slot);
             SkinState state;
-            if (!_manifests.TryGetValue(sender.Id, out state) || !state.HasTexture)
+            if (!_manifests.TryGetValue(key, out state) || !state.HasTexture)
             {
-                _logger.Warn("Player {PlayerId} uploaded skin data without announcing a manifest, dropped.",
-                    sender.Id);
+                _logger.Warn("Player {PlayerId} uploaded skin data for slot {Slot} without announcing a manifest, dropped.",
+                    sender.Id, packet.Slot);
                 return;
             }
 
@@ -117,10 +119,10 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
                 return;
             }
 
-            _blobs[sender.Id] = blob;
-            BroadcastManifest(sender.Id);
-            _logger.Info("Cached skin {Hash} ({Bytes} bytes) for player {PlayerId}.",
-                blob.Hash, blob.Data.Length, sender.Id);
+            _blobs[key] = blob;
+            BroadcastManifest(sender.Id, packet.Slot);
+            _logger.Info("Cached skin {Hash} ({Bytes} bytes) for player {PlayerId} slot {Slot}.",
+                blob.Hash, blob.Data.Length, sender.Id, packet.Slot);
         }
 
         private void OnRequest(C2SSkinRequestPacket packet, PacketSender sender)
@@ -131,15 +133,15 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
                 || scope.PlayerMembershipId != packet.Scope.PlayerMembershipId) return;
 
             SkinBlob blob;
-            if (_blobs.TryGetValue(packet.PlayerId, out blob) && blob.Hash.Equals(packet.Hash))
+            if (_blobs.TryGetValue(new SkinKey(packet.PlayerId, packet.Slot), out blob) && blob.Hash.Equals(packet.Hash))
             {
                 _networkServer.Send(sender.Id,
-                    new S2CSkinDataPacket { Scope = scope, PlayerId = packet.PlayerId, Blob = blob },
+                    new S2CSkinDataPacket { Scope = scope, PlayerId = packet.PlayerId, Slot = packet.Slot, Blob = blob },
                     NetworkChannels.Skin, DeliveryMethod.ReliableOrdered);
                 return;
             }
             _networkServer.Send(sender.Id,
-                new S2CSkinUnavailablePacket { Scope = scope, PlayerId = packet.PlayerId, Hash = packet.Hash },
+                new S2CSkinUnavailablePacket { Scope = scope, PlayerId = packet.PlayerId, Slot = packet.Slot, Hash = packet.Hash },
                 NetworkChannels.Skin, DeliveryMethod.ReliableOrdered);
         }
 
@@ -148,24 +150,29 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
             foreach (var member in _rooms.GetMembers(e.PlayerId))
             {
                 if (member.PlayerId == e.PlayerId) continue;
-                SendManifest(e.PlayerId, member.PlayerId);
-                SendManifest(member.PlayerId, e.PlayerId);
+                // 每名玩家可能有多个槽位的皮肤，两个方向都要把已知槽位都补齐。
+                for (var i = 0; i < SkinConstants.Slots.Length; i++)
+                {
+                    SendManifest(e.PlayerId, member.PlayerId, SkinConstants.Slots[i]);
+                    SendManifest(member.PlayerId, e.PlayerId, SkinConstants.Slots[i]);
+                }
             }
         }
 
-        private void BroadcastManifest(int playerId)
+        private void BroadcastManifest(int playerId, byte slot)
         {
             foreach (var member in _rooms.GetMembers(playerId))
-                if (member.PlayerId != playerId) SendManifest(member.PlayerId, playerId);
+                if (member.PlayerId != playerId) SendManifest(member.PlayerId, playerId, slot);
         }
 
-        private void SendManifest(int recipientId, int playerId)
+        private void SendManifest(int recipientId, int playerId, byte slot)
         {
             SkinState state;
             SkinBlob blob;
             RoomPacketScope scope;
-            if (!_rooms.TryGetScope(recipientId, playerId, out scope) || !_manifests.TryGetValue(playerId, out state)) return;
-            if (state.HasTexture && (!_blobs.TryGetValue(playerId, out blob) || !blob.Hash.Equals(state.Hash))) return;
+            var key = new SkinKey(playerId, slot);
+            if (!_rooms.TryGetScope(recipientId, playerId, out scope) || !_manifests.TryGetValue(key, out state)) return;
+            if (state.HasTexture && (!_blobs.TryGetValue(key, out blob) || !blob.Hash.Equals(state.Hash))) return;
             // Roster + manifest share one reliable control stream. Only large byte payloads
             // use the independent Skin channel, so an initial manifest cannot outrun its roster.
             _networkServer.Send(recipientId,
@@ -175,8 +182,13 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
 
         private void OnClientDisconnected(ClientDisconnectedEvent e)
         {
-            _manifests.Remove(e.ClientId);
-            _blobs.Remove(e.ClientId);
+            // 一名玩家的所有槽位都要清掉。
+            for (var i = 0; i < SkinConstants.Slots.Length; i++)
+            {
+                var key = new SkinKey(e.ClientId, SkinConstants.Slots[i]);
+                _manifests.Remove(key);
+                _blobs.Remove(key);
+            }
         }
 
         private bool IsKnownPlayer(int playerId)

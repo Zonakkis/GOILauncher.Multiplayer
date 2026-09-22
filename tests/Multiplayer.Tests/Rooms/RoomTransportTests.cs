@@ -91,7 +91,7 @@ namespace GOILauncher.Multiplayer.Tests.Rooms
                     WaitUntil(() =>
                     {
                         SkinState state; byte[] bytes;
-                        return guest.Resolve<ClientSkinSync>().TryGetSkin(ownerId, out state, out bytes) && bytes != null;
+                        return guest.Resolve<ClientSkinSync>().TryGetSkin(ownerId, SkinConstants.PotSlot, out state, out bytes) && bytes != null;
                     }, poll);
                     int stops = 0; host.Resolve<IServerEventBus>().Subscribe<ServerStoppedEvent>(e => stops++);
                     server.Stop(); server.Stop();

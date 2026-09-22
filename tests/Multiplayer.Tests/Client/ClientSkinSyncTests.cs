@@ -196,7 +196,7 @@ namespace GOILauncher.Multiplayer.Tests.Client
 
             SkinState state;
             byte[] stored;
-            _sync.TryGetSkin(RemoteId, out state, out stored).Should().BeTrue();
+            _sync.TryGetSkin(RemoteId, SkinConstants.PotSlot, out state, out stored).Should().BeTrue();
             stored.Should().Equal(payload);
         }
 
@@ -305,7 +305,7 @@ namespace GOILauncher.Multiplayer.Tests.Client
             SkinState state;
             byte[] payload;
 
-            _sync.TryGetSkin(RemoteId, out state, out payload).Should().BeFalse();
+            _sync.TryGetSkin(RemoteId, SkinConstants.PotSlot, out state, out payload).Should().BeFalse();
         }
 
         /// <summary>
@@ -319,7 +319,7 @@ namespace GOILauncher.Multiplayer.Tests.Client
 
             SkinState state;
             byte[] payload;
-            _sync.TryGetSkin(RemoteId, out state, out payload).Should().BeTrue();
+            _sync.TryGetSkin(RemoteId, SkinConstants.PotSlot, out state, out payload).Should().BeTrue();
             payload.Should().BeNull();
             state.Goldness.Should().Be(1f);
         }
@@ -335,7 +335,7 @@ namespace GOILauncher.Multiplayer.Tests.Client
 
             SkinState state;
             byte[] stored;
-            _sync.TryGetSkin(RemoteId, out state, out stored).Should().BeFalse();
+            _sync.TryGetSkin(RemoteId, SkinConstants.PotSlot, out state, out stored).Should().BeFalse();
             _sync.IsHashReferenced(SkinHash.Compute(payload)).Should().BeFalse();
         }
 
@@ -393,13 +393,93 @@ namespace GOILauncher.Multiplayer.Tests.Client
 
             SkinState state;
             byte[] stored;
-            _sync.TryGetSkin(RemoteId, out state, out stored).Should().BeFalse();
+            _sync.TryGetSkin(RemoteId, SkinConstants.PotSlot, out state, out stored).Should().BeFalse();
 
             _networkClient.Sent.Clear();
             _eventBus.Publish(new RoomMembershipChangedEvent());
 
             _networkClient.Sent.Select(s => s.Packet.GetType()).Should().Equal(
                 typeof(C2SSkinManifestPacket), typeof(C2SSkinDataPacket));
+        }
+
+        /// <summary>
+        /// 罐子和身体是两个独立槽位：各自的清单分别存、分别取，一个不会顶掉另一个。
+        /// </summary>
+        [Test]
+        public void TwoSlots_AreStoredAndReadIndependently()
+        {
+            var pot = SkinTestData.Png(0x01);
+            var body = SkinTestData.Png(0x02);
+            ReceiveManifest(RemoteId, SkinTestData.State(pot, 0f, SkinConstants.PotSlot));
+            ReceiveData(RemoteId, pot, SkinConstants.PotSlot);
+            ReceiveManifest(RemoteId, SkinTestData.State(body, 0f, SkinConstants.BodySlot));
+            ReceiveData(RemoteId, body, SkinConstants.BodySlot);
+
+            SkinState state;
+            byte[] stored;
+            _sync.TryGetSkin(RemoteId, SkinConstants.PotSlot, out state, out stored).Should().BeTrue();
+            stored.Should().Equal(pot);
+            _sync.TryGetSkin(RemoteId, SkinConstants.BodySlot, out state, out stored).Should().BeTrue();
+            stored.Should().Equal(body);
+        }
+
+        /// <summary>
+        /// 每个槽位的清单带自己的槽位号请求，服务端才知道要哪个部件的字节。
+        /// </summary>
+        [Test]
+        public void UnknownManifest_RequestsWithTheManifestsSlot()
+        {
+            var body = SkinTestData.Png(0x02);
+
+            ReceiveManifest(RemoteId, SkinTestData.State(body, 0f, SkinConstants.BodySlot));
+
+            var request = (C2SSkinRequestPacket)_networkClient.Sent.Single().Packet;
+            request.PlayerId.Should().Be(RemoteId);
+            request.Slot.Should().Be(SkinConstants.BodySlot);
+            request.Hash.Matches(body).Should().BeTrue();
+        }
+
+        /// <summary>
+        /// 一名玩家离开要清掉他所有槽位的清单，不能只清罐子。
+        /// </summary>
+        [Test]
+        public void PlayerLeft_ForgetsEverySlot()
+        {
+            var pot = SkinTestData.Png(0x01);
+            var body = SkinTestData.Png(0x02);
+            ReceiveManifest(RemoteId, SkinTestData.State(pot, 0f, SkinConstants.PotSlot));
+            ReceiveData(RemoteId, pot, SkinConstants.PotSlot);
+            ReceiveManifest(RemoteId, SkinTestData.State(body, 0f, SkinConstants.BodySlot));
+            ReceiveData(RemoteId, body, SkinConstants.BodySlot);
+
+            _eventBus.Publish(new PlayerLeftEvent(RemoteId, "remote", Platform.PC));
+
+            SkinState state;
+            byte[] stored;
+            _sync.TryGetSkin(RemoteId, SkinConstants.PotSlot, out state, out stored).Should().BeFalse();
+            _sync.TryGetSkin(RemoteId, SkinConstants.BodySlot, out state, out stored).Should().BeFalse();
+            _sync.IsHashReferenced(SkinHash.Compute(pot)).Should().BeFalse();
+            _sync.IsHashReferenced(SkinHash.Compute(body)).Should().BeFalse();
+        }
+
+        /// <summary>
+        /// 两个槽位可以在一局里各自宣告：罐子和身体都上传，各发一份清单加一份字节。
+        /// </summary>
+        [Test]
+        public void AnnouncingTwoSlots_SendsBothManifestsAndBothBytes()
+        {
+            var pot = SkinTestData.Png(0x01);
+            var body = SkinTestData.Png(0x02);
+
+            _sync.Announce(SkinTestData.State(pot, 0f, SkinConstants.PotSlot), pot);
+            _sync.Announce(SkinTestData.State(body, 0f, SkinConstants.BodySlot), body);
+
+            _networkClient.Sent.Should().HaveCount(4); // 每槽位一份 manifest + 一份 data
+            var dataSlots = _networkClient.Sent
+                .Where(s => s.Packet is C2SSkinDataPacket)
+                .Select(s => ((C2SSkinDataPacket)s.Packet).Slot)
+                .ToList();
+            dataSlots.Should().BeEquivalentTo(new[] { SkinConstants.PotSlot, SkinConstants.BodySlot });
         }
 
         private void ReceiveManifest(int playerId, SkinState state)
@@ -409,9 +489,14 @@ namespace GOILauncher.Multiplayer.Tests.Client
 
         private void ReceiveData(int playerId, byte[] payload)
         {
+            ReceiveData(playerId, payload, SkinConstants.PotSlot);
+        }
+
+        private void ReceiveData(int playerId, byte[] payload, byte slot)
+        {
             _dispatcher.Receive(new S2CSkinDataPacket
             {
-                Scope = TestClientRoster.Scope(playerId), PlayerId = playerId,
+                Scope = TestClientRoster.Scope(playerId), PlayerId = playerId, Slot = slot,
                 Blob = SkinTestData.Blob(payload)
             });
         }

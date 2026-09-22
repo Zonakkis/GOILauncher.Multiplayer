@@ -59,9 +59,15 @@ namespace GOILauncher.Multiplayer.Tests
 
         public static SkinState State(byte[] data, float goldness)
         {
+            return State(data, goldness, SkinConstants.PotSlot);
+        }
+
+        /// <summary>A manifest for <paramref name="slot"/> naming <paramref name="data"/> as its texture.</summary>
+        public static SkinState State(byte[] data, float goldness, byte slot)
+        {
             return new SkinState
             {
-                Slot = SkinConstants.PotSlot,
+                Slot = slot,
                 Hash = SkinHash.Compute(data),
                 Goldness = goldness
             };
@@ -70,7 +76,12 @@ namespace GOILauncher.Multiplayer.Tests
         /// <summary>A pot manifest with no texture: an empty hash plus a goldness that still counts.</summary>
         public static SkinState Vanilla(float goldness)
         {
-            return new SkinState { Slot = SkinConstants.PotSlot, Goldness = goldness };
+            return Vanilla(goldness, SkinConstants.PotSlot);
+        }
+
+        public static SkinState Vanilla(float goldness, byte slot)
+        {
+            return new SkinState { Slot = slot, Goldness = goldness };
         }
 
         private static void WriteBigEndian(byte[] data, int offset, int value)

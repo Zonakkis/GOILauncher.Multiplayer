@@ -106,7 +106,7 @@ ale` 无关）。没有轮询，也没有手动刷新：**游戏中途换皮肤�
 后者贵得多，所以它每次贴完贴图就问一次 `IsHashReferenced` 再扫。代价是那张要是又被换回来得重新下一次——上传侧的 A→B→A 会重传，正是为了让这
 条路走得通。
 - **换房清空远端一切，本地状态留着；断线还清空本地上传记录。** 重连可能是另一台服务器，或者同一台重启过，它那份缓存不算数了；本地皮肤没变，所以只需要在 `RoomMembershipChangedEvent` 时按原样再宣告一次。本地那次读取也可能发生在连上之前（先进游戏再连服务器），走的是同一条补发路径。
-- **`byte Slot` 现在只有 `PotSlot`。** 留着是为了以后加部件，服务端收到别的槽位会丢掉并警告——转发出去也没人渲染得了。
+- **`byte Slot` 目前有 `PotSlot`（罐子）和 `BodySlot`（身体 Diogenes）两个。** 收发两端按 `(playerId, slot)` 独立宣告、缓存、下发；服务端收到 `SkinConstants.IsKnownSlot` 之外的槽位会丢掉并警告——转发出去也没人渲染得了。已知槽位列在 `SkinConstants.Slots`，加部件往那里加一个即可（Unity 侧的 mesh 路径见 `game-runtime.md` 的 Body Skin 一节）。
 
 ## Player Roster Ownership
 

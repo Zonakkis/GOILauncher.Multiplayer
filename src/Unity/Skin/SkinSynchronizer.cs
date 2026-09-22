@@ -35,7 +35,7 @@ namespace GOILauncher.Multiplayer.Unity.Skin
         public IGameManager GameManager { get; set; }
         public IPlayerManager PlayerManager { get; set; }
         public LocalSkinReader SkinReader { get; set; }
-        public VanillaPotTexture VanillaTexture { get; set; }
+        public VanillaSkins VanillaSkins { get; set; }
         public ILogger<SkinSynchronizer> Logger { get; set; }
 
         private readonly Dictionary<SkinHash, Texture2D> _textures = new Dictionary<SkinHash, Texture2D>();
@@ -77,15 +77,17 @@ namespace GOILauncher.Multiplayer.Unity.Skin
             yield return new WaitForSecondsRealtime(ReadDelaySeconds);
             _readRoutine = null;
 
-            SkinState state;
-            byte[] payload;
-            if (!SkinReader.TryRead(out state, out payload))
+            List<LocalSkinReader.ReadResult> results;
+            if (!SkinReader.TryReadAll(out results))
             {
                 yield break;
             }
 
-            // 没连上也照样调用：ClientSkinSync 会先存着，握手完成后自己补发。
-            SkinSync.Announce(state, payload);
+            // 没连上也照样调用：ClientSkinSync 会先存着，握手完成后自己补发。每个槽位各宣告一次。
+            foreach (var result in results)
+            {
+                SkinSync.Announce(result.State, result.Payload);
+            }
         }
 
         private void OnRemotePlayerInstanceCreated(RemotePlayerInstanceCreatedEvent e)
@@ -96,17 +98,22 @@ namespace GOILauncher.Multiplayer.Unity.Skin
                 return;
             }
 
-            SkinState state;
-            byte[] payload;
-            if (SkinSync.TryGetSkin(e.PlayerId, out state, out payload))
+            // 每个槽位各自处理：可能罐子清单到了、身体还没到（或反之）。
+            for (var i = 0; i < SkinConstants.Slots.Length; i++)
             {
-                Apply(remote, state, payload);
-                return;
-            }
+                var slot = SkinConstants.Slots[i];
+                SkinState state;
+                byte[] payload;
+                if (SkinSync.TryGetSkin(e.PlayerId, slot, out state, out payload))
+                {
+                    Apply(remote, state, payload);
+                    continue;
+                }
 
-            // 清单还没到，但实例现在就要露面：它是从池子里借的，上面还留着前一个使用者的贴图，
-            // 而模板自带的又是本地玩家的贴图。两种都不能给别人看，先画原版。
-            remote.ApplySkin(VanillaTexture.Texture, UnknownGoldness);
+                // 清单还没到，但实例现在就要露面：它是从池子里借的，上面还留着前一个使用者的贴图，
+                // 而模板自带的又是本地玩家的贴图。两种都不能给别人看，先画原版。
+                remote.ApplySkin(slot, VanillaSkins.Get(slot), UnknownGoldness);
+            }
         }
 
         private void OnPlayerSkinReceived(PlayerSkinReceivedEvent e)
@@ -137,10 +144,10 @@ namespace GOILauncher.Multiplayer.Unity.Skin
 
         private void Apply(RemotePlayer remote, SkinState state, byte[] payload)
         {
-            if (!remote.ApplySkin(ResolveTexture(state, payload), state.Goldness))
+            if (!remote.ApplySkin(state.Slot, ResolveTexture(state, payload), state.Goldness))
             {
-                Logger.Warn("Remote instance of player {PlayerId} has no {Path} renderer, " +
-                    "skin not applied.", remote.Id, GameConstants.PotMeshPath);
+                Logger.Warn("Remote instance of player {PlayerId} has no renderer at {Path} for slot {Slot}, " +
+                    "skin not applied.", remote.Id, GameConstants.SkinMeshPath(state.Slot), state.Slot);
             }
 
             // 贴到实例上之后再扫：现在没人在用的那些才是真的可以扔了。
@@ -151,7 +158,7 @@ namespace GOILauncher.Multiplayer.Unity.Skin
         {
             if (!state.HasTexture)
             {
-                return VanillaTexture.Texture;
+                return VanillaSkins.Get(state.Slot);
             }
 
             Texture2D texture;
@@ -163,13 +170,13 @@ namespace GOILauncher.Multiplayer.Unity.Skin
             if (payload == null)
             {
                 // 字节还在路上，先画原版；到了会再发一次事件。
-                return VanillaTexture.Texture;
+                return VanillaSkins.Get(state.Slot);
             }
 
             texture = Decode(payload);
             if (texture == null)
             {
-                return VanillaTexture.Texture;
+                return VanillaSkins.Get(state.Slot);
             }
 
             _textures[state.Hash] = texture;

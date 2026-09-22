@@ -30,7 +30,9 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
         private readonly IClientEventBus _eventBus;
         private readonly ILogger<ClientSkinSync> _logger;
 
-        private readonly Dictionary<int, SkinState> _manifests = new Dictionary<int, SkinState>();
+        // 远端清单按 (玩家, 槽位) 存：一名玩家可能同时有罐子和身体两份皮肤。字节仍按哈希存，
+        // 内容寻址——两个槽位若恰好同一张贴图可共享一份字节。
+        private readonly Dictionary<SkinKey, SkinState> _manifests = new Dictionary<SkinKey, SkinState>();
         private readonly Dictionary<SkinHash, byte[]> _payloads = new Dictionary<SkinHash, byte[]>();
 
         /// <summary>
@@ -39,9 +41,15 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
         /// </summary>
         private readonly Dictionary<byte, SkinHash> _uploadedHashBySlot = new Dictionary<byte, SkinHash>();
 
-        private SkinState _localState;
-        private byte[] _localPayload;
-        private bool _hasLocalSkin;
+        // 本地每个槽位当前宣告的皮肤，按槽位存。本地读取可能发生在连上之前（先进游戏再连服务器），
+        // 那时只存着，房间就绪或重连后遍历补发。
+        private readonly Dictionary<byte, LocalSkin> _localSkins = new Dictionary<byte, LocalSkin>();
+
+        private struct LocalSkin
+        {
+            public SkinState State;
+            public byte[] Payload;
+        }
 
         public bool IsConnected => _networkClient.IsConnected;
 
@@ -80,10 +88,8 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
                 return;
             }
 
-            _localState = state;
-            _localPayload = payload;
-            _hasLocalSkin = true;
-            SendLocalSkin();
+            _localSkins[state.Slot] = new LocalSkin { State = state, Payload = payload };
+            SendLocalSkin(state.Slot);
         }
 
         /// <summary>
@@ -91,10 +97,10 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
         /// 可能是他就用原版，也可能是字节还在路上——两种情况现在都该画原版，字节到了会再发事件。
         /// 返回 false 表示还没收到这名玩家的清单，什么都别改。
         /// </summary>
-        public bool TryGetSkin(int playerId, out SkinState state, out byte[] payload)
+        public bool TryGetSkin(int playerId, byte slot, out SkinState state, out byte[] payload)
         {
             payload = null;
-            if (!_manifests.TryGetValue(playerId, out state))
+            if (!_manifests.TryGetValue(new SkinKey(playerId, slot), out state))
             {
                 return false;
             }
@@ -122,41 +128,55 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
             return false;
         }
 
-        private void SendLocalSkin()
+        private void SendAllLocalSkins()
+        {
+            foreach (var slot in _localSkins.Keys)
+            {
+                SendLocalSkin(slot);
+            }
+        }
+
+        private void SendLocalSkin(byte slot)
         {
             if (!_networkClient.IsConnected || _players.LocalMembershipId == 0)
             {
                 return;
             }
 
-            _networkClient.Send(new C2SSkinManifestPacket { State = _localState },
+            LocalSkin local;
+            if (!_localSkins.TryGetValue(slot, out local))
+            {
+                return;
+            }
+
+            _networkClient.Send(new C2SSkinManifestPacket { State = local.State },
                 NetworkChannels.Skin, DeliveryMethod.ReliableOrdered);
 
-            if (!_localState.HasTexture)
+            if (!local.State.HasTexture)
             {
-                _uploadedHashBySlot.Remove(_localState.Slot);
+                _uploadedHashBySlot.Remove(slot);
                 return;
             }
 
             SkinHash uploaded;
-            if (_uploadedHashBySlot.TryGetValue(_localState.Slot, out uploaded) &&
-                uploaded.Equals(_localState.Hash))
+            if (_uploadedHashBySlot.TryGetValue(slot, out uploaded) &&
+                uploaded.Equals(local.State.Hash))
             {
                 return;
             }
 
             // 不等别人来要：一张贴图迟早每个人都要，服务端存一份能省掉按人头的重传。
             _networkClient.Send(
-                new C2SSkinDataPacket { Blob = new SkinBlob { Hash = _localState.Hash, Data = _localPayload } },
+                new C2SSkinDataPacket { Slot = slot, Blob = new SkinBlob { Hash = local.State.Hash, Data = local.Payload } },
                 NetworkChannels.Skin, DeliveryMethod.ReliableOrdered);
-            _uploadedHashBySlot[_localState.Slot] = _localState.Hash;
+            _uploadedHashBySlot[slot] = local.State.Hash;
         }
 
         private void OnManifest(S2CSkinManifestPacket packet, PacketSender _)
         {
             if (!_players.AcceptsRemote(packet.PlayerId, packet.Scope)) return;
             var state = packet.State;
-            _manifests[packet.PlayerId] = state;
+            _manifests[new SkinKey(packet.PlayerId, state.Slot)] = state;
             PruneUnreferencedPayloads();
 
             if (!state.HasTexture)
@@ -173,7 +193,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
                 return;
             }
 
-            _networkClient.Send(new C2SSkinRequestPacket { Scope = packet.Scope, PlayerId = packet.PlayerId, Hash = state.Hash },
+            _networkClient.Send(new C2SSkinRequestPacket { Scope = packet.Scope, PlayerId = packet.PlayerId, Slot = state.Slot, Hash = state.Hash },
                 NetworkChannels.Skin, DeliveryMethod.ReliableOrdered);
         }
 
@@ -194,7 +214,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
             _payloads[blob.Hash] = blob.Data;
 
             SkinState state;
-            if (!_manifests.TryGetValue(packet.PlayerId, out state) || !state.Hash.Equals(blob.Hash))
+            if (!_manifests.TryGetValue(new SkinKey(packet.PlayerId, packet.Slot), out state) || !state.Hash.Equals(blob.Hash))
             {
                 // 字节在路上时他又换了一张，这份已经过期了。缓存留着没意义，扫掉。
                 PruneUnreferencedPayloads();
@@ -208,14 +228,14 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
         {
             if (!_players.AcceptsRemote(packet.PlayerId, packet.Scope)) return;
             SkinState state;
-            if (!_manifests.TryGetValue(packet.PlayerId, out state) || !state.Hash.Equals(packet.Hash))
+            if (!_manifests.TryGetValue(new SkinKey(packet.PlayerId, packet.Slot), out state) || !state.Hash.Equals(packet.Hash))
             {
                 return;
             }
 
             // 不重试：服务端没有就是没有，要等那名玩家下次重开关卡重新宣告。金度仍然生效。
-            _logger.Warn("Skin {Hash} of player {PlayerId} is unavailable, rendering vanilla.",
-                packet.Hash, packet.PlayerId);
+            _logger.Warn("Skin {Hash} of player {PlayerId} slot {Slot} is unavailable, rendering vanilla.",
+                packet.Hash, packet.PlayerId, packet.Slot);
             _eventBus.Publish(new PlayerSkinReceivedEvent(packet.PlayerId, state, null));
         }
 
@@ -225,15 +245,16 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
             _payloads.Clear();
             // 本地那次读取可能发生在连上之前（先进游戏再连服务器），那时 Announce 只存了状态。
             // 上传去重保证这里不会重复传字节。
-            if (_hasLocalSkin)
-            {
-                SendLocalSkin();
-            }
+            SendAllLocalSkins();
         }
 
         private void OnPlayerLeft(PlayerLeftEvent e)
         {
-            _manifests.Remove(e.PlayerId);
+            // 一名玩家的所有槽位都要清掉。
+            for (var i = 0; i < SkinConstants.Slots.Length; i++)
+            {
+                _manifests.Remove(new SkinKey(e.PlayerId, SkinConstants.Slots[i]));
+            }
             PruneUnreferencedPayloads();
         }
 

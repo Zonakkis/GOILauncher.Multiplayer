@@ -58,58 +58,64 @@ namespace GOILauncher.Multiplayer.Tests.Data
         }
 
         [Test]
-        public void ClientData_RoundTripsBlob()
+        public void ClientData_RoundTripsSlotAndBlob()
         {
             var payload = SkinTestData.Png(0x33);
-            var expected = new C2SSkinDataPacket { Blob = SkinTestData.Blob(payload) };
+            var expected = new C2SSkinDataPacket { Slot = SkinConstants.BodySlot, Blob = SkinTestData.Blob(payload) };
 
-            var actual = RoundTrip(expected).Blob;
+            var actual = RoundTrip(expected);
 
-            actual.Data.Should().Equal(payload);
-            actual.Hash.Matches(payload).Should().BeTrue();
+            actual.Slot.Should().Be(SkinConstants.BodySlot);
+            actual.Blob.Data.Should().Equal(payload);
+            actual.Blob.Hash.Matches(payload).Should().BeTrue();
         }
 
         [Test]
-        public void ServerData_RoundTripsPlayerIdAndBlob()
+        public void ServerData_RoundTripsPlayerIdSlotAndBlob()
         {
             var payload = SkinTestData.Png(0x44);
-            var expected = new S2CSkinDataPacket { PlayerId = 3, Blob = SkinTestData.Blob(payload) };
+            var expected = new S2CSkinDataPacket { PlayerId = 3, Slot = SkinConstants.BodySlot, Blob = SkinTestData.Blob(payload) };
 
             var actual = RoundTrip(expected);
 
             actual.PlayerId.Should().Be(3);
+            actual.Slot.Should().Be(SkinConstants.BodySlot);
             actual.Blob.Data.Should().Equal(payload);
         }
 
         [Test]
-        public void Request_RoundTripsPlayerIdAndHash()
+        public void Request_RoundTripsPlayerIdSlotAndHash()
         {
             var payload = SkinTestData.Png(0x55);
             var expected = new C2SSkinRequestPacket
             {
                 PlayerId = 12,
+                Slot = SkinConstants.BodySlot,
                 Hash = SkinHash.Compute(payload)
             };
 
             var actual = RoundTrip(expected);
 
             actual.PlayerId.Should().Be(12);
+            actual.Slot.Should().Be(SkinConstants.BodySlot);
             actual.Hash.Matches(payload).Should().BeTrue();
         }
 
         [Test]
-        public void Unavailable_RoundTripsPlayerIdAndHash()
+        public void Unavailable_RoundTripsPlayerIdSlotAndHash()
         {
             var payload = SkinTestData.Png(0x66);
             var expected = new S2CSkinUnavailablePacket
             {
                 PlayerId = 5,
+                Slot = SkinConstants.BodySlot,
                 Hash = SkinHash.Compute(payload)
             };
 
             var actual = RoundTrip(expected);
 
             actual.PlayerId.Should().Be(5);
+            actual.Slot.Should().Be(SkinConstants.BodySlot);
             actual.Hash.Matches(payload).Should().BeTrue();
         }
 

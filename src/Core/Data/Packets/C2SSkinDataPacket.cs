@@ -9,15 +9,20 @@ namespace GOILauncher.Multiplayer.Core.Data.Packets
     /// </summary>
     public struct C2SSkinDataPacket : INetSerializable
     {
+        /// <summary>这份字节属于哪个部件的槽位。服务端按 (发送方, 槽位) 存，别的槽位不受影响。</summary>
+        public byte Slot { get; set; }
+
         public SkinBlob Blob { get; set; }
 
         public void Serialize(NetDataWriter writer)
         {
+            writer.Put(Slot);
             writer.Put(Blob);
         }
 
         public void Deserialize(NetDataReader reader)
         {
+            Slot = reader.GetByte();
             Blob = reader.Get<SkinBlob>();
         }
     }
