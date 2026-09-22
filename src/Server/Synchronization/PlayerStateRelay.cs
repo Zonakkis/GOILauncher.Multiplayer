@@ -22,12 +22,12 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
             PlayerInfo player;
             if (!_rooms.IsCurrentMembership(sender.Id, packet.MembershipId)
                 || !_players.Players.TryGetValue(sender.Id, out player) || !player.IsInGame) return;
-            foreach (var recipient in _rooms.GetMembers(sender.Id))
+            foreach (var peer in _rooms.Peers(sender.Id))
             {
-                if (recipient.PlayerId == sender.Id || !_players.Players.TryGetValue(recipient.PlayerId, out player) || !player.IsInGame) continue;
-                _network.Send(recipient.PlayerId, new S2CPlayerStatePacket
+                if (!_players.Players.TryGetValue(peer.PlayerId, out player) || !player.IsInGame) continue;
+                _network.Send(peer.PlayerId, new S2CPlayerStatePacket
                 {
-                    Scope = new RoomPacketScope(recipient.Id, packet.MembershipId), PlayerId = sender.Id,
+                    Scope = peer.Scope, PlayerId = sender.Id,
                     Sequence = packet.Sequence, State = packet.State
                 }, DeliveryMethod.Unreliable);
             }

@@ -23,5 +23,13 @@ namespace GOILauncher.Multiplayer.Tests.Server
             scope = new RoomPacketScope((ulong)recipientId + 1, (ulong)playerId + 1);
             return _players.Players.ContainsKey(recipientId) && _players.Players.ContainsKey(playerId);
         }
+        public IEnumerable<RoomPeer> Peers(int subjectPlayerId)
+        {
+            if (!_players.Players.ContainsKey(subjectPlayerId)) yield break;
+            var subjectMembership = (ulong)subjectPlayerId + 1;
+            foreach (var id in _players.Players.Keys)
+                if (id != subjectPlayerId)
+                    yield return new RoomPeer(id, new RoomPacketScope((ulong)id + 1, subjectMembership));
+        }
     }
 }

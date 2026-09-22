@@ -72,6 +72,20 @@ namespace GOILauncher.Multiplayer.Server.Services
             scope = default(RoomPacketScope);
             return false;
         }
+        public IEnumerable<RoomPeer> Peers(int subjectPlayerId)
+        {
+            RoomMembership subject;
+            return _members.TryGetValue(subjectPlayerId, out subject)
+                ? PeersOf(_rooms[subject.RoomId], subject.Id, subjectPlayerId)
+                : Enumerable.Empty<RoomPeer>();
+        }
+        /// <summary>Every member of <paramref name="room"/> except <paramref name="skipPlayerId"/>, scoped to the subject.</summary>
+        private static IEnumerable<RoomPeer> PeersOf(Room room, ulong subjectMembershipId, int skipPlayerId)
+        {
+            foreach (var member in room.Members)
+                if (member.PlayerId != skipPlayerId)
+                    yield return new RoomPeer(member.PlayerId, new RoomPacketScope(member.Id, subjectMembershipId));
+        }
         void IStartable.Start()
         {
             _dispatcher.RegisterStruct<C2SRoomOperationPacket>(OnOperation);
@@ -172,10 +186,10 @@ namespace GOILauncher.Multiplayer.Server.Services
                 Room = target.Snapshot,
                 Members = target.Members.Select(m => new RoomMemberInfo(_players.Players[m.PlayerId], m.Id)).ToList()
             }, DeliveryMethod.ReliableOrdered);
-            foreach (var recipient in target.Members.Where(m => m.PlayerId != playerId))
-                _network.Send(recipient.PlayerId, new S2CPlayerJoinedPacket
+            foreach (var peer in Peers(playerId))
+                _network.Send(peer.PlayerId, new S2CPlayerJoinedPacket
                 {
-                    Scope = new RoomPacketScope(recipient.Id, member.Id), PlayerId = playerId,
+                    Scope = peer.Scope, PlayerId = playerId,
                     PlayerName = player.Name, Platform = player.Platform, IsInGame = player.IsInGame
                 }, DeliveryMethod.ReliableOrdered);
             PublishDirectory();
@@ -190,10 +204,11 @@ namespace GOILauncher.Multiplayer.Server.Services
             room.Members.Remove(member); _members.Remove(playerId);
             if (room.Owner == playerId) room.Owner = room.Members.Count == 0 ? (int?)null : room.Members[0].PlayerId;
             if (room.Id != RoomConstants.LobbyId && room.Members.Count == 0) _rooms.Remove(room.Id);
-            foreach (var recipient in room.Members)
-                _network.Send(recipient.PlayerId, new S2CPlayerLeftPacket
+            // The leaving member is already out of room.Members; PeersOf notifies whoever remains.
+            foreach (var peer in PeersOf(room, member.Id, playerId))
+                _network.Send(peer.PlayerId, new S2CPlayerLeftPacket
                 {
-                    Scope = new RoomPacketScope(recipient.Id, member.Id), PlayerId = playerId
+                    Scope = peer.Scope, PlayerId = playerId
                 }, DeliveryMethod.ReliableOrdered);
             return true;
         }
@@ -201,13 +216,9 @@ namespace GOILauncher.Multiplayer.Server.Services
         { if (RemoveMember(e.ClientId)) PublishDirectory(); }
         private void OnStatusChanged(PlayerStatusChangedEvent e)
         {
-            foreach (var recipient in GetMembers(e.Player.Id).Where(m => m.PlayerId != e.Player.Id))
-            {
-                RoomPacketScope scope;
-                if (!TryGetScope(recipient.PlayerId, e.Player.Id, out scope)) continue;
-                _network.Send(recipient.PlayerId, new S2CIsInGameUpdatePacket
-                { Scope = scope, PlayerId = e.Player.Id, IsInGame = e.Player.IsInGame }, DeliveryMethod.ReliableOrdered);
-            }
+            foreach (var peer in Peers(e.Player.Id))
+                _network.Send(peer.PlayerId, new S2CIsInGameUpdatePacket
+                { Scope = peer.Scope, PlayerId = e.Player.Id, IsInGame = e.Player.IsInGame }, DeliveryMethod.ReliableOrdered);
         }
         private void SendDirectory(int playerId)
         { _network.Send(playerId, new S2CRoomListPacket { Rooms = Rooms.ToList() }, DeliveryMethod.ReliableOrdered); }

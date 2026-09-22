@@ -27,15 +27,12 @@ namespace GOILauncher.Multiplayer.Server.Services
             RoomMembership membership;
             if (!_rooms.TryGetMembership(sender.Id, out membership)) return;
             if (!_rooms.IsCurrentMembership(sender.Id, packet.MembershipId)) return;
-            foreach (var recipient in _rooms.GetMembers(sender.Id))
-            {
-                if (recipient.PlayerId == sender.Id) continue;
-                _network.Send(recipient.PlayerId, new S2CChatMessagePacket
+            foreach (var peer in _rooms.Peers(sender.Id))
+                _network.Send(peer.PlayerId, new S2CChatMessagePacket
                 {
-                    Scope = new RoomPacketScope(recipient.Id, packet.MembershipId),
+                    Scope = peer.Scope,
                     PlayerId = sender.Id, Content = packet.Content, Timestamp = packet.Timestamp
                 }, DeliveryMethod.ReliableOrdered);
-            }
             // Server-side copy for the observation facade: the room the message belongs to
             // is known right here, and the server's clock is the only trustworthy one.
             PlayerInfo player;
