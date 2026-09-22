@@ -25,12 +25,23 @@
 .EXAMPLE
     .\scripts\build.ps1 -Project Core
     只构建 Core，不碰测试也不碰 Web UI。
+
+.EXAMPLE
+    .\scripts\build.ps1 -Project Unity -GameTarget Windows
+    只构建 Unity，编译时把游戏 DLL 切到 Windows 版。不传 -GameTarget 时由 csproj
+    自己的默认平台决定，脚本不插手。
 #>
 param(
     [string]$Project,
 
     [ValidateSet("Debug", "Release")]
     [string]$Configuration = "Release",
+
+    # 平台开关。透传成 MSBuild 的 -p:GameTarget=<值>，由 csproj 据此选 Android\ / Windows\
+    # 下的游戏 DLL。ValidateSet 是刻意的：拼错平台名不会报错，只会静默落回 csproj 默认值，
+    # 结果就是拿错平台的 DLL 编译却毫无征兆——这正是最该防的坑。
+    [ValidateSet("Android", "Windows")]
+    [string]$GameTarget,
 
     [switch]$SkipRestore,
     [switch]$Clean,
@@ -183,6 +194,15 @@ if ($Project) {
     Write-Host "Project: (entire solution)" -ForegroundColor DarkGray
 }
 
+# MSBuild 属性，透传给下面每一次 dotnet 调用。GameTarget 必须同时到达 restore / clean /
+# build / test——因为 --no-restore、--no-build 让后续步骤直接信任前面产出的东西：只喂给
+# build 的话，test 会用另一套（默认）平台去求值项目、找到错误的输出路径。全程一致才安全。
+$msbuildArgs = @()
+if ($GameTarget) {
+    $msbuildArgs = @("-p:GameTarget=$GameTarget")
+    Write-Host "GameTarget: $GameTarget" -ForegroundColor DarkGray
+}
+
 # Which test projects to run, and therefore also to build.
 $testProjects = @()
 if ($RunTests) {
@@ -213,7 +233,7 @@ if ($Project) {
 if (-not $SkipRestore) {
     Write-Step "Restoring packages"
     foreach ($target in $buildTargets) {
-        & $dotnet restore $target
+        & $dotnet restore $target @msbuildArgs
         if ($LASTEXITCODE -ne 0) { Fail "Restore failed for $target" }
     }
 }
@@ -224,7 +244,7 @@ if (-not $SkipRestore) {
 if ($Clean) {
     Write-Step "Cleaning"
     foreach ($target in $buildTargets) {
-        & $dotnet clean $target -c $Configuration
+        & $dotnet clean $target -c $Configuration @msbuildArgs
         if ($LASTEXITCODE -ne 0) { Fail "Clean failed for $target" }
     }
 }
@@ -244,7 +264,7 @@ if ($wantsWebUI -and -not $SkipWebUI) {
 # ============================================================
 Write-Step "Building ($Configuration)"
 foreach ($target in $buildTargets) {
-    & $dotnet build $target -c $Configuration --no-restore
+    & $dotnet build $target -c $Configuration --no-restore @msbuildArgs
     if ($LASTEXITCODE -ne 0) { Fail "Build failed for $target" }
 }
 
@@ -281,7 +301,7 @@ if ($RunTests) {
         $trxPath = Join-Path $resultsDir $trxName
 
         & $dotnet test $testProject.Path -c $Configuration --no-build `
-            --logger "trx;LogFileName=$trxName" --results-directory $resultsDir
+            --logger "trx;LogFileName=$trxName" --results-directory $resultsDir @msbuildArgs
         $testExit = $LASTEXITCODE
 
         if (-not (Test-Path -LiteralPath $trxPath)) {

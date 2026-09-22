@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net35;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net35;net40;netstandard2.0</TargetFrameworks>
     <AssemblyName>GOILauncher.Multiplayer.Unity</AssemblyName>
     <RootNamespace>GOILauncher.Multiplayer.Unity</RootNamespace>
     <LangVersion>latest</LangVersion>
@@ -18,35 +18,38 @@
     <PackageReference Include="Autofac" Version="4.9.4" />
   </ItemGroup>
 
+  <!-- 定义游戏目标平台以及dll路径 -->
+  <PropertyGroup>
+    <GameTarget Condition="'$(GameTarget)' == ''">Windows</GameTarget>
+    <GameLib Condition="$(GameTarget) == 'Windows'">..\..\lib\Windows\Original</GameLib>
+    <GameLib Condition="$(GameTarget) == 'Android'">..\..\lib\Android\Original</GameLib>
+    <DefineConstants>$(DefineConstants);GAME_$(GameTarget.ToUpperInvariant())</DefineConstants>
+  </PropertyGroup>
+
+  <!-- 游戏目标平台引用的dll -->
   <ItemGroup>
-    <!--
-      The game supplies its own assemblies at runtime, so these are compile-time only.
-      Without Private=False they are copy-local and flow through every ProjectReference
-      into the BepInEx plugin payload, which would ship stale Android-built copies of the
-      game's own assemblies alongside the real ones.
-    -->
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\UnityLibraries\Android\Assembly-CSharp.dll</HintPath>
+      <HintPath>$(GameLib)\Assembly-CSharp.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\UnityLibraries\Android\UnityEngine.dll</HintPath>
+      <HintPath>$(GameLib)\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\UnityLibraries\Android\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>$(GameLib)\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\UnityLibraries\Android\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>$(GameLib)\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
-      <HintPath>..\UnityLibraries\Android\UnityEngine.ImageConversionModule.dll</HintPath>
+      <HintPath>$(GameLib)\UnityEngine.ImageConversionModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.Physics2DModule">
-      <HintPath>..\UnityLibraries\Android\UnityEngine.Physics2DModule.dll</HintPath>
+      <HintPath>$(GameLib)\UnityEngine.Physics2DModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
   </ItemGroup>
