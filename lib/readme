@@ -1,2 +1,4 @@
 LiteNetLib为fork官方的本MOD专用0.9.5.2+版本，可修改。
 UniverseLib为fork yukieiji的本MOD专用版本，可修改。
+Windows/Original-1.7为Windows上GOI1.7版本的相关dll引用及Assembly-CSharp反编译项目。
+Android/Original-1.9.2为Android上GOI1.9.2版本的相关dll引用及Assembly-CSharp反编译项目。

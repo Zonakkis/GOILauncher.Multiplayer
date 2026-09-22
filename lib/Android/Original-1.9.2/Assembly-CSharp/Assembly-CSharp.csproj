@@ -1,0 +1,334 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{737C5E8C-4A59-46E4-86E7-A2A2F95A4023}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Assembly-CSharp</RootNamespace>
+    <AssemblyName>Assembly-CSharp</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <FileAlignment>512</FileAlignment>
+    <TargetFramework>net35</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <EnableDefaultItems>False</EnableDefaultItems>
+  </PropertyGroup>
+  <PropertyGroup />
+  <ItemGroup>
+    <Compile Include="AnimCallbacks.cs" />
+    <Compile Include="BatControl.cs" />
+    <Compile Include="BatGen.cs" />
+    <Compile Include="BlackfireStudio\Frost.cs" />
+    <Compile Include="CameraControl.cs" />
+    <Compile Include="CheatDragControl.cs" />
+    <Compile Include="CheatDragRuntime.cs" />
+    <Compile Include="ColorAnimation.cs" />
+    <Compile Include="ColorSet.cs" />
+    <Compile Include="ConformBackground.cs" />
+    <Compile Include="ConformTerrain.cs" />
+    <Compile Include="CraneMove.cs" />
+    <Compile Include="DebugPanel.cs" />
+    <Compile Include="DebugSpawn.cs" />
+    <Compile Include="DialogLine.cs" />
+    <Compile Include="DidDismissCreative.cs" />
+    <Compile Include="DidDismissMoreGames.cs" />
+    <Compile Include="DigitalOpus\MB\Core\AtlasPackingResult.cs" />
+    <Compile Include="DigitalOpus\MB\Core\DRect.cs" />
+    <Compile Include="DigitalOpus\MB\Core\GrouperData.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB2_EditorMethodsInterface.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB2_LightmapOptions.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB2_Log.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB2_LogLevel.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB2_OutputOptions.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB2_PackingAlgorithmEnum.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB2_TexturePacker.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB2_ValidationLevel.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_AgglomerativeClustering.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_CopyBoneWeights.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_MeshBakerGrouperCluster.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_MeshBakerGrouperCore.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_MeshBakerGrouperGrid.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_MeshBakerGrouperKMeans.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_MeshBakerGrouperNone.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_MeshBakerGrouperPie.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_MeshCombiner.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_MeshCombinerSingle.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_MultiMeshCombiner.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_TextureCombiner.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB3_UVTransformUtility.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MBVersion.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MBVersionConcrete.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MBVersionInterface.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB_ObjsToCombineTypes.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB_OutputOptions.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB_RenderType.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB_TGAWriter.cs" />
+    <Compile Include="DigitalOpus\MB\Core\MB_Utility.cs" />
+    <Compile Include="DigitalOpus\MB\Core\ObjectLog.cs" />
+    <Compile Include="DigitalOpus\MB\Core\PriorityQueue.cs" />
+    <Compile Include="DigitalOpus\MB\Core\ProgressUpdateCancelableDelegate.cs" />
+    <Compile Include="DigitalOpus\MB\Core\ProgressUpdateDelegate.cs" />
+    <Compile Include="DigitalOpus\MB\Core\ShaderTextureProperty.cs" />
+    <Compile Include="DigitalOpus\MB\Core\TextureBlender.cs" />
+    <Compile Include="DigitalOpus\MB\Core\TextureBlenderFallback.cs" />
+    <Compile Include="DigitalOpus\MB\Core\TextureBlenderLegacyBumpDiffuse.cs" />
+    <Compile Include="DigitalOpus\MB\Core\TextureBlenderLegacyDiffuse.cs" />
+    <Compile Include="DigitalOpus\MB\Core\TextureBlenderStandardMetallic.cs" />
+    <Compile Include="DigitalOpus\MB\Core\TextureBlenderStandardSpecular.cs" />
+    <Compile Include="EFogVolumeLightType.cs" />
+    <Compile Include="EFogVolumePrimitiveType.cs" />
+    <Compile Include="EnableDepthInForwardCamera.cs" />
+    <Compile Include="ExplorationCamera.cs" />
+    <Compile Include="FakeCursor.cs" />
+    <Compile Include="FillTextWithFPS.cs" />
+    <Compile Include="FindLarge.cs" />
+    <Compile Include="FogControl.cs" />
+    <Compile Include="FogVolume.cs" />
+    <Compile Include="FogVolumeCamera.cs" />
+    <Compile Include="FogVolumeData.cs" />
+    <Compile Include="FogVolumeDirectionalLight.cs" />
+    <Compile Include="FogVolumeLight.cs" />
+    <Compile Include="FogVolumeLightManager.cs" />
+    <Compile Include="FogVolumePlaydeadTAA\CameraExtension.cs" />
+    <Compile Include="FogVolumePlaydeadTAA\EffectBase.cs" />
+    <Compile Include="FogVolumePlaydeadTAA\FrustumJitter.cs" />
+    <Compile Include="FogVolumePlaydeadTAA\Matrix4x4Extension.cs" />
+    <Compile Include="FogVolumePlaydeadTAA\Vector2Extension.cs" />
+    <Compile Include="FogVolumePlaydeadTAA\Vector3Extension.cs" />
+    <Compile Include="FogVolumePlaydeadTAA\VelocityBuffer.cs" />
+    <Compile Include="FogVolumePrimitive.cs" />
+    <Compile Include="FogVolumePrimitiveManager.cs" />
+    <Compile Include="FogVolumePriority.cs" />
+    <Compile Include="FogVolumeRenderer.cs" />
+    <Compile Include="FogVolumeRenderManager.cs" />
+    <Compile Include="FogVolumeRenderPriority\RenderPriority.cs" />
+    <Compile Include="FogVolumeScreen.cs" />
+    <Compile Include="FogVolumeTAA.cs" />
+    <Compile Include="FogVolumeUtilities\ExtensionMethods.cs" />
+    <Compile Include="FogVolumeUtilities\int2.cs" />
+    <Compile Include="FogVolumeUtilities\Rendering.cs" />
+    <Compile Include="FogVolumeUtils\FPSCounter\FPSCounter.cs" />
+    <Compile Include="follow.cs" />
+    <Compile Include="FxPro.cs" />
+    <Compile Include="FxProNS\BloomHelper.cs" />
+    <Compile Include="FxProNS\BloomHelperParams.cs" />
+    <Compile Include="FxProNS\DOFHelper.cs" />
+    <Compile Include="FxProNS\DOFHelperParams.cs" />
+    <Compile Include="FxProNS\EffectsQuality.cs" />
+    <Compile Include="FxProNS\RenderTextureManager.cs" />
+    <Compile Include="FxProNS\Singleton.cs" />
+    <Compile Include="GamecenterManager.cs" />
+    <Compile Include="GiftSpawner.cs" />
+    <Compile Include="GravityControl.cs" />
+    <Compile Include="GroundCol.cs" />
+    <Compile Include="HammerCollisions.cs" />
+    <Compile Include="HideBelowIOSVersion.cs" />
+    <Compile Include="HitSoundProvider.cs" />
+    <Compile Include="I2\CoroutineManager.cs" />
+    <Compile Include="I2\Loc\AutoChangeCultureInfo.cs" />
+    <Compile Include="I2\Loc\eLanguageDataFlags.cs" />
+    <Compile Include="I2\Loc\eSpreadsheetUpdateMode.cs" />
+    <Compile Include="I2\Loc\eTermType.cs" />
+    <Compile Include="I2\Loc\eTransTag_Input.cs" />
+    <Compile Include="I2\Loc\eTransTag_Plural.cs" />
+    <Compile Include="I2\Loc\EventCallback.cs" />
+    <Compile Include="I2\Loc\GoogleLanguages.cs" />
+    <Compile Include="I2\Loc\GoogleTranslation.cs" />
+    <Compile Include="I2\Loc\ILocalizationParamsManager.cs" />
+    <Compile Include="I2\Loc\ILocalizeTarget.cs" />
+    <Compile Include="I2\Loc\IResourceManager_Bundles.cs" />
+    <Compile Include="I2\Loc\LanguageData.cs" />
+    <Compile Include="I2\Loc\LanguageSource.cs" />
+    <Compile Include="I2\Loc\LocalizationManager.cs" />
+    <Compile Include="I2\Loc\LocalizationParamsManager.cs" />
+    <Compile Include="I2\Loc\LocalizationReader.cs" />
+    <Compile Include="I2\Loc\Localize.cs" />
+    <Compile Include="I2\Loc\LocalizeDropdown.cs" />
+    <Compile Include="I2\Loc\LocalizedString.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_TextMeshPro_TMPLabel.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_TextMeshPro_UGUI.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_UnityStd_AudioSource.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_UnityStd_GUIText.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_UnityStd_Prefab.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_UnityStd_SpriteRenderer.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_UnityStd_TextMesh.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_UnityStd_Texture.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_UnityUI_Image.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_UnityUI_RawImage.cs" />
+    <Compile Include="I2\Loc\LocalizeTarget_UnityUI_Text.cs" />
+    <Compile Include="I2\Loc\RegisterGlobalParameters.cs" />
+    <Compile Include="I2\Loc\ResourceManager.cs" />
+    <Compile Include="I2\Loc\ScriptLocalization.cs" />
+    <Compile Include="I2\Loc\SetLanguage.cs" />
+    <Compile Include="I2\Loc\SetLanguageDropdown.cs" />
+    <Compile Include="I2\Loc\SimpleJSON\JSON.cs" />
+    <Compile Include="I2\Loc\SimpleJSON\JSONArray.cs" />
+    <Compile Include="I2\Loc\SimpleJSON\JSONBinaryTag.cs" />
+    <Compile Include="I2\Loc\SimpleJSON\JSONClass.cs" />
+    <Compile Include="I2\Loc\SimpleJSON\JSONData.cs" />
+    <Compile Include="I2\Loc\SimpleJSON\JSONLazyCreator.cs" />
+    <Compile Include="I2\Loc\SimpleJSON\JSONNode.cs" />
+    <Compile Include="I2\Loc\StringObfucator.cs" />
+    <Compile Include="I2\Loc\TermData.cs" />
+    <Compile Include="I2\Loc\TermsPopup.cs" />
+    <Compile Include="I2\Loc\TranslationFlag.cs" />
+    <Compile Include="I2\Loc\TranslationRequest.cs" />
+    <Compile Include="ImpactBlur.cs" />
+    <Compile Include="IndexedCollision.cs" />
+    <Compile Include="LightmapDefaults.cs" />
+    <Compile Include="Loader.cs" />
+    <Compile Include="LoadingIndicatorFadeout.cs" />
+    <Compile Include="Match2DTransform.cs" />
+    <Compile Include="MB2_TestShowHide.cs" />
+    <Compile Include="MB2_TestUpdate.cs" />
+    <Compile Include="MB2_TextureBakeResults.cs" />
+    <Compile Include="MB2_UpdateSkinnedMeshBoundsFromBones.cs" />
+    <Compile Include="MB2_UpdateSkinnedMeshBoundsFromBounds.cs" />
+    <Compile Include="MB3_AtlasPackerRenderTexture.cs" />
+    <Compile Include="MB3_BatchPrefabBaker.cs" />
+    <Compile Include="MB3_BoneWeightCopier.cs" />
+    <Compile Include="MB3_DisableHiddenAnimations.cs" />
+    <Compile Include="MB3_KMeansClustering.cs" />
+    <Compile Include="MB3_MeshBaker.cs" />
+    <Compile Include="MB3_MeshBakerCommon.cs" />
+    <Compile Include="MB3_MeshBakerGrouper.cs" />
+    <Compile Include="MB3_MeshBakerRoot.cs" />
+    <Compile Include="MB3_MultiMeshBaker.cs" />
+    <Compile Include="MB3_TestAddingRemovingSkinnedMeshes.cs" />
+    <Compile Include="MB3_TestBakeAllWithSameMaterial.cs" />
+    <Compile Include="MB3_TestRenderTextureTestHarness.cs" />
+    <Compile Include="MB3_TestTexturePacker.cs" />
+    <Compile Include="MB3_TextureBaker.cs" />
+    <Compile Include="MB_AtlasesAndRects.cs" />
+    <Compile Include="MB_MaterialAndUVRect.cs" />
+    <Compile Include="MB_MultiMaterial.cs" />
+    <Compile Include="MB_TextureCombinerRenderTexture.cs" />
+    <Compile Include="MipmapBias.cs" />
+    <Compile Include="MobileManager.cs" />
+    <Compile Include="Narrator.cs" />
+    <Compile Include="NoodleControlsTest.cs" />
+    <Compile Include="NoodleNewsClient.cs" />
+    <Compile Include="NoodlePermissionGranter.cs" />
+    <Compile Include="Noodle\AndroidNativePopup.cs" />
+    <Compile Include="Noodle\DialogInterfaceOnClickListener.cs" />
+    <Compile Include="Noodle\DialogInterfaceOnDismissListener.cs" />
+    <Compile Include="Noodle\GooglePlayLicenseVerifier.cs" />
+    <Compile Include="Noodle\NoodleAntiPiracy.cs" />
+    <Compile Include="Noodle\NoodleBackButtonHandler.cs" />
+    <Compile Include="Noodle\NoodleManager.cs" />
+    <Compile Include="Noodle\NoodleNewsManager.cs" />
+    <Compile Include="Noodle\NoodleSingleton.cs" />
+    <Compile Include="OpenGift.cs" />
+    <Compile Include="Parallax.cs" />
+    <Compile Include="PauseButton.cs" />
+    <Compile Include="PlayerControl.cs" />
+    <Compile Include="PlayerSounds.cs" />
+    <Compile Include="PoseControl.cs" />
+    <Compile Include="PotSounds.cs" />
+    <Compile Include="ProgressMeter.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PropSound.cs" />
+    <Compile Include="RatePopup.cs" />
+    <Compile Include="RattlePot.cs" />
+    <Compile Include="ReplayKitManager.cs" />
+    <Compile Include="ReportContact.cs" />
+    <Compile Include="RestartOnContact.cs" />
+    <Compile Include="RewardLogic.cs" />
+    <Compile Include="Rotator.cs" />
+    <Compile Include="RSA.cs" />
+    <Compile Include="SaveState.cs" />
+    <Compile Include="Saviour.cs" />
+    <Compile Include="Screener.cs" />
+    <Compile Include="ScreenFader.cs" />
+    <Compile Include="Scroller.cs" />
+    <Compile Include="SetFogQuality.cs" />
+    <Compile Include="SetLanguageFont.cs" />
+    <Compile Include="SettingsManager.cs" />
+    <Compile Include="ShaderTour.cs" />
+    <Compile Include="ShadowCamera.cs" />
+    <Compile Include="ShadowRaycaster.cs" />
+    <Compile Include="SortingLayerExposed.cs" />
+    <Compile Include="SortWithSprite.cs" />
+    <Compile Include="SplashControl.cs" />
+    <Compile Include="SplineSnapper.cs" />
+    <Compile Include="StuckDetector.cs" />
+    <Compile Include="SwitchOffOnPlay.cs" />
+    <Compile Include="TapticPlugin\ImpactFeedback.cs" />
+    <Compile Include="TapticPlugin\NotificationFeedback.cs" />
+    <Compile Include="TapticPlugin\TapticManager.cs" />
+    <Compile Include="Teleporter.cs" />
+    <Compile Include="TitleFade.cs" />
+    <Compile Include="ToggleChildren.cs" />
+    <Compile Include="VersionReadout.cs" />
+    <Compile Include="WellDone.cs" />
+    <Compile Include="WillShowCreative.cs" />
+    <Compile Include="WillShowMoreGames.cs" />
+    <Compile Include="YPbPr.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="ArabicSupport">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\ArabicSupport.dll</HintPath>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core">
+      <HintPath>..\System.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\System.Xml.dll</HintPath>
+    </Reference>
+    <Reference Include="TextMeshPro-1.0.55.2017.1.0b11" />
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\UnityEngine.CoreModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.GameCenterModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.GameCenterModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>..\UnityEngine.ImageConversionModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>..\UnityEngine.IMGUIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.Physics2DModule">
+      <HintPath>..\UnityEngine.Physics2DModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.ScreenCaptureModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.ScreenCaptureModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.UI.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityAnalyticsModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.UnityAnalyticsModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestWWWModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
+    </Reference>
+    <Reference Include="UnityEngine.VRModule">
+      <HintPath>..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.VRModule.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
