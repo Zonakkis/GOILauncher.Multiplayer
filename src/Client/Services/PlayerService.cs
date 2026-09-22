@@ -37,7 +37,9 @@ namespace GOILauncher.Multiplayer.Client.Services
             _eventBus.Subscribe<ServerDisconnectedEvent>(OnServerDisconnected);
         }
         public bool TryGetPlayer(int playerId, out PlayerInfo player) => _players.TryGetValue(playerId, out player);
-        public bool AcceptsScope(int playerId, RoomPacketScope scope)
+        public bool AcceptsRemote(int playerId, RoomPacketScope scope)
+            => playerId != LocalPlayer.Id && AcceptsScope(playerId, scope);
+        private bool AcceptsScope(int playerId, RoomPacketScope scope)
         {
             ulong membership;
             return LocalMembershipId != 0 && scope.RecipientMembershipId == LocalMembershipId
@@ -93,7 +95,7 @@ namespace GOILauncher.Multiplayer.Client.Services
         }
         private void OnPlayerLeft(S2CPlayerLeftPacket packet, PacketSender _)
         {
-            if (!AcceptsScope(packet.PlayerId, packet.Scope) || packet.PlayerId == LocalPlayer.Id) return;
+            if (!AcceptsRemote(packet.PlayerId, packet.Scope)) return;
             var player = _players[packet.PlayerId];
             _players.Remove(packet.PlayerId); _memberships.Remove(packet.PlayerId);
             _logger.Info("Player {PlayerId} left the room.", player.Id);
@@ -102,7 +104,7 @@ namespace GOILauncher.Multiplayer.Client.Services
         }
         private void OnIsInGameUpdate(S2CIsInGameUpdatePacket packet, PacketSender _)
         {
-            if (!AcceptsScope(packet.PlayerId, packet.Scope) || packet.PlayerId == LocalPlayer.Id) return;
+            if (!AcceptsRemote(packet.PlayerId, packet.Scope)) return;
             var player = _players[packet.PlayerId];
             var updated = player.WithIsInGame(packet.IsInGame);
             _players[packet.PlayerId] = updated;

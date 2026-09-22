@@ -65,7 +65,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
 
         private void OnPlayerStateReceived(S2CPlayerStatePacket packet, PacketSender _)
         {
-            if (!_players.AcceptsScope(packet.PlayerId, packet.Scope) || packet.PlayerId == _players.LocalPlayer.Id) return;
+            if (!_players.AcceptsRemote(packet.PlayerId, packet.Scope)) return;
             uint lastSequence;
             if (_lastReceivedSequences.TryGetValue(packet.PlayerId, out lastSequence) &&
                 !SequenceNumber.IsNewer(packet.Sequence, lastSequence))

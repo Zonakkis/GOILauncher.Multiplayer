@@ -10,7 +10,11 @@ namespace GOILauncher.Multiplayer.Client.Services
     {
         PlayerInfo LocalPlayer { get; }
         ulong LocalMembershipId { get; }
-        bool AcceptsScope(int playerId, RoomPacketScope scope);
+        /// <summary>
+        /// True if a scoped packet about <paramref name="playerId"/> should be applied: the scope
+        /// matches our current membership pairing and the packet is about a remote player, not us.
+        /// </summary>
+        bool AcceptsRemote(int playerId, RoomPacketScope scope);
         void ReplaceRoomRoster(IEnumerable<RoomMemberInfo> members);
 
         /// <summary>

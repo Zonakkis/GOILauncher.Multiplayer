@@ -199,7 +199,7 @@ namespace GOILauncher.Multiplayer.Tests.Unity
 
             public PlayerInfo LocalPlayer { get; private set; }
             public ulong LocalMembershipId => 1;
-            public bool AcceptsScope(int playerId, RoomPacketScope scope) => false;
+            public bool AcceptsRemote(int playerId, RoomPacketScope scope) => false;
             public void ReplaceRoomRoster(IEnumerable<RoomMemberInfo> members)
             { _players.Clear(); foreach (var member in members) _players[member.Player.Id] = member.Player; }
 

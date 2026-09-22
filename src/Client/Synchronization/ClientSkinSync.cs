@@ -154,7 +154,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
 
         private void OnManifest(S2CSkinManifestPacket packet, PacketSender _)
         {
-            if (!_players.AcceptsScope(packet.PlayerId, packet.Scope) || packet.PlayerId == _players.LocalPlayer.Id) return;
+            if (!_players.AcceptsRemote(packet.PlayerId, packet.Scope)) return;
             var state = packet.State;
             _manifests[packet.PlayerId] = state;
             PruneUnreferencedPayloads();
@@ -179,7 +179,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
 
         private void OnData(S2CSkinDataPacket packet, PacketSender _)
         {
-            if (!_players.AcceptsScope(packet.PlayerId, packet.Scope) || packet.PlayerId == _players.LocalPlayer.Id) return;
+            if (!_players.AcceptsRemote(packet.PlayerId, packet.Scope)) return;
             var blob = packet.Blob;
 
             // 服务端也不能全信：它转发的是别的客户端上传的字节，校验和上限得在这儿再走一遍。
@@ -206,7 +206,7 @@ namespace GOILauncher.Multiplayer.Client.Synchronization
 
         private void OnUnavailable(S2CSkinUnavailablePacket packet, PacketSender _)
         {
-            if (!_players.AcceptsScope(packet.PlayerId, packet.Scope) || packet.PlayerId == _players.LocalPlayer.Id) return;
+            if (!_players.AcceptsRemote(packet.PlayerId, packet.Scope)) return;
             SkinState state;
             if (!_manifests.TryGetValue(packet.PlayerId, out state) || !state.Hash.Equals(packet.Hash))
             {

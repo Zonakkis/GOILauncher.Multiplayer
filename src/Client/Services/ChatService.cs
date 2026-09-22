@@ -115,7 +115,7 @@ namespace GOILauncher.Multiplayer.Client.Services
 
         private void OnChatMessage(S2CChatMessagePacket packet, PacketSender _)
         {
-            if (!_playerService.AcceptsScope(packet.PlayerId, packet.Scope)) return;
+            if (!_playerService.AcceptsRemote(packet.PlayerId, packet.Scope)) return;
             var playerId = packet.PlayerId;
             var dateTime = DateTimeUtils.FromUnixTimeSeconds(packet.Timestamp);
             if (_playerService.TryGetPlayer(playerId, out var player))
