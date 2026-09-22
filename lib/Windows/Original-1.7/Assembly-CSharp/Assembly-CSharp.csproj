@@ -17,7 +17,6 @@
     <Compile Include="AnimCallbacks.cs" />
     <Compile Include="BatControl.cs" />
     <Compile Include="BatGen.cs" />
-    <Compile Include="BlackfireStudio\Frost.cs" />
     <Compile Include="BrowserControl.cs" />
     <Compile Include="CameraControl.cs" />
     <Compile Include="ColorAnimation.cs" />
@@ -40,119 +39,19 @@
     <Compile Include="FogVolumeDirectionalLight.cs" />
     <Compile Include="FogVolumeLight.cs" />
     <Compile Include="FogVolumeLightManager.cs" />
-    <Compile Include="FogVolumePlaydeadTAA\CameraExtension.cs" />
-    <Compile Include="FogVolumePlaydeadTAA\EffectBase.cs" />
-    <Compile Include="FogVolumePlaydeadTAA\FrustumJitter.cs" />
-    <Compile Include="FogVolumePlaydeadTAA\Matrix4x4Extension.cs" />
-    <Compile Include="FogVolumePlaydeadTAA\Vector2Extension.cs" />
-    <Compile Include="FogVolumePlaydeadTAA\Vector3Extension.cs" />
-    <Compile Include="FogVolumePlaydeadTAA\VelocityBuffer.cs" />
     <Compile Include="FogVolumePrimitive.cs" />
     <Compile Include="FogVolumePrimitiveManager.cs" />
     <Compile Include="FogVolumePriority.cs" />
     <Compile Include="FogVolumeRenderer.cs" />
-    <Compile Include="FogVolumeRenderPriority\RenderPriority.cs" />
     <Compile Include="FogVolumeScreen.cs" />
     <Compile Include="FogVolumeTAA.cs" />
-    <Compile Include="FogVolumeUtilities\EditorExtension.cs" />
-    <Compile Include="FogVolumeUtilities\ExtensionMethods.cs" />
-    <Compile Include="FogVolumeUtilities\int2.cs" />
-    <Compile Include="FogVolumeUtilities\Rendering.cs" />
-    <Compile Include="FogVolumeUtils\FPSCounter\FPSCounter.cs" />
     <Compile Include="follow.cs" />
     <Compile Include="GiftSpawner.cs" />
     <Compile Include="GravityControl.cs" />
     <Compile Include="GroundCol.cs" />
     <Compile Include="HammerCollisions.cs" />
     <Compile Include="HitSoundProvider.cs" />
-    <Compile Include="I2\Loc\ArabicMapping.cs" />
-    <Compile Include="I2\Loc\ArabicTable.cs" />
-    <Compile Include="I2\Loc\AutoChangeCultureInfo.cs" />
-    <Compile Include="I2\Loc\BaseSpecializationManager.cs" />
-    <Compile Include="I2\Loc\CallbackNotification.cs" />
-    <Compile Include="I2\Loc\CoroutineManager.cs" />
-    <Compile Include="I2\Loc\CustomLocalizeCallback.cs" />
-    <Compile Include="I2\Loc\eLanguageDataFlags.cs" />
-    <Compile Include="I2\Loc\ePluralType.cs" />
-    <Compile Include="I2\Loc\eSpreadsheetUpdateMode.cs" />
-    <Compile Include="I2\Loc\eTermType.cs" />
-    <Compile Include="I2\Loc\EventCallback.cs" />
-    <Compile Include="I2\Loc\Example_ChangeLanguage.cs" />
-    <Compile Include="I2\Loc\Example_LocalizedString.cs" />
-    <Compile Include="I2\Loc\GeneralArabicLetters.cs" />
-    <Compile Include="I2\Loc\GlobalParametersExample.cs" />
-    <Compile Include="I2\Loc\GoogleLanguages.cs" />
-    <Compile Include="I2\Loc\GoogleTranslation.cs" />
-    <Compile Include="I2\Loc\HindiFixer.cs" />
-    <Compile Include="I2\Loc\I2BasePersistentStorage.cs" />
-    <Compile Include="I2\Loc\I2CustomPersistentStorage.cs" />
-    <Compile Include="I2\Loc\I2Utils.cs" />
-    <Compile Include="I2\Loc\ILanguageSource.cs" />
-    <Compile Include="I2\Loc\ILocalizationParamsManager.cs" />
-    <Compile Include="I2\Loc\ILocalizeTarget.cs" />
-    <Compile Include="I2\Loc\ILocalizeTargetDescriptor.cs" />
-    <Compile Include="I2\Loc\IResourceManager_Bundles.cs" />
-    <Compile Include="I2\Loc\IsolatedArabicLetters.cs" />
-    <Compile Include="I2\Loc\LanguageData.cs" />
-    <Compile Include="I2\Loc\LanguageSource.cs" />
-    <Compile Include="I2\Loc\LanguageSourceAsset.cs" />
-    <Compile Include="I2\Loc\LanguageSourceData.cs" />
-    <Compile Include="I2\Loc\LocalizationManager.cs" />
-    <Compile Include="I2\Loc\LocalizationParamsManager.cs" />
-    <Compile Include="I2\Loc\LocalizationReader.cs" />
-    <Compile Include="I2\Loc\Localize.cs" />
-    <Compile Include="I2\Loc\LocalizeDropdown.cs" />
-    <Compile Include="I2\Loc\LocalizedString.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget.cs" />
-    <Compile Include="I2\Loc\LocalizeTargetDesc.cs" />
-    <Compile Include="I2\Loc\LocalizeTargetDesc_Child.cs" />
-    <Compile Include="I2\Loc\LocalizeTargetDesc_Prefab.cs" />
-    <Compile Include="I2\Loc\LocalizeTargetDesc_Type.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_TextMeshPro_Label.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_TextMeshPro_UGUI.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_UnityStandard_AudioSource.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_UnityStandard_Child.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_UnityStandard_MeshRenderer.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_UnityStandard_Prefab.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_UnityStandard_SpriteRenderer.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_UnityStandard_TextMesh.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_UnityUI_Image.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_UnityUI_RawImage.cs" />
-    <Compile Include="I2\Loc\LocalizeTarget_UnityUI_Text.cs" />
-    <Compile Include="I2\Loc\PersistentStorage.cs" />
-    <Compile Include="I2\Loc\RealTimeTranslation.cs" />
-    <Compile Include="I2\Loc\RegisterBundlesManager.cs" />
-    <Compile Include="I2\Loc\RegisterGlobalParameters.cs" />
-    <Compile Include="I2\Loc\ResourceManager.cs" />
-    <Compile Include="I2\Loc\RTLFixer.cs" />
-    <Compile Include="I2\Loc\RTLFixerTool.cs" />
-    <Compile Include="I2\Loc\ScriptLocalization.cs" />
-    <Compile Include="I2\Loc\SetLanguage.cs" />
-    <Compile Include="I2\Loc\SetLanguageDropdown.cs" />
-    <Compile Include="I2\Loc\SimpleJSON\JSON.cs" />
-    <Compile Include="I2\Loc\SimpleJSON\JSONArray.cs" />
-    <Compile Include="I2\Loc\SimpleJSON\JSONBinaryTag.cs" />
-    <Compile Include="I2\Loc\SimpleJSON\JSONClass.cs" />
-    <Compile Include="I2\Loc\SimpleJSON\JSONData.cs" />
-    <Compile Include="I2\Loc\SimpleJSON\JSONLazyCreator.cs" />
-    <Compile Include="I2\Loc\SimpleJSON\JSONNode.cs" />
-    <Compile Include="I2\Loc\SpecializationManager.cs" />
-    <Compile Include="I2\Loc\StringObfucator.cs" />
-    <Compile Include="I2\Loc\TashkeelLocation.cs" />
-    <Compile Include="I2\Loc\TermData.cs" />
-    <Compile Include="I2\Loc\TermsPopup.cs" />
-    <Compile Include="I2\Loc\ToggleLanguage.cs" />
-    <Compile Include="I2\Loc\TranslationFlag.cs" />
-    <Compile Include="I2\Loc\TranslationJob.cs" />
-    <Compile Include="I2\Loc\TranslationJob_GET.cs" />
-    <Compile Include="I2\Loc\TranslationJob_Main.cs" />
-    <Compile Include="I2\Loc\TranslationJob_POST.cs" />
-    <Compile Include="I2\Loc\TranslationJob_WEB.cs" />
-    <Compile Include="I2\Loc\TranslationJob_WWW.cs" />
-    <Compile Include="I2\Loc\TranslationQuery.cs" />
     <Compile Include="ImpactBlur.cs" />
-    <Compile Include="LetterboxCamera\CameraRatio.cs" />
-    <Compile Include="LetterboxCamera\ForceCameraRatio.cs" />
     <Compile Include="LightmapDefaults.cs" />
     <Compile Include="Loader.cs" />
     <Compile Include="MainMenuButton.cs" />
@@ -174,49 +73,6 @@
     <Compile Include="ReportContact.cs" />
     <Compile Include="RestartOnContact.cs" />
     <Compile Include="RewardLogic.cs" />
-    <Compile Include="Rewired\Data\UserDataStore_PlayerPrefs.cs" />
-    <Compile Include="Rewired\Demos\Bullet.cs" />
-    <Compile Include="Rewired\Demos\ControlRemappingDemo1.cs" />
-    <Compile Include="Rewired\Demos\CustomControllerDemo.cs" />
-    <Compile Include="Rewired\Demos\CustomControllerDemo_Player.cs" />
-    <Compile Include="Rewired\Demos\CustomControllersTiltDemo.cs" />
-    <Compile Include="Rewired\Demos\DualShock4SpecialFeaturesExample.cs" />
-    <Compile Include="Rewired\Demos\EightPlayersExample_Player.cs" />
-    <Compile Include="Rewired\Demos\FallbackJoystickIdentificationDemo.cs" />
-    <Compile Include="Rewired\Demos\GamepadTemplateUI\ControllerUIEffect.cs" />
-    <Compile Include="Rewired\Demos\GamepadTemplateUI\ControllerUIElement.cs" />
-    <Compile Include="Rewired\Demos\GamepadTemplateUI\GamepadTemplateUI.cs" />
-    <Compile Include="Rewired\Demos\PlayerMouseSpriteExample.cs" />
-    <Compile Include="Rewired\Demos\PlayerPointerEventHandlerExample.cs" />
-    <Compile Include="Rewired\Demos\PressAnyButtonToJoinExample_Assigner.cs" />
-    <Compile Include="Rewired\Demos\PressAnyButtonToJoinExample_GamePlayer.cs" />
-    <Compile Include="Rewired\Demos\PressStartToJoinExample_Assigner.cs" />
-    <Compile Include="Rewired\Demos\PressStartToJoinExample_GamePlayer.cs" />
-    <Compile Include="Rewired\Demos\SimpleCombinedKeyboardMouseRemapping.cs" />
-    <Compile Include="Rewired\Demos\SimpleControlRemapping.cs" />
-    <Compile Include="Rewired\Demos\TouchButtonExample.cs" />
-    <Compile Include="Rewired\Demos\TouchJoystickExample.cs" />
-    <Compile Include="Rewired\Demos\UIPointer.cs" />
-    <Compile Include="Rewired\FlightPedalsTemplate.cs" />
-    <Compile Include="Rewired\FlightYokeTemplate.cs" />
-    <Compile Include="Rewired\GamepadTemplate.cs" />
-    <Compile Include="Rewired\HOTASTemplate.cs" />
-    <Compile Include="Rewired\IFlightPedalsTemplate.cs" />
-    <Compile Include="Rewired\IFlightYokeTemplate.cs" />
-    <Compile Include="Rewired\IGamepadTemplate.cs" />
-    <Compile Include="Rewired\IHOTASTemplate.cs" />
-    <Compile Include="Rewired\InputManager.cs" />
-    <Compile Include="Rewired\Integration\UnityUI\PlayerPointerEventData.cs" />
-    <Compile Include="Rewired\Integration\UnityUI\PointerEventType.cs" />
-    <Compile Include="Rewired\Integration\UnityUI\RewiredEventSystem.cs" />
-    <Compile Include="Rewired\Integration\UnityUI\RewiredPointerInputModule.cs" />
-    <Compile Include="Rewired\Integration\UnityUI\RewiredStandaloneInputModule.cs" />
-    <Compile Include="Rewired\Internal\ControllerTemplateFactory.cs" />
-    <Compile Include="Rewired\IRacingWheelTemplate.cs" />
-    <Compile Include="Rewired\ISixDofControllerTemplate.cs" />
-    <Compile Include="Rewired\RacingWheelTemplate.cs" />
-    <Compile Include="Rewired\SixDofControllerTemplate.cs" />
-    <Compile Include="Rewired\Utils\ExternalTools.cs" />
     <Compile Include="Rotator.cs" />
     <Compile Include="SaveState.cs" />
     <Compile Include="Saviour.cs" />
@@ -243,97 +99,7 @@
     <Compile Include="ToggleChildren.cs" />
     <Compile Include="VersionReadout.cs" />
     <Compile Include="VerticalOscilator.cs" />
-    <Compile Include="VolumetricFogAndMist\FogAreaCullingManager.cs" />
-    <Compile Include="VolumetricFogAndMist\FogVolume.cs" />
-    <Compile Include="VolumetricFogAndMist\FOG_PRESET.cs" />
-    <Compile Include="VolumetricFogAndMist\IVolumetricFogRenderComponent.cs" />
-    <Compile Include="VolumetricFogAndMist\VolumetricFog.cs" />
-    <Compile Include="VolumetricFogAndMist\VolumetricFogPosT.cs" />
-    <Compile Include="VolumetricFogAndMist\VolumetricFogPreT.cs" />
     <Compile Include="WellDone.cs" />
     <Compile Include="YPbPr.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\ActionTimer.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\BallBrowserSpawner.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\CoinPickup.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\DemoList.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\DestroyDetector.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\Door.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\ExplainUnzip.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\ForcedCooperation.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\HUDManager.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\PlayerInventory.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\SayWordsOnTouch.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\SimpleController.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\SimpleFPSController.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\SimpleScripting.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\TestDownloadServer.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\VRBrowserPanel.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\VRMainControlPanel.cs" />
-    <Compile Include="ZenFulcrum\EmbeddedBrowser\VRMode.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Assembly-CSharp-firstpass">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
-    </Reference>
-    <Reference Include="Rewired_Core">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\Rewired_Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Rewired_Windows">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\Rewired_Windows.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.Postprocessing.Runtime">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\Unity.Postprocessing.Runtime.dll</HintPath>
-    </Reference>
-    <Reference Include="Unity.TextMeshPro">
-      <HintPath>..\..\Unity.TextMeshPro.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.AnimationModule">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.AudioModule">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\UnityEngine.CoreModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\..\UnityEngine.IMGUIModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.InputLegacyModule">
-      <HintPath>..\..\UnityEngine.InputLegacyModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.ParticleSystemModule">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.Physics2DModule">
-      <HintPath>..\..\UnityEngine.Physics2DModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.PhysicsModule">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TerrainModule">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.TerrainModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.TextRenderingModule">
-      <HintPath>..\..\UnityEngine.TextRenderingModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>..\..\UnityEngine.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UIModule">
-      <HintPath>..\..\UnityEngine.UIModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestModule">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestWWWModule">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.VRModule">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\UnityEngine.VRModule.dll</HintPath>
-    </Reference>
-    <Reference Include="ZFBrowser">
-      <HintPath>..\..\..\..\..\..\..\..\SteamLibrary\steamapps\common\Getting Over It\GettingOverIt_Data\Managed\ZFBrowser.dll</HintPath>
-    </Reference>
   </ItemGroup>
 </Project>
