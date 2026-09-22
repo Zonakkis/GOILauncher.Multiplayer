@@ -67,7 +67,6 @@
     <Compile Include="PoseControl.cs" />
     <Compile Include="PotSounds.cs" />
     <Compile Include="ProgressMeter.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropSound.cs" />
     <Compile Include="RattlePot.cs" />
     <Compile Include="ReportContact.cs" />
