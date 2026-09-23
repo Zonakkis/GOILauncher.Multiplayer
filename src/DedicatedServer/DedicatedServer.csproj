@@ -11,12 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!--
-      Autofac stays at 4.9.4 to match the netstandard2.0 builds of Core/Server it composes
-      against — one version on the whole non-game side keeps assembly resolution trivial.
-    -->
-    <PackageReference Include="Autofac" Version="4.9.4" />
-    <PackageReference Include="NLog" Version="6.1.1" />
+    <PackageReference Include="Autofac" />
+    <PackageReference Include="NLog" />
   </ItemGroup>
 
   <!--

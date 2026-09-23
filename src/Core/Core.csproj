@@ -11,22 +11,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Autofac" />
+    <PackageReference Include="NLog" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\lib\LiteNetLib\LiteNetLib\LiteNetLib.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net35'">
-    <PackageReference Include="Autofac" Version="2.6.3.862" />
-    <PackageReference Include="NLog" Version="6.2.1" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
-    <PackageReference Include="Autofac" Version="3.5.2" />
-    <PackageReference Include="NLog" Version="6.2.1" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Autofac" Version="4.9.4" />
-    <PackageReference Include="NLog" Version="6.2.1" />
   </ItemGroup>
 
 </Project>

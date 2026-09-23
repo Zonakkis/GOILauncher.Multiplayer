@@ -10,12 +10,8 @@
     <ProjectGuid>{9D509ADD-EC76-4072-99C7-907624C222CF}</ProjectGuid>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net35'">
-    <PackageReference Include="Autofac" Version="2.6.3.862" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Autofac" Version="4.9.4" />
+  <ItemGroup>
+    <PackageReference Include="Autofac" />
   </ItemGroup>
 
   <ItemGroup>

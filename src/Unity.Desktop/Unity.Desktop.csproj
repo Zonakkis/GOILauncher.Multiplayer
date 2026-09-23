@@ -7,26 +7,17 @@
     <Version>1.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
-    <RestoreAdditionalProjectSources>
-      https://api.nuget.org/v3/index.json;
-      https://nuget.bepinex.dev/v3/index.json;
-      https://nuget.samboy.dev/v3/index.json
-    </RestoreAdditionalProjectSources>
     <RootNamespace>GOILauncher.Multiplayer</RootNamespace>
     <Authors>Zonakkis</Authors>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
-    <PackageReference Include="BepInEx.Core" Version="5.*" />
-    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
-    <PackageReference Include="NLog" Version="6.2.1" />
+    <PackageReference Include="BepInEx.Analyzers" />
+    <PackageReference Include="BepInEx.Core" />
+    <PackageReference Include="BepInEx.PluginInfoProps" />
+    <PackageReference Include="NLog" />
   </ItemGroup>
-  
-  <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
-  </ItemGroup>
-  
+
   <ItemGroup>
     <ProjectReference Include="..\Unity\Unity.csproj" />
     <!-- UniverseLib 改用 lib/UniverseLib 子模块（Zonakkis fork）源码。它自己会把 Debug/Release
@@ -36,10 +27,11 @@
     <ProjectReference Include="..\..\lib\UniverseLib\src\UniverseLib.csproj" />
   </ItemGroup>
 
+    <!-- dll路径 -->
   <PropertyGroup>
-    <GameLib>..\..\lib\Windows\Original</GameLib>
+    <GameLib>..\..\lib\Windows\Original-1.7</GameLib>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <Reference Include="netstandard">
       <HintPath>$(GameLib)\netstandard.dll</HintPath>

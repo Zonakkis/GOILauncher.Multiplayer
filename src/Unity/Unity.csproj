@@ -10,23 +10,15 @@
     <ProjectGuid>{125C7A1A-0023-4E64-A620-E808AE58D966}</ProjectGuid>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net35'">
-    <PackageReference Include="Autofac" Version="2.6.3.862" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
-    <PackageReference Include="Autofac" Version="3.5.2" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-    <PackageReference Include="Autofac" Version="4.9.4" />
+  <ItemGroup>
+    <PackageReference Include="Autofac" />
   </ItemGroup>
 
   <!-- 定义游戏目标平台以及dll路径 -->
   <PropertyGroup>
     <GameTarget Condition="'$(GameTarget)' == ''">Windows</GameTarget>
-    <GameLib Condition="$(GameTarget) == 'Windows'">..\..\lib\Windows\Original</GameLib>
-    <GameLib Condition="$(GameTarget) == 'Android'">..\..\lib\Android\Original</GameLib>
+    <GameLib Condition="$(GameTarget) == 'Windows'">..\..\lib\Windows\Original-1.7</GameLib>
+    <GameLib Condition="$(GameTarget) == 'Android'">..\..\lib\Android\Original-1.9.2</GameLib>
     <DefineConstants>$(DefineConstants);GAME_$(GameTarget.ToUpperInvariant())</DefineConstants>
   </PropertyGroup>
 
@@ -63,8 +55,10 @@
       原版皮肤基线贴图，每个槽位一张。文件缺失时不参与编译，VanillaPotTexture 会退化成
       "不改贴图"并警告一行——少一张图不该让整个仓库编不过。
     -->
-    <EmbeddedResource Include="Resources\VanillaPot.png" Condition="Exists('Resources\VanillaPot.png')" />
-    <EmbeddedResource Include="Resources\VanillaDiogenes.png" Condition="Exists('Resources\VanillaDiogenes.png')" />
+    <EmbeddedResource Include="Resources\VanillaPot.png"
+      Condition="Exists('Resources\VanillaPot.png')" />
+    <EmbeddedResource Include="Resources\VanillaDiogenes.png"
+      Condition="Exists('Resources\VanillaDiogenes.png')" />
   </ItemGroup>
 
   <ItemGroup>
