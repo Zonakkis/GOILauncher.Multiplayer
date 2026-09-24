@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Client.Events;
@@ -21,11 +22,6 @@ namespace GOILauncher.Multiplayer.Unity.Skin
     /// </summary>
     public class SkinSynchronizer : MonoBehaviour
     {
-        /// <summary>
-        /// 进关卡后等多久读本地皮肤。皮肤 Mod 是在场景加载后自己去换贴图的，谁先跑没有保证，
-        /// 等一下让它换完。只读这一次：宣告一次就够，一局里皮肤不会再变（换了要重开关卡）。
-        /// </summary>
-        private const float ReadDelaySeconds = 0.1f;
 
         /// <summary>清单还没到时按黑罐画——金罐是通关后的装饰，未知时按普通的来。</summary>
         private const float UnknownGoldness = 0f;
@@ -73,8 +69,8 @@ namespace GOILauncher.Multiplayer.Unity.Skin
 
         private IEnumerator ReadLocalSkin()
         {
-            // 用真实时间：读的时机跟游戏是否暂停、timeScale 是多少无关。
-            yield return new WaitForSecondsRealtime(ReadDelaySeconds);
+            // 等待一帧
+            yield return null;
             _readRoutine = null;
 
             List<LocalSkinReader.ReadResult> results;
