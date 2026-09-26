@@ -19,7 +19,7 @@
     <GameTarget Condition="'$(GameTarget)' == ''">Windows</GameTarget>
     <GameLib Condition="$(GameTarget) == 'Windows'">..\..\lib\Windows\Original-1.7</GameLib>
     <GameLib Condition="$(GameTarget) == 'Android'">..\..\lib\Android\Original-1.9.2</GameLib>
-    <DefineConstants>$(DefineConstants);GAME_$(GameTarget.ToUpperInvariant())</DefineConstants>
+    <DefineConstants>$(DefineConstants);$(GameTarget.ToUpperInvariant())</DefineConstants>
   </PropertyGroup>
 
   <!-- 游戏目标平台引用的dll -->
