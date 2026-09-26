@@ -93,7 +93,7 @@ Player
 - `Saviour.pc.fakeCursor` 与 `Saviour.hammer` 是两个 `Transform`，搬完后把前者的位置对齐到后者；
 - `Saviour.slider`、`Saviour.hinge`、`Saviour.hubJoint` 是三个带 `JointMotor2D motor` 的关节，可用于把马达清零。
 
-搬运期间物理模拟被关掉再恢复。`Physics2D.autoSimulation`（旧版 Unity）和 `Physics2D.simulationMode`（新版 Unity）是同一件事的两种 API，游戏可能是任一版本，所以由 `Unity/Helpers/Physics2DHelper` 用反射二选一；只有这两种情况。
+搬运期间物理模拟被关掉再恢复。`Physics2D.autoSimulation`（旧版 Unity）和 `Physics2D.simulationMode`（新版 Unity）是同一件事的两种 API，游戏可能是任一版本，所以由 `Unity/Helpers/Physics2DHelper` 用条件编译处理不同平台代码。
 
 ## Cursor Object
 
@@ -117,7 +117,7 @@ Player
 | 材质成员 | 含义 |
 | --- | --- |
 | `mainTexture` | 罐子的贴图。皮肤 Mod 换的就是这个 |
-| `_Goldness` | 黑罐 `0`、金罐 `1`。通关后的金罐和普通黑罐用的是同一张贴图，差别只有这个值 |
+| 金度 | 黑罐 `0`、金罐 `1`。通关后的金罐和普通黑罐用的是同一张贴图，差别只有这个值。**怎么落到材质上分平台**（PC 的 shader 属性 `_Goldness` / Android 的 procedural input `Goldness`），见下方「金度的平台差异」 |
 
 - **皮肤 Mod 只能依赖机制，不能依赖实现。** 现有皮肤 Mod（`SkinCustomizer` 只是其中一个）的实现各不相同，唯一稳定的是它们最终都把上面那个
 `mainTexture` 换成一张从本地图片加载的 `Texture2D`。所以同步皮肤读的是那张贴图本身，不读任何 Mod 的配置、目录或 `PlayerPrefs`。
@@ -130,7 +130,16 @@ Player
 Mesh`）。所以"这张贴图能不能编码成 PNG"只能试一次：`ImageConversion.EncodeToPNG` 用 try/catch 包住，结果按贴图对象记住。游戏自带的贴图在 C
 PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是这条失败路径，它不是错误**，只是 Unity 会往控制台打一行错，所以记住结果是为了每张贴图
 最多撞一次。
-- 因此没装皮肤时的基线不是"读到的贴图"，而是插件内嵌的一张原版贴图（`src/Unity/Resources/VanillaPot.png`），再叠上传过来的 `_Goldness`。
+- 因此没装皮肤时的基线不是"读到的贴图"，而是插件内嵌的一张原版贴图（`src/Unity/Resources/VanillaPot.png`），再叠上传过来的金度（PC 走 `_Goldness`，Android 走 procedural input，见下方）。
+
+### 金度的平台差异（PC shader 属性 vs Android Substance）
+
+金度落到材质上的机制两个平台完全不同，但线上格式不受影响：`SkinState.Goldness` 是 0–1 的 float，平台中立，收发两端各自按本平台的材质机制读写。所有平台差异集中在 `SkinMaterial`（`#if WINDOWS/ANDROID`，与 `Physics2DHelper` 同一套路）：读走 `SkinMaterial.ReadGoldness`，写走 `SkinMaterial.ApplyTo`。
+
+- **PC**：罐子是普通 `Material`，金度是 shader 浮点属性 `_Goldness`（`GameConstants.GoldnessProperty`），用 `GetFloat`/`SetFloat`。贴图和金度各自独立、可叠加——皮肤 + 金罐能同时成立。
+- **Android**：罐子是 Substance `ProceduralMaterial`，金度是 procedural input `Goldness`（`GameConstants.GoldnessProceduralInput`，**无下划线**），用 `GetProceduralFloat`/`SetProceduralFloat` 读写、再重烘才生效。重烘把金色烘进生成的贴图（占用 `mainTexture`），所以 Android 上**自定义皮肤与金罐机制互斥**——这与它们在领域上本就二选一一致。
+- **写远端金罐必须用 `RebuildTexturesImmediately()`，不能用 `RebuildTextures()`（已实机确认）**。远端实例经 `renderer.material` 拷出来的那份副本运行时类型仍是 `ProceduralMaterial`，`SetProceduralFloat` 也确实写进去了（回读为设定值），但异步的 `RebuildTextures()` 是排进 Substance 帧末队列的，这份运行时副本不在队列里、异步重烘永不触发，金色出不来；`RebuildTexturesImmediately()` 当场同步重烘绕开队列。（本地玩家自己的金罐用 `RebuildTextures()` 有效，因为那份是 inspector 挂的原始 substance 资源，引擎在跟。）
+- 症状对照（换成 immediate 之前）：PC 观察端能看到 Android 金罐（Android 读 procedural input、PC 写 `_Goldness` 都正常），但 Android 观察端看不到 PC 金罐——正是卡在 Android 写端那次异步重烘不触发。
 
 ## Body Skin（Diogenes）
 
@@ -138,7 +147,7 @@ PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是�
 
 - 对应对象相对 `Player` 根的完整路径是 `dude/Body`（`dude` 的直接子物体，见上面 Player Object Hierarchy）。它挂的是 **`SkinnedMeshRenderer`**，不是 `MeshRenderer`——但 `SkinnedMeshRenderer` 同样继承自 `Renderer`，皮肤读写全走 `GetComponent<Renderer>()` + `.material`/`.sharedMaterial`/`.mainTexture`，对它一视同仁，不需要为 skinned 特判。
 - 皮肤 Mod 换身体皮肤的机制与罐子**完全一致**：最终都把这个 renderer 材质的 `mainTexture` 换成一张 `Texture2D`。同步读的也是那张贴图本身，不认任何 Mod 的实现。
-- **`_Goldness` 是罐子材质专属的，身体材质没有。** 读端 `LocalSkinReader` 用 `HasProperty` 取金度（身体读到 0），写端 `RemotePlayer.ApplySkin` 也用 `HasProperty` 兜底（给身体写金度是空操作），所以 `SkinState.Goldness` 对身体槽位天然惰性。
+- **金度是罐子专属的，身体材质没有。** 读端 `SkinMaterial.ReadGoldness` 对身体返回 0，写端 `SkinMaterial.ApplyTo` 给身体写金度是空操作——两平台都天然如此：PC 上身体材质没有 `_Goldness` 属性，Android 上身体不是 `ProceduralMaterial`。所以 `SkinState.Goldness` 对身体槽位天然惰性。
 - 没装身体皮肤时的原版基线是内嵌的 `src/Unity/Resources/VanillaDiogenes.png`，道理和 `VanillaPot.png` 一样：远端实例从本地 `Player` 克隆而来，不带一张原版身体贴图的话，没装皮肤的远端玩家会顶着本地玩家的身体贴图。
 
 同步链路做成**按槽位通用**：`SkinConstants.Slots`（`PotSlot=0`、`BodySlot=1`）列出所有已知槽位，`GameConstants.SkinMeshPath(slot)` 把槽位映射到上面这两条 mesh 路径，收发两端按 `(playerId, slot)` 独立宣告、缓存、下发。加第三个部件只是往 `Slots` 和 `SkinMeshPath` 各加一行，并补一张原版基线贴图。

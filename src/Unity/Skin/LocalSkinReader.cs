@@ -93,9 +93,7 @@ namespace GOILauncher.Multiplayer.Unity.Skin
             state = new SkinState
             {
                 Slot = slot,
-                Goldness = material.HasProperty(GameConstants.GoldnessProperty)
-                    ? material.GetFloat(GameConstants.GoldnessProperty)
-                    : 0f
+                Goldness = SkinMaterial.ReadGoldness(material)
             };
 
             var texture = material.mainTexture as Texture2D;

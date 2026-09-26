@@ -3,6 +3,7 @@ using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Shared.Extensions;
 using GOILauncher.Multiplayer.Unity.Extensions;
+using GOILauncher.Multiplayer.Unity.Skin;
 using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Unity.Models
@@ -97,8 +98,9 @@ namespace GOILauncher.Multiplayer.Unity.Models
         }
 
          /// <summary>
-        /// 换掉某个槽位（罐子 / 身体）的贴图和金度。<paramref name="texture"/> 为 null 时只改金度；
-        /// 身体材质没有 <c>_Goldness</c>，那一步靠 <c>HasProperty</c> 兜住，是空操作。
+        /// 换掉某个槽位（罐子 / 身体）的贴图和金度。<paramref name="texture"/> 为 null 时只改金度。
+        /// 贴图与金度怎么落到材质上（PC 的 shader 属性还是 Android 的 procedural input、二者能否叠加）
+        /// 全部收在 <see cref="SkinMaterial.ApplyTo"/>，这里不认平台；身体没有金度那一步天然是空操作。
         /// 返回 false 表示这个实例上找不到该槽位的 Renderer，外观没动过。
         /// </summary>
         /// <remarks>
@@ -115,14 +117,7 @@ namespace GOILauncher.Multiplayer.Unity.Models
                 return false;
             }
 
-            if (texture != null)
-            {
-                material.mainTexture = texture;
-            }
-            if (material.HasProperty(GameConstants.GoldnessProperty))
-            {
-                material.SetFloat(GameConstants.GoldnessProperty, goldness);
-            }
+            SkinMaterial.ApplyTo(material, texture, goldness);
             return true;
         }
 

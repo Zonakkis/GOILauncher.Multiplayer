@@ -21,8 +21,19 @@ namespace GOILauncher.Multiplayer.Unity.Models
         /// </summary>
         public const string BodyMeshPath = "dude/Body";
 
-        /// <summary>罐子材质上控制金罐的属性名：黑罐 0，金罐 1。身体材质没有这个属性。</summary>
+        /// <summary>
+        /// PC 版罐子材质（普通 <c>Material</c>）上控制金罐的 shader 属性名：黑罐 0，金罐 1。
+        /// 身体材质没有这个属性。用 <c>GetFloat</c>/<c>SetFloat</c> 读写，与贴图各自独立可叠加。
+        /// </summary>
         public const string GoldnessProperty = "_Goldness";
+
+        /// <summary>
+        /// Android 版罐子材质（Substance <c>ProceduralMaterial</c>）上控制金罐的 procedural input 名。
+        /// 注意没有下划线，且要靠 <c>SetProceduralFloat</c>/<c>GetProceduralFloat</c> 读写、再
+        /// <c>RebuildTextures</c> 才生效——把金色烘进生成的贴图里，与 <see cref="GoldnessProperty"/>
+        /// 是两套机制（见 docs/agent/game-runtime.md 的 Pot Skin）。
+        /// </summary>
+        public const string GoldnessProceduralInput = "Goldness";
 
         /// <summary>
         /// 皮肤槽位 → 它对应的 MeshRenderer 相对 <c>Player</c> 根的路径。
