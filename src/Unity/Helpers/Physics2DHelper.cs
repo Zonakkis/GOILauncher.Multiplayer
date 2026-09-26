@@ -9,7 +9,7 @@ namespace GOILauncher.Multiplayer.Unity.Helpers
         public static void SetAutoSimulation(bool autoSimulation)
         {
 #if WINDOWS
-                Physics2D.simulationMode = autoSimulation ? SimulationMode2D.Script : SimulationMode2D.FixedUpdate;
+                Physics2D.simulationMode = autoSimulation ? SimulationMode2D.FixedUpdate : SimulationMode2D.Script;
 #elif ANDROID
                 Physics2D.autoSimulation = autoSimulation;
 #endif
