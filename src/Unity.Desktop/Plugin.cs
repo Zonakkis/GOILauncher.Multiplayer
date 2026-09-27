@@ -30,6 +30,7 @@ public class Plugin : BaseUnityPlugin
 
     private MultiplayerSettings _settings;
     private Target _logTarget;
+    private MultiplayerCore _core;
     private MultiplayerUI _multiplayerUI;
     private RoomDialogUI _roomDialogUI;
     private ClientPage _clientPage;
@@ -61,7 +62,7 @@ public class Plugin : BaseUnityPlugin
     /// 第二个都建不出来，所以它们的生命周期是进程级的；而联机模块随开随关，两套生命周期
     /// 放进同一个容器里只会互相牵制。页面要用的联机门面改成 Bind / Unbind 递进来。
     /// <para>
-    /// 本类是唯一读 MultiplayerUnityCore 的地方：其余 UI 只认自己绑到的那个门面，
+    /// 本类是唯一持有 MultiplayerCore 的地方：其余 UI 只认自己绑到的那个门面，
     /// 开关按下去也是委托到这里才变成加载与销毁。
     /// </para>
     /// </summary>
@@ -72,10 +73,7 @@ public class Plugin : BaseUnityPlugin
         _settings = new MultiplayerSettings(Config);
         // NLog 的落地端由宿主提供，且整个进程只建一次：它挂在 NLog 的全局配置上，
         // 不跟着联机模块一起销毁，否则下一轮 Initialize 复用到的是个已销毁的 target。
-        _logTarget = new BepInExTarget(Logger)
-        {
-            Layout = @"${date:format=yyyy-MM-dd HH\:mm\:ss}|${level:uppercase=true}|${logger:shortName=true}|${message}${onexception:inner=${newline}${exception:format=tostring}}"
-        };
+        _logTarget = new BepInExTarget(Logger);
 
         Theme = new DarkTheme();
         UIBase = UniversalUI.RegisterUI<ResponsiveUIBase>(MyPluginInfo.PLUGIN_GUID, null);
@@ -100,13 +98,10 @@ public class Plugin : BaseUnityPlugin
         _chatHudUI.ActiveModeChanged += OnChatActiveModeChanged;
         _settingsPage.LoadToggled += OnLoadToggled;
         _settingsPage.HideServerPageToggled += OnHideServerPageToggled;
-        MultiplayerUnityCore.Initialized += OnCoreInitialized;
-        MultiplayerUnityCore.Disposing += OnCoreDisposing;
 
-        // 订阅在前、加载在后：加载成功时 Initialized 会立刻把各页面绑上，不用这里补一遍。
         // 这是 Enabled 唯一一次被当作输入读：决定本次启动加不加载。之后它只被写，跟着现状走。
         if (_settings.Enabled)
-            MultiplayerUnityCore.Initialize(_logTarget);
+            Load();
 
         SyncLoadedState();
         ApplyCursorState();
@@ -116,9 +111,9 @@ public class Plugin : BaseUnityPlugin
     private void OnLoadToggled(bool load)
     {
         if (load)
-            MultiplayerUnityCore.Initialize(_logTarget);
+            Load();
         else
-            MultiplayerUnityCore.Dispose();
+            Unload();
 
         SyncLoadedState();
     }
@@ -132,25 +127,30 @@ public class Plugin : BaseUnityPlugin
     }
 
     /// <summary>
-    /// 加载状态变动后统一收尾：落盘的 Enabled、勾选框、聊天窗口，全按 MultiplayerUnityCore.IsLoaded
-    /// 这个唯一真值来。启动时那次自动加载也走这里，所以配置里不会留下一个没成真的 true，
+    /// 加载状态变动后统一收尾：落盘的 Enabled、勾选框、聊天窗口，全按宿主手里的 MultiplayerCore
+    /// 实例在不在（_core != null）这个唯一真值来。启动时那次自动加载也走这里，所以配置里不会留下一个没成真的 true，
     /// 勾选框也不会停在玩家刚点下去、其实没生效的那个值上。
     /// </summary>
     private void SyncLoadedState()
     {
-        bool loaded = MultiplayerUnityCore.IsLoaded;
+        bool loaded = _core != null;
         _settings.SetEnabled(loaded);
         _settingsPage.SetLoaded(loaded);
         ApplyMultiplayerUiState(loaded);
     }
 
-    private void OnCoreInitialized()
+    /// <summary>
+    /// 加载联机模块并把各页面绑到本轮的门面上。Initialize 返回 null（加载失败）时保持未加载。
+    /// 本类是唯一持有 MultiplayerCore 的地方，加载即绑定，不再走事件。
+    /// </summary>
+    private void Load()
     {
-        var client = MultiplayerUnityCore.UnityClient;
-        var server = MultiplayerUnityCore.UnityServer;
-        if (client == null || server == null)
+        _core = MultiplayerCore.Initialize(options => options.LogTarget = _logTarget);
+        if (_core == null)
             return;
 
+        var client = _core.UnityClient;
+        var server = _core.UnityServer;
         _clientPage.Bind(client);
         _serverPage.Bind(server);
         _roomDialogUI.Bind(client);
@@ -159,15 +159,23 @@ public class Plugin : BaseUnityPlugin
         ApplyMultiplayerUiState(true);
     }
 
-    private void OnCoreDisposing()
+    /// <summary>
+    /// 卸载联机模块。顺序不能反：趁对象图还活着先退订、归零各页面，再 Dispose，最后丢引用。
+    /// </summary>
+    private void Unload()
     {
-        // 顺序反过来会漏：拆的时候门面事件已经不会再发，页面得趁还拿得到时自己退订、归零。
+        if (_core == null)
+            return;
+
         _clientPage.Unbind();
         _serverPage.Unbind();
         _roomDialogUI.Unbind();
         _chatHudUI.Unbind();
         _playerListOverlayUI.Unbind();
         ApplyMultiplayerUiState(false);
+
+        _core.Dispose();
+        _core = null;
     }
 
     private void OnLog(string message, LogType type)
@@ -199,7 +207,7 @@ public class Plugin : BaseUnityPlugin
             ApplyCursorState();
         }
 
-        if (!MultiplayerUnityCore.IsLoaded)
+        if (_core == null)
         {
             if (_playerListOverlayUI.Enabled)
                 _playerListOverlayUI.SetActive(false);
@@ -241,11 +249,9 @@ public class Plugin : BaseUnityPlugin
         _chatHudUI.ActiveModeChanged -= OnChatActiveModeChanged;
         _settingsPage.LoadToggled -= OnLoadToggled;
         _settingsPage.HideServerPageToggled -= OnHideServerPageToggled;
-        MultiplayerUnityCore.Initialized -= OnCoreInitialized;
-        MultiplayerUnityCore.Disposing -= OnCoreDisposing;
 
         // 先退订再拆：拆的时候不该再回调进这批跟着宿主一起销毁的窗口。
-        MultiplayerUnityCore.Dispose();
+        Unload();
     }
 
     private void OnChatActiveModeChanged(bool active)
@@ -281,7 +287,7 @@ public class Plugin : BaseUnityPlugin
     private void ApplyCursorPhysicsState(bool blocked)
     {
         // 释放只依赖已记录的刚体，所以联机模块没加载、甚至宿主还没初始化完时都能安全调用。
-        IGameManager gameManager = MultiplayerUnityCore.GameManager;
+        IGameManager gameManager = _core?.GameManager;
         GameObject cursor = blocked && gameManager != null ? gameManager.Cursor : null;
         Rigidbody2D cursorBody = cursor != null ? cursor.GetComponent<Rigidbody2D>() : null;
 

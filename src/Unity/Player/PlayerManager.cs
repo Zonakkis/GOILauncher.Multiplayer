@@ -106,7 +106,7 @@ namespace GOILauncher.Multiplayer.Unity.Player
         /// 进程里连进来都进不来——ECall 是在 JIT 编译整个方法时解析失败的，不是执行到那一行才
         /// 失败，所以 Dispose 里那个空判挡不住它。Dispose 本身必须保持不含任何 Unity 调用，
         /// 否则 PlayerManagerTests 里那两条 Dispose 测试连调用都进不去。
-        /// 同一个理由见 MultiplayerUnityCore.TearDown。
+        /// 同一个理由见 MultiplayerCore.TearDown。
         /// NoInlining 是必须的：本方法只有一行，JIT 会把它内联回 Dispose，
         /// 那样 ECall 又回到 Dispose 的编译单元里，等于没拆。
         /// </summary>

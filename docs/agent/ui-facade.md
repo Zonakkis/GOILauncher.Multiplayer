@@ -2,7 +2,7 @@
 
 UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）通过以下入口访问联机业务与游戏运行时：
 
-- `MultiplayerUnityCore` — 联机模块的根，加载与销毁它，并取得下面的依赖；未加载时三个门面属性都是 `null`；
+- `MultiplayerCore` — 联机模块的根。`Initialize` 建出对象图并返回一个实例，`Dispose` 拆掉它；宿主持有这个实例，手里的实例为 `null` 即未加载，拆除后实例的三个门面属性也返回 `null`；
 - `IUnityClient` — 客户端联机业务；
 - `IUnityServer` — 内嵌服务端联机业务；
 - `IGameManager` — 游戏场景状态与游戏内对象引用，不提供联机业务。
@@ -20,21 +20,21 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）通过以下�
 
 ## 加载与销毁
 
-联机模块只有两种状态：已加载、已销毁。`MultiplayerUnityCore.Initialize(Target)` 建出整张对象图，`Dispose()` 拆掉它，没有“加载着但停用”这第三种状态——关就是拆，重新开就是重建。`UnityClient` / `UnityServer` / `PlayerManager` 里因此没有 `IsMultiplayerEnabled` 之类的守卫：拿得到门面就说明这一轮是活的；闸落下去之后，三个门面属性一律返回 null。
+联机模块只有两种状态：已加载、已销毁。`MultiplayerCore.Initialize(configure)` 建出整张对象图并返回一个实例，`Dispose()` 拆掉它，没有“加载着但停用”这第三种状态——关就是拆，重新开就是重建。`UnityClient` / `UnityServer` / `PlayerManager` 里因此没有 `IsMultiplayerEnabled` 之类的守卫：拿得到门面就说明这一轮是活的；拆除之后，实例的三个门面属性一律返回 null。
 
-UI 不进这张对象图。`Plugin.OnInitialized` 手工组合窗口、页面和 handler，再把自己这一轮的门面递进去：
+UI 不进这张对象图。`Plugin.OnInitialized` 手工组合窗口、页面和 handler，再把自己这一轮的门面递进去。没有加载/销毁事件——`Plugin` 持有 `MultiplayerCore` 实例，加载与卸载是它自己的两个方法：
 
-- `MultiplayerUnityCore.Initialized` 触发时，`Plugin` 读 `UnityClient` / `UnityServer`，逐个 `Bind` 到 `ClientPage`、`ServerPage`、`RoomDialogUI`、`ChatHudUI`、`PlayerListUI`。
-- `MultiplayerUnityCore.Disposing` 触发时反过来逐个 `Unbind`。这个事件发出时对象图还活着，所以退订门面事件、清掉列表行上缓存的 `PlayerView`、把聊天记录归零都还来得及。
+- `Plugin.Load` 调 `MultiplayerCore.Initialize`；返回非 null（加载成功）时立刻读 `UnityClient` / `UnityServer`，逐个 `Bind` 到 `ClientPage`、`ServerPage`、`RoomDialogUI`、`ChatHudUI`、`PlayerListUI`，返回 null 就保持未加载。
+- `Plugin.Unload` 反过来：先逐个 `Unbind`——这时对象图还活着，退订门面事件、清掉列表行上缓存的 `PlayerView`、把聊天记录归零都还来得及——再 `Dispose` 实例，最后把引用置 null。
 - `Bind` / `Unbind` 必须交替：两边的订阅是成对的，漏掉一次 `-=` 就是下一轮点一次按钮弹两条消息。
 
 不进容器的理由是两套生命周期不同步。UniverseLib 的窗口按 id 注册在一张静态表里，同一个 id 建第二个会抛，所以 UI 只能活满整个进程；联机模块随开随关。塞进同一个容器，要么 UI 跟着容器一起被拆掉再也建不回来，要么容器名不副实。
 
-`Plugin` 是唯一读 `MultiplayerUnityCore` 的类，其余 UI 只认自己 `Bind` 到的那个门面。日志按同一个方向切：UI 写 `Plugin.Logger`（BepInEx 的 `ManualLogSource`），不依赖 core 的 `ILogger<T>`；core 的 NLog 落地端由宿主建一次、以外部所有的身份注册进容器，所以它不跟着联机模块一起销毁，下一轮 `Initialize` 复用的是活的 target。
+`Plugin` 是唯一持有 `MultiplayerCore` 的类，其余 UI 只认自己 `Bind` 到的那个门面。日志按同一个方向切：UI 写 `Plugin.Logger`（BepInEx 的 `ManualLogSource`），不依赖 core 的 `ILogger<T>`；core 的 NLog 落地端由宿主建一次、以外部所有的身份注册进容器，所以它不跟着联机模块一起销毁，下一轮 `Initialize` 复用的是活的 target。
 
 ## IGameManager
 
-`IGameManager` 提供 `IsInGame` 及 `Player`、`PlayerPrefab`、`Cursor` 等游戏内引用，不承载连接、房间、名单等业务。UI 通过 `MultiplayerUnityCore.GameManager` 现读，不保存它——每加载一次是一个新实例，存下来的引用在模块关掉之后就再也更新不动了。场景中的对象同样会被销毁或替换，使用时从它的属性读取当前引用。
+`IGameManager` 提供 `IsInGame` 及 `Player`、`PlayerPrefab`、`Cursor` 等游戏内引用，不承载连接、房间、名单等业务。UI 通过持有的 `MultiplayerCore` 实例的 `GameManager` 现读，不保存它——每加载一次是一个新实例，存下来的引用在模块关掉之后就再也更新不动了。场景中的对象同样会被销毁或替换，使用时从它的属性读取当前引用。
 
 桌面 UI 占用鼠标时，`Plugin` 直接操作 `IGameManager.Cursor` 上的 `Rigidbody2D.simulated`：占用时设为 `false`，释放时设为 `true`。这是 UI 对游戏对象的交互，不必为此增加 `IUnityClient` 方法，也不让 `IGameManager` 保存 UI 状态或提供业务命令。具体运行时事实见 `game-runtime.md` 的 Cursor Object。
 
@@ -110,11 +110,11 @@ UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerLis
 
 `GOILauncher.Multiplayer.UI.Config.MultiplayerSettings` 是持久化设置的唯一所有者，整个住在宿主这一层：core 不认识这个类型，也没有为设置留任何端口。怎么存是宿主的事，PC 宿主直接用 BepInEx 的 `ConfigFile`（`Multiplayer` 节下的 `Enabled` / `PlayerName` / `ClientHost` / `ClientPort` / `ServerPort` / `HideServerPage`），键名、类型、解析容错都交给它，这里只补两条它不管的规矩——端口的合法范围，和“清空主机名等于回到默认值”。
 
-以前反过来：设置归 `src/Unity`，只把“字节落到哪”抽成 `ISettingsStore`，理由是 BepInEx 只存在于 PC 宿主、平台无关层要能读同一套设置。现在还没有第二个宿主，这套抽象换来了一个 Unity 层的 `MultiplayerUnityCore.Settings` 入口，代价比收益大，所以 `ISettingsStore` / `FileSettingsStore` 一起删了。Android / iOS 宿主真要出现，各写各的设置类型，共享的是语义而不是实现。
+以前反过来：设置归 `src/Unity`，只把“字节落到哪”抽成 `ISettingsStore`，理由是 BepInEx 只存在于 PC 宿主、平台无关层要能读同一套设置。现在还没有第二个宿主，这套抽象换来了一个 Unity 层的 `MultiplayerCore.Settings` 入口，代价比收益大，所以 `ISettingsStore` / `FileSettingsStore` 一起删了。Android / iOS 宿主真要出现，各写各的设置类型，共享的是语义而不是实现。
 
 四项初值的方向没变：`SettingsPage` 是唯一写入方，`ClientPage` / `ServerPage` 只在填输入框时读它，并订阅对应的 `XxxChanged` 在空闲时更新输入框——页面上临时改名字或地址只影响那一次连接，不回写。名字允许为空（“还没填”），空名字连接时由 `ClientPage` 弹“名字不能为空”拦下，没有兜底默认名（见 `docs/agent/game-runtime.md` 的 Multiplayer Settings）。
 
-`Enabled` 是那份开关状态落了盘。真值只有一处——`MultiplayerUnityCore.IsLoaded`，宿主在每次加载与销毁之后回写它，所以配置文件里写的、勾选框显示的、模块实际的，是同一件事；启动那次自动加载失败也一样回写成 false，不会留下一个没成真的 true。它顺带回答“下次启动要不要自动加载”，因为落盘的正是当时的状态。
+`Enabled` 是那份开关状态落了盘。真值只有一处——宿主持有的 `MultiplayerCore` 实例是否为 null，宿主在每次加载与销毁之后回写它，所以配置文件里写的、勾选框显示的、模块实际的，是同一件事；启动那次自动加载失败也一样回写成 false，不会留下一个没成真的 true。它顺带回答“下次启动要不要自动加载”，因为落盘的正是当时的状态。
 
 `HideServerPage`（默认 true）和 `Enabled` 正好相反，它不是状态的回写目标，而是 UI 自己的一个选择：设置页写它，`Plugin` 读到变化后调 `MultiplayerUI.SetServerPageVisible` 收放“服务端”页签。**它只影响页签可见性**：`ServerPage` 照旧构造、照旧被 `Bind` / `Unbind`，内嵌服务端不因为它而少加载一分；设置页里的“服务端设置”块（默认端口）也不受它影响。这也是设置页不直接去改另一个页面的按钮、而是往上抛 `HideServerPageToggled` 的理由——跨页面的应用动作归宿主。
 

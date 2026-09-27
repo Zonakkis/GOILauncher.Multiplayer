@@ -23,31 +23,32 @@
     The Unity project references these compile-time only (Private=False) so they stay out of
     the BepInEx plugin payload. The test host has no Unity runtime to supply them, and Moq
     has to load them to proxy interfaces such as IGameManager (GameObject Player), so the
-    test project needs its own copy-local references.
+    test project needs its own copy-local references. These are the Android game libs (net35-
+    era), matching the -GameTarget Android build the test gate runs under.
   -->
   <ItemGroup>
     <Reference Include="Assembly-CSharp">
-      <HintPath>..\..\src\UnityLibraries\Android\Assembly-CSharp.dll</HintPath>
+      <HintPath>..\..\lib\Android\Original-1.9.2\Assembly-CSharp.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="UnityEngine">
-      <HintPath>..\..\src\UnityLibraries\Android\UnityEngine.dll</HintPath>
+      <HintPath>..\..\lib\Android\Original-1.9.2\UnityEngine.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="UnityEngine.CoreModule">
-      <HintPath>..\..\src\UnityLibraries\Android\UnityEngine.CoreModule.dll</HintPath>
+      <HintPath>..\..\lib\Android\Original-1.9.2\UnityEngine.CoreModule.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
-      <HintPath>..\..\src\UnityLibraries\Android\UnityEngine.IMGUIModule.dll</HintPath>
+      <HintPath>..\..\lib\Android\Original-1.9.2\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
-      <HintPath>..\..\src\UnityLibraries\Android\UnityEngine.ImageConversionModule.dll</HintPath>
+      <HintPath>..\..\lib\Android\Original-1.9.2\UnityEngine.ImageConversionModule.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="UnityEngine.Physics2DModule">
-      <HintPath>..\..\src\UnityLibraries\Android\UnityEngine.Physics2DModule.dll</HintPath>
+      <HintPath>..\..\lib\Android\Original-1.9.2\UnityEngine.Physics2DModule.dll</HintPath>
       <Private>True</Private>
     </Reference>
   </ItemGroup>

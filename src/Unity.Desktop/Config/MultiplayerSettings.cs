@@ -16,7 +16,7 @@ namespace GOILauncher.Multiplayer.UI.Config
     /// 照样加载。设置页里的"服务端设置"块不受它影响——那份默认端口是给页签用的，两块各有各的去留理由。
     /// </para>
     /// <para>
-    /// Enabled 是联机开关落下来的那一份：唯一真值是 MultiplayerUnityCore.IsLoaded，宿主在每次加载与
+    /// Enabled 是联机开关落下来的那一份：唯一真值是宿主手里的 MultiplayerCore 实例在不在，宿主在每次加载与
     /// 销毁之后回写它，所以它既回答"现在开着没有"，也回答"下次启动要不要自动加载"。联机现在要么已经
     /// 加载、要么已经销毁，没有"加载着但停用"这第三种状态，两边不会各说一套。
     /// </para>
@@ -72,7 +72,7 @@ namespace GOILauncher.Multiplayer.UI.Config
         public event Action<int> ServerPortChanged;
 
         /// <summary>
-        /// 联机开关。当前有没有加载以 MultiplayerUnityCore.IsLoaded 为准，宿主在每次加载与销毁后回写这里。
+        /// 联机开关。当前有没有加载以宿主手里的 MultiplayerCore 实例在不在为准，宿主在每次加载与销毁后回写这里。
         /// </summary>
         public bool Enabled
         {

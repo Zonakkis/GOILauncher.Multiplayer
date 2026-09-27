@@ -82,7 +82,7 @@ Player
 
 结论：`LocalPlayer` 上按需缓存 Unity 对象（`Saviour`、`Rigidbody2D[]`）不需要失效逻辑，也不需要防"缓存指向已销毁对象"的空检查——那种检查在这里是恒不成立的死代码。唯一复用已有组件的路径是同一场景内断线重连（`EnsureLocalPlayer` 的 `GetComponent<LocalPlayer>()` 分支），那时缓存指向的还是同一个场景里的对象，同样有效。
 
-`PlayerManager.Dispose()` 里不能出现 Unity ECall（`Object.Destroy`），**包括被 JIT 内联进来的**：无 Unity 运行时的进程里整个方法编译不过（`SecurityException: ECall 方法必须打包到系统模块中`），空判挡不住它，因为失败发生在编译方法时，而不是执行到那一行时。销毁场景 `Player` 上的 `LocalPlayer` 组件因此走单独的 `DestroyLocalPlayer()`，并且**必须**标 `NoInlining`——那个方法只有一行，不标就会被内联回 `Dispose`，等于没拆。`MultiplayerUnityCore.TearDown` 是为同一个理由拆出去的（它靠方法体够大躲过内联）。往 `Dispose` 里加回内联的 Unity 调用，会让 `PlayerManagerTests` 的两条 Dispose 测试连调用都进不去。
+`PlayerManager.Dispose()` 里不能出现 Unity ECall（`Object.Destroy`），**包括被 JIT 内联进来的**：无 Unity 运行时的进程里整个方法编译不过（`SecurityException: ECall 方法必须打包到系统模块中`），空判挡不住它，因为失败发生在编译方法时，而不是执行到那一行时。销毁场景 `Player` 上的 `LocalPlayer` 组件因此走单独的 `DestroyLocalPlayer()`，并且**必须**标 `NoInlining`——那个方法只有一行，不标就会被内联回 `Dispose`，等于没拆。`MultiplayerCore.TearDown` 是为同一个理由拆出去的（它显式标了 `NoInlining`）。往 `Dispose` 里加回内联的 Unity 调用，会让 `PlayerManagerTests` 的两条 Dispose 测试连调用都进不去。
 
 已知不对称：远端玩家的 Unity 对象生命周期在 `IPlayerInstancePool` 后面（测试整个 Mock 掉），本地玩家没有对应接缝。原因是 `PlayerBase` 是 `MonoBehaviour`，要在测试里造出一个非 null 的本地玩家，得先把 `PlayerBase` / `LocalPlayer` 抽成接口，而这会波及 `PlayerManager._players` 表、皮肤同步的 `GetPlayer(id)` 和 UI 的 `PlayerView`。等真要给本地玩家组件生命周期写覆盖时再做，不要为单条测试启动这个重构。
 
@@ -105,7 +105,7 @@ Player
 
 - `LocalPlayer` 挂载在 `Player` 根对象上，从 `Player`、`Player/Hub/Slider` 和 `Player/Hub/Slider/Handle` 读取世界位置与世界旋转。
 - 这三个对象只绕 Z 轴转，**世界旋转的 `X`、`Y` 恒为 0**（已实机确认）。状态包因此只传 `Z` 和 `W`，收端把 `X` / `Y` 写回 0；`RemotePlayer` 用 `(0, 0, z, w)` 重建出来的仍是单位四元数，插值也照常。以后要同步会绕 X / Y 转的对象，得先改 `UnityQuaternion` 的读写——格式只在那一处（见 `docs/agent/state-synchronization.md` 的“线上格式只写一遍”）。
-- `PlayerStateSynchronizer` 挂载在持久化的 `MultiplayerUnityCore` 子对象上，在 `LateUpdate` 以 60 Hz 采样本地 `Player`，仅在 `Mian` 且连接有效时发送。
+- `PlayerStateSynchronizer` 挂载在持久化的 `MultiplayerCore` 子对象上，在 `LateUpdate` 以 60 Hz 采样本地 `Player`，仅在 `Mian` 且连接有效时发送。
 - `RemotePlayer` 使用相同的完整路径写入世界位置与世界旋转。首次收到状态时直接定位，后续状态在约一个 60 Hz 间隔内插值。
 - 远端实例由 `PlayerInstancePool` 创建的 `PlayerPrefab` 派生，并继续使用现有的无碰撞远端对象处理，因此当前不会与本地 `Player` 产生交互。
 - 如果多人插件在当前场景已经是 `Mian` 时才完成初始化，`GameManager.Start` 会补做当前场景资源准备并发布初始 `GameStartedEvent`；游戏中连接服务器时，握手也会触发玩家生命周期初始化并重新绑定本地玩家 ID。
@@ -175,7 +175,7 @@ PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是�
 
   | 键 | 类型 | 默认 | 说明 |
   |---|---|---|---|
-  | `Enabled` | bool | `true` | 联机开关。唯一真值是 `MultiplayerUnityCore.IsLoaded`，宿主每次加载与销毁后回写这里，所以它同时决定下次启动要不要自动加载 |
+  | `Enabled` | bool | `true` | 联机开关。唯一真值是宿主持有的 `MultiplayerCore` 实例是否为 null，宿主每次加载与销毁后回写这里，所以它同时决定下次启动要不要自动加载 |
   | `HideServerPage` | bool | `true` | 隐藏主面板上的“服务端”页签。纯 UI 可见性：`ServerPage` 照旧构造与 `Bind`，内嵌服务端照常能加载 |
   | `PlayerName` | string | （空） | 客户端页“名字”输入框的初值；空表示还没填，连接会被客户端页拦下 |
   | `ClientHost` | string | `127.0.0.1` | 客户端页“服务器地址”输入框的初值 |
@@ -189,16 +189,16 @@ PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是�
 
 ### 加载与销毁保证什么
 
-联机模块只有两种状态：`MultiplayerUnityCore.IsLoaded` 为真（整张对象图活着），或者为假（没加载，或者已经被 `Dispose` 拆掉）。**没有“已加载但停用”的中间态**，所以也不再有 `IMultiplayerState`、`MultiplayerLifecycleController`，以及 Unity 客户端 / 服务端门面里那圈 `IsMultiplayerEnabled` 守卫。
+联机模块只有两种状态：宿主手里的 `MultiplayerCore` 实例在（整张对象图活着），或者为 null（没加载，或者已经被 `Dispose` 拆掉）。**没有“已加载但停用”的中间态**，所以也不再有 `IMultiplayerState`、`MultiplayerLifecycleController`，以及 Unity 客户端 / 服务端门面里那圈 `IsMultiplayerEnabled` 守卫。
 
-- 加载：`MultiplayerUnityCore.Initialize(logTarget)` 建 `_core` GameObject、build 容器、激活 `IStartable`，成功后发 `Initialized`。失败会回滚（销毁 `_core`、丢掉半张容器）并返回 false，不会留下一个半死不活的加载状态。
-- 销毁：`Dispose()` 的顺序是有条件的，改之前先对一遍：
-  1. 先把 `_container` 置 null——从这一刻起三个门面属性全返回 null，没人能再拿到这一轮的实例。判据必须是 `_container`，不能是对象本身：`UnityClient` 是 MonoBehaviour，`Destroy` 之后托管引用仍在，`IsConnected` 这类纯托管属性不碰 Unity API，照样返回上一轮的旧值；而按 `IUnityClient` 接口做的 `== null` 用的是 `object` 的引用相等，Unity 那套假 null 根本不参与。
-  2. 发 `Disposing`，趁对象图还活着让 UI 退订、清掉缓存。
-  3. `_core.SetActive(false)` 停掉轮询。`Destroy` 要到帧末才生效，不先关的话本帧的 `Update` 还会 `Poll` 一次，到的包能把刚清掉的远端实例重新建出来。
-  4. `Disconnect()` → `Stop()` → `PlayerManager.Dispose()`（退订 + `ReleaseGamePlayers` + 销毁挂在场景 `Player` 上的 `LocalPlayer` 组件）。
-  5. `Object.Destroy(_core)` 一次带走 `GameManager`、`UnityClient`、`UnityServer`、`PlayerStateSynchronizer`、`SkinSynchronizer`（都在 `_core` 底下）。`GameManager.OnDestroy` 负责退订静态的 `SceneManager.sceneLoaded` 并销毁自己 `Instantiate` 的 `PlayerPrefab` 克隆。
-  6. `container.Dispose()` 收掉容器创建的服务：`ClientService` / `ServerService` 连同底下的 `NetworkClient` / `NetworkServer`（`Dispose` 里 `NetManager.Stop()`，收下网络线程）。
+- 加载：`MultiplayerCore.Initialize(configure)` 建 `_core` GameObject、build 容器、激活 `IStartable`，成功后返回实例。失败会回滚（销毁 `_core`、丢掉半张容器）并返回 null，不会留下一个半死不活的加载状态。没有 `Initialized` 事件——工厂的返回值就是“加载好了”，宿主拿到非 null 实例后自己把各页面 `Bind` 上去。
+- 销毁：`Dispose()` 是实例方法，顺序是有条件的，改之前先对一遍：
+  1. 先把 `_container` 置 null——从这一刻起本实例三个门面属性全返回 null，没人能再拿到这一轮的实例。判据必须是 `_container`，不能是对象本身：`UnityClient` 是 MonoBehaviour，`Destroy` 之后托管引用仍在，`IsConnected` 这类纯托管属性不碰 Unity API，照样返回上一轮的旧值；而按 `IUnityClient` 接口做的 `== null` 用的是 `object` 的引用相等，Unity 那套假 null 根本不参与。
+  2. `_core.SetActive(false)` 停掉轮询。`Destroy` 要到帧末才生效，不先关的话本帧的 `Update` 还会 `Poll` 一次，到的包能把刚清掉的远端实例重新建出来。
+  3. `Disconnect()` → `Stop()` → `PlayerManager.Dispose()`（退订 + `ReleaseGamePlayers` + 销毁挂在场景 `Player` 上的 `LocalPlayer` 组件）。
+  4. `Object.Destroy(_core)` 一次带走 `GameManager`、`UnityClient`、`UnityServer`、`PlayerStateSynchronizer`、`SkinSynchronizer`（都在 `_core` 底下）。`GameManager.OnDestroy` 负责退订静态的 `SceneManager.sceneLoaded` 并销毁自己 `Instantiate` 的 `PlayerPrefab` 克隆。
+  5. `container.Dispose()` 收掉容器创建的服务：`ClientService` / `ServerService` 连同底下的 `NetworkClient` / `NetworkServer`（`Dispose` 里 `NetManager.Stop()`，收下网络线程）。
+- 没有 `Disposing` 事件：UI 的退订、清缓存改在宿主的 `Plugin.Unload` 里，趁对象图还活着（调 `Dispose` 之前）逐个 `Unbind`，再调 `Dispose`。
 - NLog 的 target 注册成 `ExternallyOwned`。它挂在 NLog 的全局配置上，跟着容器一起销毁的话，下一轮 `Initialize` 会按名字复用那个已销毁的 target，日志就全哑了。`CoreManager` 本身按 target 名字去重，所以反复加载不会重复挂规则。
 - 随开随关把“关掉时把场景还原干净”从可选变成必做：`LocalPlayer` 组件、`PlayerPrefab` 克隆、`sceneLoaded` 订阅这三样都会活到下一轮，而 `PlayerManager.EnsureLocalPlayer` 的 `GetComponent<LocalPlayer>()` 分支正好会捞到上一轮那个揣着已销毁服务的组件。
 - 第二次 `Initialize` 落在 `Mian` 里是能自愈的：新建的 `GameManager.Start` 走 `if (IsInGame && Player == null)` 那一次补做，重新找 `Player`、重造 `PlayerPrefab`、补发 `GameStartedEvent`。这条路径本来就有（插件在 Loader 初始化、进游戏才补做），随开随关只是复用它。
@@ -211,8 +211,8 @@ PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是�
 - “设置”页除了那个加载开关还管四个默认值，按“客户端设置”（从上到下是“名字”一行、默认主机和默认端口同一行）和“服务端设置”（默认端口）两段排：`ClientPage` 和 `ServerPage` 从它们取输入框初值，并订阅对应的变更事件，在空闲时跟着更新（见上面 Multiplayer Settings）。这四个输入框不随加载状态变灰——联机没加载也要能先把默认值配好。落盘发生在编辑结束（`InputField.onEndEdit`）和离开设置页时，不是每敲一个字符就写一次：每次写都要整份重写配置文件。端口填了非法值会弹提示并把输入框回填成当前设置值；主机清空则归一化回默认值；名字清空就保留为空，连接时为空会弹“名字不能为空”并拦下连接。名字输入框不设占位提示，空就是空框；已知限制：uGUI 的 `InputField` 文本为空时聚焦不画光标，空名字框点进去看不到光标（未处理）。
 - F2 始终切换 `MultiplayerUI`（“连接配置”）窗口，不看联机加没加载，因此关掉之后仍能进入“设置”页重新开启。
 - `Plugin.ApplyCursorState` 使用同一判据解锁系统鼠标和把游戏 `Cursor` 刚体的 `simulated` 切为 `false`：配置窗口、房间弹窗、Tab 玩家列表 + 空格、聊天输入激活，或其他 UniverseLib UI 显示；被动聊天 HUD 不屏蔽输入。单独按住 Tab 只显示玩家列表，游戏输入照常，鼠标要 Tab 和空格一起按住才交出。UI 不再占用鼠标时把 `simulated` 切回 `true`，不修改 `PlayerControl` 的启用状态或拦截其方法。
-- `Plugin` 每次要用光标时现读 `MultiplayerUnityCore.GameManager`，不缓存实例（缓存了就在关掉联机之后剩下一个已销毁的对象），输入屏蔽直接读它的 `Cursor`，不依赖连接或 `LocalPlayer` 组件。刚体处理在光标状态缓存的提前返回之前执行：UI 开着进入或重载场景时也会处理新 Cursor，并释放此前记录的旧刚体（如果仍存在）。Plugin 被禁用或销毁时把已屏蔽的刚体的 `simulated` 切回 `true`。
-- 插件启动时读一次 `Enabled`，为真才 `Initialize()`；这是它唯一一次被当作输入读，之后只被写。启动那次尝试失败同样回写成 false，配置里不会留一个没成真的 true；游戏里关掉再开是同一句 `Initialize()`。不再有“上次退出时是关闭状态，这次别先起服务”的补做逻辑——关着就是整张图不存在。玩家实例那一半在 `Dispose` 的顺序里，见上面“加载与销毁保证什么”。
+- `Plugin` 每次要用光标时现读持有的 `MultiplayerCore` 实例的 `GameManager`（`_core?.GameManager`），不缓存它（缓存了就在关掉联机之后剩下一个已销毁的对象），输入屏蔽直接读它的 `Cursor`，不依赖连接或 `LocalPlayer` 组件。刚体处理在光标状态缓存的提前返回之前执行：UI 开着进入或重载场景时也会处理新 Cursor，并释放此前记录的旧刚体（如果仍存在）。Plugin 被禁用或销毁时把已屏蔽的刚体的 `simulated` 切回 `true`。
+- 插件启动时读一次 `Enabled`，为真才调 `Plugin.Load`（内部 `MultiplayerCore.Initialize`）；这是它唯一一次被当作输入读，之后只被写。启动那次尝试失败同样回写成 false，配置里不会留一个没成真的 true；游戏里关掉再开走 `Plugin.Unload` / `Plugin.Load`。不再有“上次退出时是关闭状态，这次别先起服务”的补做逻辑——关着就是整张图不存在。玩家实例那一半在 `Dispose` 的顺序里，见上面“加载与销毁保证什么”。
 - 关闭联机时 `ClientPage` 收不到 `Disconnected`（`Unbind` 发生在断线之前），所以它自己在 `Unbind` 里把 `isConnecting`、房间目录和按钮状态归零，不留“正在连接”的残影。
 - 关闭联机时 `ChatHudUI` 被隐藏并退出输入激活状态，`PlayerListUI` 被隐藏，Plugin 不再响应 Tab 来显示玩家列表。窗口藏着不等于账清了：`RoomDialogUI` 在 `Unbind` 里关窗，`ChatHudUI` 和 `PlayerListUI` 各自把消息记录和名单行清成空——它们的刷新方法在门面为 null 时照常走，把画面落成“没有门面就没有内容”（房间两行显示未加入 / -），不留一份还能读但底下已经拆掉的 `PlayerView`。
 - Tab 玩家列表顶部是一行等宽两列的房间信息：“当前房间：名称 / 房主：名字”，大厅房主显示“无”，未入房显示“未加入 / -”；下方玩家表格的列仍为：玩家 / 信息 / 状态 / 距离 / 操作。距离读的是远端实例到本地玩家的直线距离，玩家没有场景实例时（未在游戏中、实例池已满、首个状态包未到）显示 `-`。

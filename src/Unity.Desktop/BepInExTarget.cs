@@ -1,5 +1,6 @@
 ﻿using BepInEx.Logging;
 using NLog;
+using NLog.Layouts;
 using NLog.Targets;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,7 @@ namespace GOILauncher.Multiplayer
         {
             Name = "BepInExTarget";
             _logger = logger;
+            Layout = @"[${logger:shortName=true}] ${message}${onexception:inner=${newline}${exception:format=tostring}}";
         }
 
         protected override void Write(LogEventInfo logEvent)
