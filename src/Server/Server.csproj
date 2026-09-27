@@ -6,7 +6,6 @@
     <RootNamespace>GOILauncher.Multiplayer.Server</RootNamespace>
     <LangVersion>latest</LangVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ProjectGuid>{9D509ADD-EC76-4072-99C7-907624C222CF}</ProjectGuid>
   </PropertyGroup>
 

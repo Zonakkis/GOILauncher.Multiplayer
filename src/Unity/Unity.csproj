@@ -9,7 +9,6 @@
     <RootNamespace>GOILauncher.Multiplayer.Unity</RootNamespace>
     <LangVersion>latest</LangVersion>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ProjectGuid>{125C7A1A-0023-4E64-A620-E808AE58D966}</ProjectGuid>
   </PropertyGroup>
 

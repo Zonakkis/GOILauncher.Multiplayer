@@ -6,7 +6,6 @@
     <AssemblyName>GOILauncher.Multiplayer.DedicatedServer</AssemblyName>
     <RootNamespace>GOILauncher.Multiplayer.DedicatedServer</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <ProjectGuid>{858EE83C-5E77-42AF-9E0F-A29983265D7E}</ProjectGuid>
   </PropertyGroup>
 
