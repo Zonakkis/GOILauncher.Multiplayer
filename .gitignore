@@ -12,6 +12,8 @@ desktop.ini
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+# ...but src/Core/Log/ is real source (Core.Log namespace), not build output.
+!/src/Core/Log/
 x64/
 x86/
 [Aa][Rr][Mm]/
