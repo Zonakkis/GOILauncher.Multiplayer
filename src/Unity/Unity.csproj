@@ -1,7 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net35;net40;netstandard2.0</TargetFrameworks>
+    <!-- 默认Windows平台 -->
+    <GameTarget Condition="'$(GameTarget)' == ''">Windows</GameTarget>
+    <TargetFramework Condition="'$(GameTarget)' == 'Windows'">net40</TargetFramework>
+    <TargetFramework Condition="'$(GameTarget)' == 'Android'">net35</TargetFramework>
     <AssemblyName>GOILauncher.Multiplayer.Unity</AssemblyName>
     <RootNamespace>GOILauncher.Multiplayer.Unity</RootNamespace>
     <LangVersion>latest</LangVersion>
@@ -14,9 +17,8 @@
     <PackageReference Include="Autofac" />
   </ItemGroup>
 
-  <!-- 定义游戏目标平台以及dll路径 -->
+  <!-- 定义dll路径 -->
   <PropertyGroup>
-    <GameTarget Condition="'$(GameTarget)' == ''">Windows</GameTarget>
     <GameLib Condition="$(GameTarget) == 'Windows'">..\..\lib\Windows\Original-1.7</GameLib>
     <GameLib Condition="$(GameTarget) == 'Android'">..\..\lib\Android\Original-1.9.2</GameLib>
     <DefineConstants>$(DefineConstants);$(GameTarget.ToUpperInvariant())</DefineConstants>
