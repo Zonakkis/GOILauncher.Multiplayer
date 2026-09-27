@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Data.Models;
-using GOILauncher.Multiplayer.Shared.Extensions;
 using GOILauncher.Multiplayer.Unity.Extensions;
 using GOILauncher.Multiplayer.Unity.Skin;
 using UnityEngine;
