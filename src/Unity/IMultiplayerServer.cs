@@ -1,6 +1,6 @@
 ﻿namespace GOILauncher.Multiplayer.Unity
 {
-    public interface IUnityServer
+    public interface IMultiplayerServer
     {
         bool IsRunning { get; }
         void Start(int port);

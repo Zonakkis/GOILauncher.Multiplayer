@@ -18,7 +18,7 @@ namespace GOILauncher.Multiplayer.UI
 
         private readonly PlayerListHandler playerListHandler;
         // 门面每轮联机都是新造的：Bind 时才有，Unbind 时清空。
-        private IUnityClient client;
+        private IMultiplayerClient client;
 
         private Text currentRoomText;
         private Text roomOwnerText;
@@ -36,15 +36,15 @@ namespace GOILauncher.Multiplayer.UI
         }
 
         /// <summary>
-        /// 行上的按钮只发 Id，接到门面上这一步由这里做：PlayerListHandler 因此不用认识 IUnityClient。
+        /// 行上的按钮只发 Id，接到门面上这一步由这里做：PlayerListHandler 因此不用认识 IMultiplayerClient。
         /// 也正因为接的是这一轮门面的实例方法，Unbind 必须按同一个引用退订。
         /// </summary>
-        public void Bind(IUnityClient unityClient)
+        public void Bind(IMultiplayerClient multiplayerClient)
         {
-            if (unityClient == null || client != null)
+            if (multiplayerClient == null || client != null)
                 throw new InvalidOperationException("PlayerListUI: Bind and Unbind must alternate.");
 
-            client = unityClient;
+            client = multiplayerClient;
             client.PlayerListUpdated += OnPlayerListUpdated;
             client.CurrentRoomChanged += OnCurrentRoomChanged;
             playerListHandler.TeleportRequested += client.TeleportTo;

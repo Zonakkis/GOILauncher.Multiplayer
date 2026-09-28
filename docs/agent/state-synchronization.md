@@ -113,7 +113,7 @@ ale` 无关）。没有轮询，也没有手动刷新：**游戏中途换皮肤�
 远端实例的创建时机取决于名单，所以名单的归属规则和同步方案绑定在一起。
 
 - 客户端名单的唯一权威来源是 `Client/Services/IPlayerService`：只暴露 `IEnumerable<PlayerInfo> Players` 和 `TryGetPlayer`，其它模块只读取，不保存副本。
-- `PlayerManager` 只保存"哪个玩家当前有 Unity 实例"，身份、名字和 `IsInGame` 一律现读；`UnityClient` 不再持有名单。
+- `PlayerManager` 只保存"哪个玩家当前有 Unity 实例"，身份、名字和 `IsInGame` 一律现读；`MultiplayerClient` 不再持有名单。
 - `PlayerInfo` 是协议模型（`S2CPlayerListPacket` 逐字段序列化，服务端也在用），不要往里加距离这类只有客户端算得出来的派生值。
 - `PlayerService` 一律先写自己的状态、再发布事件，订阅者在处理器里读 `IPlayerService` 一定读到新值。不要依赖 `EventBus` 的订阅顺序来保证这一点。
   - `LocalPlayerReadyEvent`：本地身份确立（`ServerHandshakeEvent` 是传输层事件，发布时 `PlayerService` 还没更新）。
@@ -121,7 +121,7 @@ ale` 无关）。没有轮询，也没有手动刷新：**游戏中途换皮肤�
   - `PlayerRosterReceivedEvent`：每次成功入房（含初次大厅）在旧房间清理后发布；从 `S2CPlayerListPacket` 的完整名单补齐远端实例。已有成员不会再逐个产生 `PlayerJoinedEvent`。
   - `PlayerListUpdatedEvent`：只是给 UI 的"有变化"信号，不携带名单，也不驱动实例增删。用它驱动生命周期会让同一次变化走两条路径。
 - 远端实例出现的唯一入口是 `PlayerManager.EnsureRemoteInstance`；名单快照、中途加入、中途进入游戏都走这一条。
-- UI 通过 `IUnityClient.Players` 读名单，拿到的是 `PlayerView`：只记 `Id` 和两个权威来源（`IPlayerService` / `IPlayerManager`），每次读属性都回去取，不保存副本。距离由 `RemotePlayer.DistanceToLocalPlayer` 单点定义，头顶标签和玩家列表共用。UI 的业务与游戏引用访问边界见 `docs/agent/ui-facade.md`。
+- UI 通过 `IMultiplayerClient.Players` 读名单，拿到的是 `PlayerView`：只记 `Id` 和两个权威来源（`IPlayerService` / `IPlayerManager`），每次读属性都回去取，不保存副本。距离由 `RemotePlayer.DistanceToLocalPlayer` 单点定义，头顶标签和玩家列表共用。UI 的业务与游戏引用访问边界见 `docs/agent/ui-facade.md`。
 - 玩家列表 UI 分两种刷新节奏：名单变化时增删行（事件驱动），距离按帧节流刷新已有行的文本（可见时拉取）。距离每帧都在变，沿用"清空重建全部行"会在按住 Tab 期间每帧 `Destroy` + `Instantiate` + 重建布局。
 
 ## Server Observation (host console)

@@ -18,7 +18,7 @@ namespace GOILauncher.Multiplayer.UI
 
         private InputFieldRef messageInput;
         // 门面每轮联机都是新造的：Bind 时才有，Unbind 时清空。
-        private IUnityClient _client;
+        private IMultiplayerClient _client;
         private readonly RoomDialogUI _roomDialog;
         private MessageHandler _messageHandler;
         private GameObject inputRow;
@@ -45,7 +45,7 @@ namespace GOILauncher.Multiplayer.UI
         }
 
         /// <summary>绑定这一轮的客户端门面；聊天消息和记录清空都从它身上订。</summary>
-        public void Bind(IUnityClient client)
+        public void Bind(IMultiplayerClient client)
         {
             if (client == null || _client != null)
                 throw new InvalidOperationException("ChatHudUI: Bind and Unbind must alternate.");

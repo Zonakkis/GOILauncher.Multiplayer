@@ -3,8 +3,8 @@
 UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）通过以下入口访问联机业务与游戏运行时：
 
 - `MultiplayerCore` — 联机模块的根。`Initialize` 建出对象图并返回一个实例，`Dispose` 拆掉它；宿主持有这个实例，手里的实例为 `null` 即未加载，拆除后实例的三个门面属性也返回 `null`；
-- `IUnityClient` — 客户端联机业务；
-- `IUnityServer` — 内嵌服务端联机业务；
+- `IMultiplayerClient` — 客户端联机业务；
+- `IMultiplayerServer` — 内嵌服务端联机业务；
 - `IGameManager` — 游戏场景状态与游戏内对象引用，不提供联机业务。
 
 这条约束区分了业务门面和游戏引用的来源，让 UI 不必了解 `Client` / `Server` / `Unity` 三层的内部服务分工。
@@ -12,19 +12,19 @@ UI 宿主（`Unity.Desktop`，以及以后可能的其它宿主）通过以下�
 ## Rules
 
 - **UI 通过上述入口访问业务和游戏引用。** 不要让 UI 直接依赖 `IPlayerService`、`IPlayerManager`、`IChatService`、`IEventBus` 等内部服务。
-- **新增联机业务挂在已有客户端/服务端门面，游戏引用放在 `IGameManager`，不要新开服务根接口。** "玩家名单该由谁提供"这类问题的答案永远是 `IUnityClient`，哪怕实现要组合好几个下层服务——组合工作在 `UnityClient` 里做。
+- **新增联机业务挂在已有客户端/服务端门面，游戏引用放在 `IGameManager`，不要新开服务根接口。** "玩家名单该由谁提供"这类问题的答案永远是 `IMultiplayerClient`，哪怕实现要组合好几个下层服务——组合工作在 `MultiplayerClient` 里做。
 - **UI 不订阅 `IEventBus`，事件由门面转发。** 见下面 Events 一节。
 - **`MultiplayerSettings` 不是新的服务根接口**（`GOILauncher.Multiplayer.UI.Config`）。它和 `PlayerView` 一样，是 UI 可以使用的设置/视图类型，不是新的业务入口；而且它整个住在宿主这一层，core 不认识它。见下面 MultiplayerSettings 一节。
 
-单一数据源和这条约束不冲突：单一数据源约束的是**谁能写、有没有人存副本**，不是成员声明在哪个接口上。只要门面上的成员是读透（read-through）的、不缓存，把它放在 `IUnityClient` 上和放在一个独立接口上完全等价。`UnityClient.Players` 每次枚举现场构造 `PlayerView`，名单的唯一所有者仍然是 `Client/Services/IPlayerService`。
+单一数据源和这条约束不冲突：单一数据源约束的是**谁能写、有没有人存副本**，不是成员声明在哪个接口上。只要门面上的成员是读透（read-through）的、不缓存，把它放在 `IMultiplayerClient` 上和放在一个独立接口上完全等价。`MultiplayerClient.Players` 每次枚举现场构造 `PlayerView`，名单的唯一所有者仍然是 `Client/Services/IPlayerService`。
 
 ## 加载与销毁
 
-联机模块只有两种状态：已加载、已销毁。`MultiplayerCore.Initialize(configure)` 建出整张对象图并返回一个实例，`Dispose()` 拆掉它，没有“加载着但停用”这第三种状态——关就是拆，重新开就是重建。`UnityClient` / `UnityServer` / `PlayerManager` 里因此没有 `IsMultiplayerEnabled` 之类的守卫：拿得到门面就说明这一轮是活的；拆除之后，实例的三个门面属性一律返回 null。
+联机模块只有两种状态：已加载、已销毁。`MultiplayerCore.Initialize(configure)` 建出整张对象图并返回一个实例，`Dispose()` 拆掉它，没有“加载着但停用”这第三种状态——关就是拆，重新开就是重建。`MultiplayerClient` / `MultiplayerServer` / `PlayerManager` 里因此没有 `IsMultiplayerEnabled` 之类的守卫：拿得到门面就说明这一轮是活的；拆除之后，实例的三个门面属性一律返回 null。
 
 UI 不进这张对象图。`Plugin.OnInitialized` 手工组合窗口、页面和 handler，再把自己这一轮的门面递进去。没有加载/销毁事件——`Plugin` 持有 `MultiplayerCore` 实例，加载与卸载是它自己的两个方法：
 
-- `Plugin.Load` 调 `MultiplayerCore.Initialize`；返回非 null（加载成功）时立刻读 `UnityClient` / `UnityServer`，逐个 `Bind` 到 `ClientPage`、`ServerPage`、`RoomDialogUI`、`ChatHudUI`、`PlayerListUI`，返回 null 就保持未加载。
+- `Plugin.Load` 调 `MultiplayerCore.Initialize`；返回非 null（加载成功）时立刻读 `MultiplayerClient` / `MultiplayerServer`，逐个 `Bind` 到 `ClientPage`、`ServerPage`、`RoomDialogUI`、`ChatHudUI`、`PlayerListUI`，返回 null 就保持未加载。
 - `Plugin.Unload` 反过来：先逐个 `Unbind`——这时对象图还活着，退订门面事件、清掉列表行上缓存的 `PlayerView`、把聊天记录归零都还来得及——再 `Dispose` 实例，最后把引用置 null。
 - `Bind` / `Unbind` 必须交替：两边的订阅是成对的，漏掉一次 `-=` 就是下一轮点一次按钮弹两条消息。
 
@@ -36,22 +36,22 @@ UI 不进这张对象图。`Plugin.OnInitialized` 手工组合窗口、页面和
 
 `IGameManager` 提供 `IsInGame` 及 `Player`、`PlayerPrefab`、`Cursor` 等游戏内引用，不承载连接、房间、名单等业务。UI 通过持有的 `MultiplayerCore` 实例的 `GameManager` 现读，不保存它——每加载一次是一个新实例，存下来的引用在模块关掉之后就再也更新不动了。场景中的对象同样会被销毁或替换，使用时从它的属性读取当前引用。
 
-桌面 UI 占用鼠标时，`Plugin` 直接操作 `IGameManager.Cursor` 上的 `Rigidbody2D.simulated`：占用时设为 `false`，释放时设为 `true`。这是 UI 对游戏对象的交互，不必为此增加 `IUnityClient` 方法，也不让 `IGameManager` 保存 UI 状态或提供业务命令。具体运行时事实见 `game-runtime.md` 的 Cursor Object。
+桌面 UI 占用鼠标时，`Plugin` 直接操作 `IGameManager.Cursor` 上的 `Rigidbody2D.simulated`：占用时设为 `false`，释放时设为 `true`。这是 UI 对游戏对象的交互，不必为此增加 `IMultiplayerClient` 方法，也不让 `IGameManager` 保存 UI 状态或提供业务命令。具体运行时事实见 `game-runtime.md` 的 Cursor Object。
 
 ## Events
 
-`IEventBus` 是下层的总线，UI 不订阅它。`UnityClient` 订阅需要的总线事件，再以自己的 `event` 转发出去：
+`IEventBus` 是下层的总线，UI 不订阅它。`MultiplayerClient` 订阅需要的总线事件，再以自己的 `event` 转发出去：
 
 | 门面事件 | 转发自 |
 |---|---|
-| `IUnityClient.Connected` | `Core.Event.ServerConnectedEvent` |
-| `IUnityClient.Disconnected(reason)` | `Core.Event.ServerDisconnectedEvent` |
-| `IUnityClient.ChatMessageReceived(message)` | `Client.Events.ChatMessageEvent` |
-| `IUnityClient.PlayerListUpdated` | `Client.Events.PlayerListUpdatedEvent` |
-| `IUnityClient.RoomListUpdated` | `Client.Events.RoomListUpdatedEvent` |
-| `IUnityClient.CurrentRoomChanged` | `Client.Events.CurrentRoomChangedEvent` |
-| `IUnityClient.RoomOperationCompleted(result)` | `Client.Events.RoomOperationCompletedEvent` |
-| `IUnityClient.ChatHistoryReset` | `Client.Events.ChatHistoryResetEvent` |
+| `IMultiplayerClient.Connected` | `Core.Event.ServerConnectedEvent` |
+| `IMultiplayerClient.Disconnected(reason)` | `Core.Event.ServerDisconnectedEvent` |
+| `IMultiplayerClient.ChatMessageReceived(message)` | `Client.Events.ChatMessageEvent` |
+| `IMultiplayerClient.PlayerListUpdated` | `Client.Events.PlayerListUpdatedEvent` |
+| `IMultiplayerClient.RoomListUpdated` | `Client.Events.RoomListUpdatedEvent` |
+| `IMultiplayerClient.CurrentRoomChanged` | `Client.Events.CurrentRoomChangedEvent` |
+| `IMultiplayerClient.RoomOperationCompleted(result)` | `Client.Events.RoomOperationCompletedEvent` |
+| `IMultiplayerClient.ChatHistoryReset` | `Client.Events.ChatHistoryResetEvent` |
 
 这样做的原因：
 
@@ -72,7 +72,7 @@ UI 不进这张对象图。`Plugin.OnInitialized` 手工组合窗口、页面和
 
 ## Rooms
 
-房间能力都在 `IUnityClient`：`Rooms` / `CurrentRoom` / `IsRoomOperationPending`，以及 `RefreshRooms` / `CreateRoom` / `JoinRoom` / `LeaveRoom` / `UpdateRoom`。`IUnityServer` 不承担房主操作。
+房间能力都在 `IMultiplayerClient`：`Rooms` / `CurrentRoom` / `IsRoomOperationPending`，以及 `RefreshRooms` / `CreateRoom` / `JoinRoom` / `LeaveRoom` / `UpdateRoom`。`IMultiplayerServer` 不承担房主操作。
 
 `RoomInfo`、`RoomOperationResult`、`RoomPasswordChange` 与共享长度常量是数据契约，不是额外的服务入口。
 
@@ -88,7 +88,7 @@ UI 不进这张对象图。`Plugin.OnInitialized` 手工组合窗口、页面和
 
 `GOILauncher.Multiplayer.Unity.Player.PlayerView` 是"UI 看到的一名玩家"。它只记 `Id` 和两个权威来源，每次读属性都回去取，所以可以存在列表行上跨帧复用。
 
-**派生显示值放 `PlayerView`，命令放门面。** 读的东西会随着列增长（距离，以后可能的高度差、进度、速度），每加一个就往 `IUnityClient` 上加一个方法的话，门面的方法就会不断膨胀；命令的数量是有限的（传送、踢人），放门面上不会失控。
+**派生显示值放 `PlayerView`，命令放门面。** 读的东西会随着列增长（距离，以后可能的高度差、进度、速度），每加一个就往 `IMultiplayerClient` 上加一个方法的话，门面的方法就会不断膨胀；命令的数量是有限的（传送、踢人），放门面上不会失控。
 
 也不要把派生值加进 `PlayerInfo`：那是协议模型（`S2CPlayerListPacket` 逐字段序列化），服务端也在用。
 
@@ -100,11 +100,11 @@ UI 不进这张对象图。`Plugin.OnInitialized` 手工组合窗口、页面和
 | 实例事实 | `IPlayerManager` → `RemotePlayer`（只在场景里） | 有没有远端实例、世界坐标 |
 | 派生显示值 | 读时现算，任何地方都不存 | `Distance` |
 
-`PlayerView.Distance` 为 `null` 表示这名玩家当前没有远端实例——未在游戏中、实例池已满、首个状态包还没到都属于正常情况，本地玩家自己也是 `null`。这个判据同时就是"能不能传送过去"：没有实例就没有目标位置，所以 `IUnityClient.TeleportTo(playerId)` 不用再配一个 `CanTeleportTo`，UI 直接按 `Distance.HasValue` 决定按钮的可用性。传送本身是命令，所以放门面上而不是 `PlayerView` 上。
+`PlayerView.Distance` 为 `null` 表示这名玩家当前没有远端实例——未在游戏中、实例池已满、首个状态包还没到都属于正常情况，本地玩家自己也是 `null`。这个判据同时就是"能不能传送过去"：没有实例就没有目标位置，所以 `IMultiplayerClient.TeleportTo(playerId)` 不用再配一个 `CanTeleportTo`，UI 直接按 `Distance.HasValue` 决定按钮的可用性。传送本身是命令，所以放门面上而不是 `PlayerView` 上。
 
-传送这条链是：`IUnityClient.TeleportTo(playerId)` → `UnityClient` 从 `IPlayerManager` 取出本地玩家和目标实例 → `LocalPlayer.TeleportTo(Transform target)`。搬运逻辑落在最后一环，那里本地玩家（`this`）和目标（`target`）两边的层级都在手上——它靠逐个配对两边的 `Rigidbody2D` 来搬，所以依赖"远端实例和本地玩家出自同一个 `PlayerPrefab`、刚体结构一致"这个前提（见 `docs/agent/game-runtime.md`）。
+传送这条链是：`IMultiplayerClient.TeleportTo(playerId)` → `MultiplayerClient` 从 `IPlayerManager` 取出本地玩家和目标实例 → `LocalPlayer.TeleportTo(Transform target)`。搬运逻辑落在最后一环，那里本地玩家（`this`）和目标（`target`）两边的层级都在手上——它靠逐个配对两边的 `Rigidbody2D` 来搬，所以依赖"远端实例和本地玩家出自同一个 `PlayerPrefab`、刚体结构一致"这个前提（见 `docs/agent/game-runtime.md`）。
 
-UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerListHandler.TeleportRequested(playerId)`，由 `PlayerListUI`（它本来就持有 `IUnityClient`）接到 `TeleportTo` 上。行渲染类因此仍然只认识 `PlayerView`，不引用任何门面类型——**纯视图类不必自己去拿门面，让持有门面的那一层把事件接过去**，这条对以后的踢人、私聊按钮同样适用。
+UI 一侧多一跳：玩家列表每行的传送按钮点击后只发 `PlayerListHandler.TeleportRequested(playerId)`，由 `PlayerListUI`（它本来就持有 `IMultiplayerClient`）接到 `TeleportTo` 上。行渲染类因此仍然只认识 `PlayerView`，不引用任何门面类型——**纯视图类不必自己去拿门面，让持有门面的那一层把事件接过去**，这条对以后的踢人、私聊按钮同样适用。
 
 ## MultiplayerSettings
 

@@ -18,7 +18,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
     public class ServerPage : IPage
     {
         // 门面每轮联机都是新造的：Bind 时才有，Unbind 时清空。
-        private IUnityServer _server;
+        private IMultiplayerServer _server;
         private readonly MultiplayerSettings _settings;
         private readonly Toast _toast;
 
@@ -40,7 +40,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         /// 绑定这一轮的内嵌服务端。服务端门面只有命令没有事件，所以这里只需要换引用，
         /// 不需要成对退订——但 Unbind 仍然要刷一次状态，否则界面会停在"运行中"。
         /// </summary>
-        public void Bind(IUnityServer server)
+        public void Bind(IMultiplayerServer server)
         {
             if (server == null || _server != null)
                 throw new InvalidOperationException("ServerPage: Bind and Unbind must alternate.");

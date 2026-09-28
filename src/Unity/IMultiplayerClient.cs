@@ -9,10 +9,10 @@ namespace GOILauncher.Multiplayer.Unity
 {
     /// <summary>
     /// UI 宿主访问客户端的唯一入口。约定见 docs/agent/ui-facade.md：
-    /// 新增能力挂在这里（或 IUnityServer）下面，不要为它新开一个根接口，
+    /// 新增能力挂在这里（或 IMultiplayerServer）下面，不要为它新开一个根接口，
     /// 也不要让 UI 直接订阅 IClientEventBus。
     /// </summary>
-    public interface IUnityClient
+    public interface IMultiplayerClient
     {
         bool IsConnected { get; }
         /// <summary>Server-wide public directory; no room passwords or foreign rosters.</summary>

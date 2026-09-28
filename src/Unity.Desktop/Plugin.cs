@@ -149,8 +149,8 @@ public class Plugin : BaseUnityPlugin
         if (_core == null)
             return;
 
-        var client = _core.UnityClient;
-        var server = _core.UnityServer;
+        var client = _core.MultiplayerClient;
+        var server = _core.MultiplayerServer;
         _clientPage.Bind(client);
         _serverPage.Bind(server);
         _roomDialogUI.Bind(client);

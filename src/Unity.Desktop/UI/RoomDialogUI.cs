@@ -29,7 +29,7 @@ namespace GOILauncher.Multiplayer.UI
     public sealed class RoomDialogUI : PanelBase
     {
         // 门面每轮联机都是新造的：Bind 时才有，Unbind 时清空。
-        private IUnityClient _client;
+        private IMultiplayerClient _client;
         private RoomOperation _operation;
         private int _roomId;
         private bool _submitted;
@@ -59,7 +59,7 @@ namespace GOILauncher.Multiplayer.UI
             SetActive(false);
         }
 
-        public void Bind(IUnityClient client)
+        public void Bind(IMultiplayerClient client)
         {
             if (client == null || _client != null)
                 throw new InvalidOperationException("RoomDialogUI: Bind and Unbind must alternate.");

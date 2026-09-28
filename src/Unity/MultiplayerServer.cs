@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace GOILauncher.Multiplayer.Unity
 {
-    public class UnityServer : MonoBehaviour, IUnityServer
+    public class MultiplayerServer : MonoBehaviour, IMultiplayerServer
     {
         public IServerService ServerService { get; set; }
         public IPlayerService PlayerService { get; set; }

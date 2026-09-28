@@ -18,7 +18,7 @@
 
 - 服务端 `PlayerService` 拥有全服身份与 `IsInGame`；服务端 `RoomService` 唯一维护成员关系、房主继任顺序及目录，负责玩家名单通知。两者通过写入完成后的服务器事件衔接，没有循环依赖。
 - 客户端 `RoomService` 拥有目录与当前房间；客户端 `PlayerService` 唯一拥有当前房间的名单与成员代次。`PlayerInfo` 仍只描述身份及场景事实，入房快照用 `RoomMemberInfo` 携带成员代次。
-- UI 只通过 `IUnityClient` 的 `Rooms`、`CurrentRoom`、`IsRoomOperationPending` 和房间命令访问功能。`RoomInfo` 是公开元数据，不带密码、盐或校验值。
+- UI 只通过 `IMultiplayerClient` 的 `Rooms`、`CurrentRoom`、`IsRoomOperationPending` 和房间命令访问功能。`RoomInfo` 是公开元数据，不带密码、盐或校验值。
 - `RoomListUpdated` 提醒重读目录；`CurrentRoomChanged` 也涵盖当前房间属性和房主变化，不能据此判断发生了换房。聊天清空使用单独的 `ChatHistoryReset`，操作结果使用 `RoomOperationCompleted`。
 - `IClientEventBus` / `IServerEventBus` 是独立单例；Unity 游戏事件使用客户端总线。纯 C# 模块通过 `IStartable` 自动注册，不依赖桌面宿主手动激活。
 

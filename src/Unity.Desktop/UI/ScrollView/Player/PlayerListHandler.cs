@@ -19,7 +19,7 @@ namespace GOILauncher.Multiplayer.UI.ScrollView.Player
     /// Destroy + Instantiate + 重建布局。
     ///
     /// 传送按钮不直接调门面：点击只发 <see cref="TeleportRequested"/>，由 PlayerListUI
-    /// 接到 IUnityClient.TeleportTo 上，本类因此仍然只是个视图，不认识任何门面类型。
+    /// 接到 IMultiplayerClient.TeleportTo 上，本类因此仍然只是个视图，不认识任何门面类型。
     /// </summary>
     public class PlayerListHandler
     {

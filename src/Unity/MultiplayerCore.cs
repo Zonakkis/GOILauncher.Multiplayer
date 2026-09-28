@@ -21,7 +21,7 @@ namespace GOILauncher.Multiplayer.Unity
     /// </summary>
     /// <remarks>
     /// 三个门面属性在拆除后返回 null，判据是 _container 这一个字段，不是对象本身。
-    /// 这点必须写死：UnityClient / GameManager 是 MonoBehaviour，Destroy 之后托管引用仍然在，
+    /// 这点必须写死：MultiplayerClient / GameManager 是 MonoBehaviour，Destroy 之后托管引用仍然在，
     /// 而 IsConnected 这类纯托管属性不碰 Unity API，照常返回上一轮的旧值；就算走 ==null，
     /// 门面按接口暴露，用的是 object 的引用相等，Unity 那套假 null 根本不参与。
     /// </remarks>
@@ -38,9 +38,9 @@ namespace GOILauncher.Multiplayer.Unity
 
         public IGameManager GameManager => Resolve<IGameManager>();
 
-        public IUnityClient UnityClient => Resolve<IUnityClient>();
+        public IMultiplayerClient MultiplayerClient => Resolve<IMultiplayerClient>();
 
-        public IUnityServer UnityServer => Resolve<IUnityServer>();
+        public IMultiplayerServer MultiplayerServer => Resolve<IMultiplayerServer>();
 
         /// <summary>
         /// 建起整张对象图并返回实例。<paramref name="configure"/> 在一个带默认值的
@@ -63,8 +63,8 @@ namespace GOILauncher.Multiplayer.Unity
                 builder
                     .RegisterMultiplayerCore().WithServer().WithClient()
                     .RegisterGameManager(core)
-                    .RegisterUnityClient(core)
-                    .RegisterUnityServer(core)
+                    .RegisterMultiplayerClient(core)
+                    .RegisterMultiplayerServer(core)
                     .RegisterPlayerInstancePool()
                     .RegisterPlayerManager()
                     .RegisterPlayerStateSynchronizer(core)
@@ -132,11 +132,11 @@ namespace GOILauncher.Multiplayer.Unity
 
             // 顺序就三条：先断网，再收场景里的玩家实例，最后才是容器。
             // 反过来会让断开途中到达的包重新造实例，或者让销毁后的组件被服务回调碰到。
-            Try(container.Resolve<IUnityClient>().Disconnect, "disconnecting the client");
-            Try(container.Resolve<IUnityServer>().Stop, "stopping the embedded server");
+            Try(container.Resolve<IMultiplayerClient>().Disconnect, "disconnecting the client");
+            Try(container.Resolve<IMultiplayerServer>().Stop, "stopping the embedded server");
             Try(() => (container.Resolve<IPlayerManager>() as IDisposable).Dispose(), "releasing player instances");
 
-            // core 底下挂着 GameManager、UnityClient、UnityServer 和两个同步器，一次带走。
+            // core 底下挂着 GameManager、MultiplayerClient、MultiplayerServer 和两个同步器，一次带走。
             // GameManager.OnDestroy 负责退订 sceneLoaded 并销毁自己造的 PlayerPrefab 克隆。
             if (core != null)
                 Object.Destroy(core);
@@ -184,25 +184,25 @@ namespace GOILauncher.Multiplayer.Unity
             return builder;
         }
 
-        internal static ContainerBuilder RegisterUnityClient(this ContainerBuilder builder, GameObject core)
+        internal static ContainerBuilder RegisterMultiplayerClient(this ContainerBuilder builder, GameObject core)
         {
-            builder.RegisterComponent<UnityClient>(unityClient =>
+            builder.RegisterComponent<MultiplayerClient>(multiplayerClient =>
                 {
-                    unityClient.transform.SetParent(core.transform);
-                    unityClient.Init();
+                    multiplayerClient.transform.SetParent(core.transform);
+                    multiplayerClient.Init();
                 }).
-                As<IUnityClient>()
+                As<IMultiplayerClient>()
                 .SingleInstance();
             return builder;
         }
 
-        internal static ContainerBuilder RegisterUnityServer(this ContainerBuilder builder, GameObject core)
+        internal static ContainerBuilder RegisterMultiplayerServer(this ContainerBuilder builder, GameObject core)
         {
-            builder.RegisterComponent<UnityServer>(unityServer =>
+            builder.RegisterComponent<MultiplayerServer>(multiplayerServer =>
                 {
-                    unityServer.transform.SetParent(core.transform);
+                    multiplayerServer.transform.SetParent(core.transform);
                 }).
-                As<IUnityServer>()
+                As<IMultiplayerServer>()
                 .SingleInstance();
             return builder;
         }

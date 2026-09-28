@@ -15,7 +15,7 @@ using UnityEngine;
 namespace GOILauncher.Multiplayer.Unity
 {
 
-    public class UnityClient : MonoBehaviour, IUnityClient
+    public class MultiplayerClient : MonoBehaviour, IMultiplayerClient
     {
         private bool _initialized;
 

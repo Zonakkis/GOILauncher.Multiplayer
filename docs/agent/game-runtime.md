@@ -193,10 +193,10 @@ PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是�
 
 - 加载：`MultiplayerCore.Initialize(configure)` 建 `_core` GameObject、build 容器、激活 `IStartable`，成功后返回实例。失败会回滚（销毁 `_core`、丢掉半张容器）并返回 null，不会留下一个半死不活的加载状态。没有 `Initialized` 事件——工厂的返回值就是“加载好了”，宿主拿到非 null 实例后自己把各页面 `Bind` 上去。
 - 销毁：`Dispose()` 是实例方法，顺序是有条件的，改之前先对一遍：
-  1. 先把 `_container` 置 null——从这一刻起本实例三个门面属性全返回 null，没人能再拿到这一轮的实例。判据必须是 `_container`，不能是对象本身：`UnityClient` 是 MonoBehaviour，`Destroy` 之后托管引用仍在，`IsConnected` 这类纯托管属性不碰 Unity API，照样返回上一轮的旧值；而按 `IUnityClient` 接口做的 `== null` 用的是 `object` 的引用相等，Unity 那套假 null 根本不参与。
+  1. 先把 `_container` 置 null——从这一刻起本实例三个门面属性全返回 null，没人能再拿到这一轮的实例。判据必须是 `_container`，不能是对象本身：`MultiplayerClient` 是 MonoBehaviour，`Destroy` 之后托管引用仍在，`IsConnected` 这类纯托管属性不碰 Unity API，照样返回上一轮的旧值；而按 `IMultiplayerClient` 接口做的 `== null` 用的是 `object` 的引用相等，Unity 那套假 null 根本不参与。
   2. `_core.SetActive(false)` 停掉轮询。`Destroy` 要到帧末才生效，不先关的话本帧的 `Update` 还会 `Poll` 一次，到的包能把刚清掉的远端实例重新建出来。
   3. `Disconnect()` → `Stop()` → `PlayerManager.Dispose()`（退订 + `ReleaseGamePlayers` + 销毁挂在场景 `Player` 上的 `LocalPlayer` 组件）。
-  4. `Object.Destroy(_core)` 一次带走 `GameManager`、`UnityClient`、`UnityServer`、`PlayerStateSynchronizer`、`SkinSynchronizer`（都在 `_core` 底下）。`GameManager.OnDestroy` 负责退订静态的 `SceneManager.sceneLoaded` 并销毁自己 `Instantiate` 的 `PlayerPrefab` 克隆。
+  4. `Object.Destroy(_core)` 一次带走 `GameManager`、`MultiplayerClient`、`MultiplayerServer`、`PlayerStateSynchronizer`、`SkinSynchronizer`（都在 `_core` 底下）。`GameManager.OnDestroy` 负责退订静态的 `SceneManager.sceneLoaded` 并销毁自己 `Instantiate` 的 `PlayerPrefab` 克隆。
   5. `container.Dispose()` 收掉容器创建的服务：`ClientService` / `ServerService` 连同底下的 `NetworkClient` / `NetworkServer`（`Dispose` 里 `NetManager.Stop()`，收下网络线程）。
 - 没有 `Disposing` 事件：UI 的退订、清缓存改在宿主的 `Plugin.Unload` 里，趁对象图还活着（调 `Dispose` 之前）逐个 `Unbind`，再调 `Dispose`。
 - NLog 的 target 注册成 `ExternallyOwned`。它挂在 NLog 的全局配置上，跟着容器一起销毁的话，下一轮 `Initialize` 会按名字复用那个已销毁的 target，日志就全哑了。`CoreManager` 本身按 target 名字去重，所以反复加载不会重复挂规则。

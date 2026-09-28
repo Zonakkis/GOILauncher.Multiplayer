@@ -27,7 +27,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
     public class ClientPage : IPage
     {
         // 门面每轮联机都是新造的，所以它不是 readonly：Bind 时才有，Unbind 时清空。
-        private IUnityClient _client;
+        private IMultiplayerClient _client;
         private readonly MultiplayerSettings _settings;
         private readonly Toast _toast;
         private readonly RoomDialogUI _roomDialog;
@@ -67,7 +67,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         /// 订阅和退订必须成对、只在这一对方法里做：漏一次 -= 不会报错，只会让下一次点按钮响应两遍。
         /// </para>
         /// </summary>
-        public void Bind(IUnityClient client)
+        public void Bind(IMultiplayerClient client)
         {
             if (client == null || _client != null)
                 throw new InvalidOperationException("ClientPage: Bind and Unbind must alternate.");
@@ -346,7 +346,7 @@ namespace GOILauncher.Multiplayer.UI.Pages
         /// 还没连上、连上了但首份房间快照没到，是三件完全不同的事；给同一句"暂无房间"
         /// 会让人以为服务器上真的没有房间，然后反复点刷新。
         ///
-        /// 注意判据是业务就绪（首份房间快照，即 <see cref="IUnityClient.CurrentRoom"/> 非空），
+        /// 注意判据是业务就绪（首份房间快照，即 <see cref="IMultiplayerClient.CurrentRoom"/> 非空），
         /// 不是 socket 的 IsConnected——见 docs/agent/room-system.md 的连接与入房流程。
         /// 另外目录里永远有大厅，所以真的走到最后一种情形只可能是服务端异常。
         ///
