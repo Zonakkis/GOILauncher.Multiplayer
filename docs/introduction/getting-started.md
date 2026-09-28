@@ -1,13 +1,20 @@
 # 快速开始
+GOILauncher.Multiplayer是一个*Getting Over It With Bennet Foddy*（以下简称GOI）的联机框架，旨在为全平台提供统一的联机体验，同时为插件开发者提供开箱即用的API。
 
-目前官方客户端仅支持桌面端Getting Over It（Windows、macOS、Linux）。
+GOILauncher.Multiplayer同时也提供了桌面端的BepInEx插件。
 
-如需在安卓端使用，请参考[客户端开发指南](/client-development/guide)
 
-## 安装
-在安装GOILauncher.Multiplayer之前，请先确保已安装Getting Over It和BepInEx。
-- [Getting Over It](https://store.steampowered.com/app/240720)
-- [BepInEx](https://github.com/BepInEx/BepInEx/releases)（请选择5.x版本）
+
+## 安装插件
+目前官方插件仅支持桌面端GOI（Windows、macOS、Linux）。
+- [Windwos安装教程](/installation/windows)
+
+安卓端插件由aWinHimOP开发中。
+
+iOS端插件不受支持。
+
+## 客户端插件开发
+见[客户端插件开发指南](/client-development/guide)。
 
 
 

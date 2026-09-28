@@ -1,64 +1,28 @@
 # 初始化插件
 
-在使用插件之前，需要通过`MultiplayerUnityCore`类初始化插件。
+在使用插件之前，需要初始化并拿到`MultiplayerCore`实例。
+
+`MultiplayerCore`类中主要包含三个对象：
+- `IMultiplayerClient`：进行客户端相关操作。
+- `IMultiplayerServer`：进行服务端相关操作。
+- `IGameManager`：获取游戏相关状态。
 
 ## 初始化
-初始化有两种方式：
-1. 普通初始化。此时将使用`MultiplayerUnityCore`中的`IUnityClient`和`IUnityServer`全局单例。
-2. 带依赖注入的初始化。此时`IUnityClient`和`IUnityServer`实例可以被依赖注入到您的服务中。
+通过`MultiplayerCore.Initialize(Action<MultiplayerOptions> configure = null)`来进行初始化：
+
+```csharp
+using GOILauncher.Multiplayer.Unity;
+
+MultiplayerCore core = MultiplayerCore.Initialize();
+// MultiplayerCore core = MultiplayerCore.Initialize(o => {
+//     // 也可以传递相关参数...
+// });
+IMultiplayerClient client = core.MultiplayerClient; // 获取客户端入口
+```
 ::: tip
-插件内置的依赖注入实现为Autofac。
+`MultiplayerOptions`中属性见
 :::
 
-::: code-group
+接下来可以使用`IMultiplayerClient`中的一系列API进行开发客户端了！
 
-```csharp [普通初始化]
-using GOILauncher.Multiplayer.Unity;
-
-MultiplayerUnityCore.Initialize();
-
-public interface IMyService { }
-public class MyService : IMyService
-{
-    public void Foo() 
-    {
-        MultiplayerUnityCore.UnityClient. // Do something...
-    }
-}
-```
-
-```csharp [带依赖注入的初始化]
-using GOILauncher.Multiplayer.Unity;
-
-var container = MultiplayerUnityCore.Initialize(builder =>{
-    builder.RegisterType<MyService1>()
-        .AsSelf()
-        .SingleInstance();
-    builder.RegisterType<MyService>()
-        .As<IMyService>()
-        .As<IStartable>() 
-        .SingleInstance();
-
-});
-
-public class MyService1
-{
-    public MyService1(IUnityClient unityClient) { }
-}
-
-public interface IMyService2 { }
-public class MyService2 : IMyService2, IStartable
-{
-    public MyService2(IUnityServer unityServer, MyService1 service1) { }
-    public void Start() 
-    { 
-        // Do something... 
-    }
-}
-```
-:::
-
-## 开始使用
-无论是通过全局单例还是依赖注入，现在都可以开始开发您的客户端了！
-
-为了简单起见，接下来的所有示例将使用全局单例，且默认已经初始化。
+为简单起见，接下来的示例将默认`core`已经初始化，`client`等已经从`core`中获取。

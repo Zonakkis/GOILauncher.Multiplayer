@@ -18,19 +18,30 @@ export default defineConfig({
       {
         text: '介绍',
         items: [
-          { text: '快速开始', link: '/introduction/getting-started' }
+          {
+            text: '快速开始', link: '/introduction/getting-started'
+          },
+          {
+            text: '安装与使用',
+            items: [
+              {
+                text: 'Windows', link: '/installation/windows'
+              }
+            ]
+          }
         ]
       },
       {
-        text: '客户端开发',
+        text: '客户端插件开发',
         items: [
           { text: '开发指南', link: '/client-development/guide' },
           { text: '初始化插件', link: '/client-development/initialize' },
-          { text: '连接服务器', link: '/client-development/connect-to-server' },
-          { text: '玩家相关功能', link: '/client-development/player' },
-          { text: '聊天相关功能', link: '/client-development/chat' },
+          { text: '连接操作', link: '/client-development/connect' },
+          { text: '房间操作', link: '/client-development/room' },
+          { text: '玩家操作', link: '/client-development/player' },
+          { text: '聊天操作', link: '/client-development/chat' },
           { text: '客户端信息', link: '/client-development/client-info' },
-          { text: '启动服务器', link: '/client-development/start-server' },
+          // { text: '启动服务器', link: '/client-development/start-server' },
         ]
       }
     ],
