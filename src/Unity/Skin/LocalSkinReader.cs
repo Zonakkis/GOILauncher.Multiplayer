@@ -96,6 +96,10 @@ namespace GOILauncher.Multiplayer.Unity.Skin
                 Goldness = SkinMaterial.ReadGoldness(material)
             };
 
+            // 诊断（Debug 级，平时不刷）：本地读到的这一刻，材质长什么样、金度读出来是多少。
+            _logger.Debug("[skin-probe] READ slot{Slot} gold={Goldness} {Desc}",
+                slot, state.Goldness, SkinMaterial.Describe(material));
+
             var texture = material.mainTexture as Texture2D;
             if (texture == null)
             {

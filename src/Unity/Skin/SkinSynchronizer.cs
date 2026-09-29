@@ -37,6 +37,9 @@ namespace GOILauncher.Multiplayer.Unity.Skin
         private readonly Dictionary<SkinHash, Texture2D> _textures = new Dictionary<SkinHash, Texture2D>();
         private Coroutine _readRoutine;
 
+        // 探针：本地玩家那份材质每局只记一次，够用来跟远端比对生成贴图是否共用了。
+        private bool _localProbeLogged;
+
         public void Init()
         {
             EventBus.Subscribe<GameStartedEvent>(OnGameStarted);
@@ -49,11 +52,13 @@ namespace GOILauncher.Multiplayer.Unity.Skin
 
         private void OnGameStarted(GameStartedEvent e)
         {
+            _localProbeLogged = false;
             BeginReadLocalSkin();
         }
 
         private void OnGameRestarted(GameRestartedEvent e)
         {
+            _localProbeLogged = false;
             // 重开关卡是玩家换皮肤后让它生效的唯一方式，所以这里必须重新读。
             BeginReadLocalSkin();
         }
@@ -108,7 +113,7 @@ namespace GOILauncher.Multiplayer.Unity.Skin
 
                 // 清单还没到，但实例现在就要露面：它是从池子里借的，上面还留着前一个使用者的贴图，
                 // 而模板自带的又是本地玩家的贴图。两种都不能给别人看，先画原版。
-                remote.ApplySkin(slot, VanillaSkins.Get(slot), UnknownGoldness);
+                remote.ApplySkin(slot, VanillaSkins.Get(slot), UnknownGoldness, false);
             }
         }
 
@@ -140,14 +145,78 @@ namespace GOILauncher.Multiplayer.Unity.Skin
 
         private void Apply(RemotePlayer remote, SkinState state, byte[] payload)
         {
-            if (!remote.ApplySkin(state.Slot, ResolveTexture(state, payload), state.Goldness))
+            // 诊断（Debug 级，平时不刷）：写前后各取一次材质描述，用来看金度到底有没有
+            // 落到真正显示的那张贴图上。判读方法见 docs/agent/game-runtime.md 的 Pot Skin。
+            var material = FindMaterial(remote.transform, state.Slot, false);
+            Logger.Debug("[skin-probe] p{PlayerId} slot{Slot} gold={Goldness} custom={Custom} BEFORE {Desc}",
+                remote.Id, state.Slot, state.Goldness, state.HasTexture, SkinMaterial.Describe(material));
+
+            if (!remote.ApplySkin(state.Slot, ResolveTexture(state, payload), state.Goldness, state.HasTexture))
             {
                 Logger.Warn("Remote instance of player {PlayerId} has no renderer at {Path} for slot {Slot}, " +
                     "skin not applied.", remote.Id, GameConstants.SkinMeshPath(state.Slot), state.Slot);
             }
+            else
+            {
+                Logger.Debug("[skin-probe] p{PlayerId} slot{Slot} gold={Goldness} custom={Custom} AFTER  {Desc}",
+                    remote.Id, state.Slot, state.Goldness, state.HasTexture, SkinMaterial.Describe(material));
+            }
+
+            if (!_localProbeLogged)
+            {
+                _localProbeLogged = true;
+                Logger.Debug("[skin-probe] LOCAL slot{Slot} {Desc}",
+                    SkinConstants.PotSlot, DescribeLocal(SkinConstants.PotSlot));
+            }
 
             // 贴到实例上之后再扫：现在没人在用的那些才是真的可以扔了。
             PruneTextures();
+        }
+
+        /// <summary>
+        /// 诊断用：读本地玩家某个槽位 <c>sharedMaterial</c> 的描述（只读）。
+        /// 拿它跟远端那份的 <c>generated[...]</c> 实例 ID 比对，就能知道 substance
+        /// 生成的贴图是不是被多个材质共用。
+        /// </summary>
+        private string DescribeLocal(byte slot)
+        {
+            var player = GameManager == null ? null : GameManager.Player;
+            if (player == null)
+            {
+                return "no-local-player";
+            }
+
+            var material = FindMaterial(player.transform, slot, true);
+            return material == null ? "no-material" : SkinMaterial.Describe(material);
+        }
+
+        /// <summary>
+        /// 诊断用：按槽位找材质。<paramref name="shared"/> 为 false 时取实例自己那份副本
+        /// （远端实例要看的、也是 <see cref="RemotePlayer.ApplySkin"/> 会写的那一份），
+        /// 为 true 时取共享材质——本地玩家必须用这个，否则读一下 <c>material</c> 就替皮肤 Mod
+        /// 改了它的对象。返回 null 表示找不到该槽位的 Renderer。
+        /// </summary>
+        private static Material FindMaterial(Transform root, byte slot, bool shared)
+        {
+            var path = GameConstants.SkinMeshPath(slot);
+            if (path == null)
+            {
+                return null;
+            }
+
+            var mesh = root.Find(path);
+            if (mesh == null)
+            {
+                return null;
+            }
+
+            var renderer = mesh.GetComponent<Renderer>();
+            if (renderer == null)
+            {
+                return null;
+            }
+
+            return shared ? renderer.sharedMaterial : renderer.material;
         }
 
         private Texture2D ResolveTexture(SkinState state, byte[] payload)

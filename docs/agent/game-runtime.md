@@ -156,16 +156,19 @@ Player
 Mesh`）。所以"这张贴图能不能编码成 PNG"只能试一次：`ImageConversion.EncodeToPNG` 用 try/catch 包住，结果按贴图对象记住。游戏自带的贴图在 C
 PU 侧没有像素副本，编码必然失败——**"没装皮肤"走的正是这条失败路径，它不是错误**，只是 Unity 会往控制台打一行错，所以记住结果是为了每张贴图
 最多撞一次。
-- 因此没装皮肤时的基线不是"读到的贴图"，而是插件内嵌的一张原版贴图（`src/Unity/Resources/VanillaPot.png`），再叠上传过来的金度（PC 走 `_Goldness`，Android 走 procedural input，见下方）。
+- 因此没装皮肤时的基线不是"读到的贴图"，而是插件内嵌的一张原版贴图（`src/Unity/Resources/VanillaPot.png`），再叠上传过来的金度。PC 上这张图直接压进 `_MainTex`；Android 上它**不适用于罐子**——罐子的原版外观由 substance 按金度现生成（见下方），那张内嵌 PNG 只在材质不是 `ProceduralMaterial` 时兜底。
 
 ### 金度的平台差异（PC shader 属性 vs Android Substance）
 
 金度落到材质上的机制两个平台完全不同，但线上格式不受影响：`SkinState.Goldness` 是 0–1 的 float，平台中立，收发两端各自按本平台的材质机制读写。所有平台差异集中在 `SkinMaterial`（`#if WINDOWS/ANDROID`，与 `Physics2DHelper` 同一套路）：读走 `SkinMaterial.ReadGoldness`，写走 `SkinMaterial.ApplyTo`。
 
 - **PC**：罐子是普通 `Material`，金度是 shader 浮点属性 `_Goldness`（`GameConstants.GoldnessProperty`），用 `GetFloat`/`SetFloat`。贴图和金度各自独立、可叠加——皮肤 + 金罐能同时成立。
-- **Android**：罐子是 Substance `ProceduralMaterial`，金度是 procedural input `Goldness`（`GameConstants.GoldnessProceduralInput`，**无下划线**），用 `GetProceduralFloat`/`SetProceduralFloat` 读写、再重烘才生效。重烘把金色烘进生成的贴图（占用 `mainTexture`），所以 Android 上**自定义皮肤与金罐机制互斥**——这与它们在领域上本就二选一一致。
-- **写远端金罐必须用 `RebuildTexturesImmediately()`，不能用 `RebuildTextures()`（已实机确认）**。远端实例经 `renderer.material` 拷出来的那份副本运行时类型仍是 `ProceduralMaterial`，`SetProceduralFloat` 也确实写进去了（回读为设定值），但异步的 `RebuildTextures()` 是排进 Substance 帧末队列的，这份运行时副本不在队列里、异步重烘永不触发，金色出不来；`RebuildTexturesImmediately()` 当场同步重烘绕开队列。（本地玩家自己的金罐用 `RebuildTextures()` 有效，因为那份是 inspector 挂的原始 substance 资源，引擎在跟。）
-- 症状对照（换成 immediate 之前）：PC 观察端能看到 Android 金罐（Android 读 procedural input、PC 写 `_Goldness` 都正常），但 Android 观察端看不到 PC 金罐——正是卡在 Android 写端那次异步重烘不触发。
+- **Android**：罐子是 Substance `ProceduralMaterial`（材质名 `CastIron_Gold`），金度是 procedural input `Goldness`（`GameConstants.GoldnessProceduralInput`，**无下划线**），用 `GetProceduralFloat`/`SetProceduralFloat` 读写、再 `RebuildTextures()` 重烘才生效。重烘把金色烘进**生成的贴图**里，所以 Android 上自定义皮肤与金罐天然互斥——这与它们在领域上本就二选一一致。
+- **重烘不会把生成的贴图重新绑回 `_MainTex`（已实机确认，这是"金罐在安卓端不生效"的真正原因）。** 罐子的 substance 有三张输出：`basecolor` / `normal` / `metallic`，`_MainTex` 用的是第一张（`generated[0]`）。`RebuildTextures()` 只重写这些 `ProceduralTexture` 的像素，**不动材质槽位的引用**；一旦 `_MainTex` 被任何静态贴图占住（例如当初无条件写进去的内嵌原版黑罐 `VanillaPot.png`），金色烘出来也没有人显示。所以：
+  - 没有自定义皮肤时，必须先把 `_MainTex` 指回 `generated[0]`，再设金度重烘——黑罐金罐都走这条路，金度是多少就烘成多少；
+  - 有自定义皮肤时直接压贴图，金度不再有任何可见意义，完全不用设。
+- **远端副本的生成贴图是独立的 `(Clone)` 对象**（实测 ID 与本地玩家那份不同），所以可以放心对远端副本重烘，不会影响本地玩家自己的罐子。
+- 早期版本把"必须用 `RebuildTexturesImmediately()`、异步 `RebuildTextures()` 在远端副本上永不触发"写进了文档，**实机探针推翻了它**：当时 `_MainTex` 已被原版贴图占住，同步异步都看不见金色，那次对比本身不成立。现在用异步 `RebuildTextures()`（排进 Substance 帧末队列，不阻塞主线程）。
 
 ## Body Skin（Diogenes）
 

@@ -145,6 +145,9 @@ namespace GOILauncher.Multiplayer.Unity.Models
 
          /// <summary>
         /// 换掉某个槽位（罐子 / 身体）的贴图和金度。<paramref name="texture"/> 为 null 时只改金度。
+        /// <paramref name="hasCustomSkin"/> 表示这名玩家这个槽位有没有自定义皮肤：没有的话
+        /// <paramref name="texture"/> 只是原版基线，安卓上会改由 substance 按金度现生成（见
+        /// <see cref="SkinMaterial.ApplyTo"/>）。
         /// 贴图与金度怎么落到材质上（PC 的 shader 属性还是 Android 的 procedural input、二者能否叠加）
         /// 全部收在 <see cref="SkinMaterial.ApplyTo"/>，这里不认平台；身体没有金度那一步天然是空操作。
         /// 返回 false 表示这个实例上找不到该槽位的 Renderer，外观没动过。
@@ -155,7 +158,7 @@ namespace GOILauncher.Multiplayer.Unity.Models
         /// 等于把本地玩家也换掉。读 <c>material</c> 这一下就已经让 Unity 拷出独立副本了，
         /// 副本归本实例所有，销毁时要自己收（见 <see cref="OnDestroy"/>）。
         /// </remarks>
-        public bool ApplySkin(byte slot, Texture2D texture, float goldness)
+        public bool ApplySkin(byte slot, Texture2D texture, float goldness, bool hasCustomSkin)
         {
             var material = GetMaterial(slot);
             if (material == null)
@@ -163,7 +166,7 @@ namespace GOILauncher.Multiplayer.Unity.Models
                 return false;
             }
 
-            SkinMaterial.ApplyTo(material, texture, goldness);
+            SkinMaterial.ApplyTo(material, texture, goldness, hasCustomSkin);
             return true;
         }
 
