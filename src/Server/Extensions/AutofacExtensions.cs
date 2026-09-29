@@ -46,6 +46,10 @@ namespace GOILauncher.Multiplayer.Server.Extensions
                 .AsSelf()
                 .As<IStartable>()
                 .SingleInstance();
+            builder.RegisterType<OpeningRelay>()
+                .AsSelf()
+                .As<IStartable>()
+                .SingleInstance();
             return builder;
         }
     }

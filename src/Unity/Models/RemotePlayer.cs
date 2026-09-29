@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using GOILauncher.Multiplayer.Core.Data.Constants;
 using GOILauncher.Multiplayer.Core.Data.Models;
 using GOILauncher.Multiplayer.Unity.Extensions;
+using GOILauncher.Multiplayer.Unity.Opening;
 using GOILauncher.Multiplayer.Unity.Skin;
 using UnityEngine;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 namespace GOILauncher.Multiplayer.Unity.Models
 {
@@ -40,6 +42,48 @@ namespace GOILauncher.Multiplayer.Unity.Models
         private readonly Camera _camera = Camera.main;
         private bool _isRenderersEnabled;
         private GUIStyle _labelStyle;
+        private OpeningPlayback _openingPlayback;
+        private Coroutine _openingRoutine;
+
+        internal void PrepareOpening()
+        {
+            if (_openingPlayback == null)
+                _openingPlayback = new OpeningPlayback(
+                    new OpeningAnimation(GetComponentInChildren<PoseControl>(true)),
+                    () => (double)Stopwatch.GetTimestamp() / Stopwatch.Frequency);
+            _openingPlayback.Prepare();
+        }
+
+        /// <summary>Zero explicitly restores the completed pose; positive values resume its tail.</summary>
+        public void ApplyOpening(float remainingSeconds)
+        {
+            StopOpeningRoutine();
+            PrepareOpening();
+            _openingRoutine = StartCoroutine(
+                _openingPlayback.ApplyAfterOneFrame(remainingSeconds, OnOpeningApplied));
+        }
+
+        private void OnOpeningApplied(bool succeeded)
+        {
+            _openingRoutine = null;
+            if (!succeeded)
+                Debug.LogWarning("[Multiplayer] Could not apply opening animation for player " + Id + ".");
+        }
+
+        private void StopOpeningRoutine()
+        {
+            if (_openingPlayback != null)
+                _openingPlayback.Cancel();
+            if (_openingRoutine == null)
+                return;
+            StopCoroutine(_openingRoutine);
+            _openingRoutine = null;
+        }
+
+        private void OnDisable()
+        {
+            StopOpeningRoutine();
+        }
 
         /// <summary>
         /// The first state snaps the pooled instance into place. Later states are
@@ -89,6 +133,9 @@ namespace GOILauncher.Multiplayer.Unity.Models
 
         public override void Reset()
         {
+            StopOpeningRoutine();
+            PrepareOpening();
+            _openingPlayback.Reset();
             base.Reset();
             _fromState = default(PlayerState);
             _targetState = default(PlayerState);
@@ -122,6 +169,7 @@ namespace GOILauncher.Multiplayer.Unity.Models
 
         public void OnDestroy()
         {
+            StopOpeningRoutine();
             // 这些材质是读 material 时 Unity 为本实例拷出来的，没人替我们回收。
             foreach (var material in _materials.Values)
             {

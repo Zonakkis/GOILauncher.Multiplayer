@@ -6,6 +6,7 @@ using GOILauncher.Multiplayer.Core;
 using GOILauncher.Multiplayer.Core.Extensions;
 using GOILauncher.Multiplayer.Server.Extensions;
 using GOILauncher.Multiplayer.Unity.Extensions;
+using GOILauncher.Multiplayer.Unity.Opening;
 using GOILauncher.Multiplayer.Unity.Player;
 using GOILauncher.Multiplayer.Unity.Skin;
 using NLog.Targets;
@@ -68,7 +69,8 @@ namespace GOILauncher.Multiplayer.Unity
                     .RegisterPlayerInstancePool()
                     .RegisterPlayerManager()
                     .RegisterPlayerStateSynchronizer(core)
-                    .RegisterSkinSynchronizer(core);
+                    .RegisterSkinSynchronizer(core)
+                    .RegisterOpeningSynchronizer(core);
 
                 // options.LogTarget 恒非空（默认是共享控制台落地端），所以无条件注册它，
                 // 盖过 RegisterMultiplayerCore 里的默认。ExternallyOwned：它挂在 NLog 全局
@@ -85,6 +87,7 @@ namespace GOILauncher.Multiplayer.Unity
                 container.Resolve<IGameManager>();
                 container.Resolve<PlayerStateSynchronizer>();
                 container.Resolve<SkinSynchronizer>();
+                container.Resolve<OpeningSynchronizer>();
             }
             catch (Exception ex)
             {
@@ -136,7 +139,7 @@ namespace GOILauncher.Multiplayer.Unity
             Try(container.Resolve<IMultiplayerServer>().Stop, "stopping the embedded server");
             Try(() => (container.Resolve<IPlayerManager>() as IDisposable).Dispose(), "releasing player instances");
 
-            // core 底下挂着 GameManager、MultiplayerClient、MultiplayerServer 和两个同步器，一次带走。
+            // core 底下挂着 GameManager、MultiplayerClient、MultiplayerServer 和各同步器，一次带走。
             // GameManager.OnDestroy 负责退订 sceneLoaded 并销毁自己造的 PlayerPrefab 克隆。
             if (core != null)
                 Object.Destroy(core);
@@ -251,6 +254,19 @@ namespace GOILauncher.Multiplayer.Unity
                     skinSynchronizer.Init();
                 }).
                 AsSelf()
+                .SingleInstance();
+            return builder;
+        }
+
+        internal static ContainerBuilder RegisterOpeningSynchronizer(this ContainerBuilder builder, GameObject core)
+        {
+            builder.RegisterType<LocalOpeningReader>().AsSelf().SingleInstance();
+            builder.RegisterComponent<OpeningSynchronizer>(synchronizer =>
+                {
+                    synchronizer.transform.SetParent(core.transform);
+                    synchronizer.Init();
+                })
+                .AsSelf()
                 .SingleInstance();
             return builder;
         }

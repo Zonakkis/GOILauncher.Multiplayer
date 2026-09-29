@@ -74,7 +74,7 @@ Mian LateUpdate
 模块读的就是那张贴图本身，不读任何 Mod 的配置、目录或 `PlayerPrefs`（见 `docs/agent/game-runtime.md` 的 Pot Skin）。
 
 ```text
-进 Mian 后 0.1 s
+收到游戏开始 / 重开事件后一帧
   -> LocalSkinReader 读 Pot/Mesh 的 sharedMaterial（贴图 + _Goldness）
   -> ClientSkinSync.Announce(SkinState, PNG 字节)
   -> C2SSkinManifestPacket + C2SSkinDataPacket
@@ -86,9 +86,7 @@ Mian LateUpdate
   -> SkinSynchronizer 解码贴图，写远端实例的 material
 ```
 
-- **一局只读一次，读完不再看。** 皮肤 Mod 是在场景加载后自己去换贴图的，谁先跑没有保证，所以等 0.1 s（`WaitForSecondsRealtime`，与 `timeSc
-ale` 无关）。没有轮询，也没有手动刷新：**游戏中途换皮肤不会同步，玩家要重开关卡**。`GameStartedEvent` 和 `GameRestartedEvent` 各触发一次读
-取，重开关卡因此是那个"生效"入口。
+- **一局只读一次，读完不再看。** 当前 `SkinSynchronizer` 在 `GameStartedEvent` / `GameRestartedEvent` 后通过 `yield return null` 等待一帧再读取，以避开场景刚加载时的处理顺序。没有轮询，也没有手动刷新：**游戏中途换皮肤不会同步，玩家要重开关卡**。重开关卡是皮肤变更的生效入口。
 - **清单和字节是分开的两个包，顺序是协议规定的。** 服务端只接受当前已宣告哈希的字节，否则它存下来的字节没有任何东西能证明属于哪张皮肤。上
 传不等别人来要：一张贴图迟早每个人都要。
 - **原版贴图不是"没有皮肤"，是一个正常的状态。** 没装皮肤时插件用内嵌的 `src/Unity/Resources/VanillaPot.png`，清单里哈希为空但 `Goldness`
@@ -107,6 +105,30 @@ ale` 无关）。没有轮询，也没有手动刷新：**游戏中途换皮肤�
 条路走得通。
 - **换房清空远端一切，本地状态留着；断线还清空本地上传记录。** 重连可能是另一台服务器，或者同一台重启过，它那份缓存不算数了；本地皮肤没变，所以只需要在 `RoomMembershipChangedEvent` 时按原样再宣告一次。本地那次读取也可能发生在连上之前（先进游戏再连服务器），走的是同一条补发路径。
 - **`byte Slot` 目前有 `PotSlot`（罐子）和 `BodySlot`（身体 Diogenes）两个。** 收发两端按 `(playerId, slot)` 独立宣告、缓存、下发；服务端收到 `SkinConstants.IsKnownSlot` 之外的槽位会丢掉并警告——转发出去也没人渲染得了。已知槽位列在 `SkinConstants.Slots`，加部件往那里加一个即可（Unity 侧的 mesh 路径见 `game-runtime.md` 的 Body Skin 一节）。
+
+## Opening Synchronization（新版本约定）
+
+出罐是一局一次的可靠状态宣告，不进入 60 Hz 的 `PlayerState`，也不走皮肤 PNG 链路。业务名称统一为 `Opening`，剩余秒数字段为 `OpeningState.RemainingSeconds`。
+
+```text
+GameStartedEvent / GameRestartedEvent 后一帧
+  -> LocalOpeningReader 读取本地 PoseControl 的实际动画进度
+  -> ClientOpeningSync.Announce(OpeningState)
+  -> C2SOpeningStatePacket（当前 MembershipId + State）
+  -> OpeningRelay 验证身份、在游戏中、当前成员代次及有效秒数
+  -> 同房其他成员收到 S2COpeningStatePacket（RoomPacketScope + PlayerId + State）
+  -> ClientOpeningSync 先缓存，再发布 PlayerOpeningReceivedEvent
+  -> OpeningSynchronizer / RemotePlayer.ApplyOpening 续播剩余部分
+```
+
+- 状态只序列化一个 float；模型的格式仅定义在自己的 `Serialize` / `Deserialize` 中。负数、NaN、Infinity 是非法载荷，两端在写缓存之前拒绝；0 是正常的已结束状态，不是无数据。
+- 两个方向都使用 Default 通道的 ReliableOrdered，与名单和房间通知保持有序。服务端身份来自 `PacketSender.Id`，不相信上行玩家 ID；下行按当前双方成员代次校验，跨房和过期 scope 不应用。
+- **不做传输延迟补偿，不传跨机器时间戳，不引入时钟同步或逐帧动画状态。** 每次收到状态，以接收者自己的本地计时开始倒计时。
+- 缓存维护的是倒计时，不是不变的“还剩几秒”。`OpeningCountdown` 只扣除该进程内缓存经过的时间；纯 C# 层用单调时钟，取出时生成当前快照。到期仍返回已知的 0，防止迟到成员重播旧动画。
+- 本地没连接也可以采集；房间就绪后发送已递减的剩余值。换房保留本地倒计时、清理旧房远端缓存，并按新成员代次宣告。断线清远端，但保留本地这局的倒计时供同场景重连；退出/重开关卡显式清理本地样本，重开的一帧后覆盖成新样本。
+- 服务端缓存按连接中的玩家保存；入房时补发双方当前状态，生成新的 room scope。退出游戏、断开连接或服务器停止时清理相应缓存。缓存存在不代表允许跨房请求或广播。
+- 收端没有实例也保留倒计时；`RemotePlayerInstanceCreatedEvent` 是补应用入口。未知状态先应用已出罐基线，收到后覆盖；归还实例池时取消待应用任务并恢复已出罐状态。
+- 不跟踪采样之后的暂停、变速或再次手动触发动画。实际动画资源、两倍换算的测量证据与播放适配验收项见 `game-runtime.md` 的 Opening 一节。
 
 ## Player Roster Ownership
 

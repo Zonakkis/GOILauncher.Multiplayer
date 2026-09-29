@@ -110,6 +110,32 @@ Player
 - 远端实例由 `PlayerInstancePool` 创建的 `PlayerPrefab` 派生，并继续使用现有的无碰撞远端对象处理，因此当前不会与本地 `Player` 产生交互。
 - 如果多人插件在当前场景已经是 `Mian` 时才完成初始化，`GameManager.Start` 会补做当前场景资源准备并发布初始 `GameStartedEvent`；游戏中连接服务器时，握手也会触发玩家生命周期初始化并重新绑定本地玩家 ID。
 
+## Opening（出罐动画）
+
+### 原版机制与实机数据
+
+- 本地 `PlayerControl` 通过 `GetComponentInChildren<PoseControl>()` 获取姿态组件；其相对 `Player` 的具体子路径尚未确认，不写死为 `dude`。
+- 三份参考代码（Windows Original-1.7 / Modpack-2148、Android Original-1.9.2）均在 `PlayOpeningAnimation` 中启用 `"Animation"` 层、设置 `"WakeUp"` Trigger，并使独立的 `potAnim` 播放 `"Rattle"`。`WakeUp` 同时是已实测的 clip 名，不据此推断 Animator 状态名。
+- Windows 在 `Awake` 初始化 `PoseControl`，Android 在 `Start` 初始化，其中会把 `handBlend` 设置为 1。远端刚激活时立即写入的手部混合值可能被这次 `Start` 覆盖。
+- `PoseControl.anim` 每帧还由 `LateUpdate` 手动调用 `Update(Time.deltaTime)`；`potAnim` 没有这条额外的逐帧推进。Modpack 的 FastStart 会直接推进两个 Animator，采样不读取它的配置。
+- 维护者在本次讨论中提供的实机数据：
+  - `wakeup.name = WakeUp`，`wakeup.length = 13.2167`。
+  - 人物 `anim` 与罐子 `potAnim` 均为 `enabled = true`、`speed = 1`、`updateMode = Normal`。
+  - `"Animation"` 层本次索引为 3；代码仍按名称查询，不以 3 为常量。
+  - 当前 clip 为 `WakeUp`，state.length 与 clip.length 均为 13.2167，state.speed / speedMultiplier 均为 1，clip weight 为 1，不在 transition 中。
+  - 两组 `(Time.time, normalizedTime)` 分别为 `(16.0399, 0.2781)` 与 `(18.0979, 0.5896)`。2.058 个游戏秒内推进 4.117002 个片段秒，有效倍率约 2.00049，即人物 Animator 的 2 倍推进；不是把 `Animator.speed` 设置为 2。
+- `blendAmt` 是动画层混合权重，`handBlend` 是手部混合权重，都不是线性倒计时。`PoseControl` 在 `blendAmt <= 0` 时结束出罐混合。
+- 正在出罐时的剩余游戏秒数为 `max(0, length * (1 - normalizedTime) / 2)`；不用 `PauseInput(6f)` 代替片段长度。该值表达片段剩余时间，视觉混合结束和输入解锁不必恰好等于片段终点。
+
+### 新版本播放适配与验收边界
+
+- `Opening` 同步约定见 `state-synchronization.md`。远端只做视觉初始化与续播，不调用含输入锁定和观察者 FastStart 配置的原版 `PlayOpeningAnimation`。
+- 远端等待激活后一帧再应用，避免 Android `PoseControl.Start` 覆盖手部混合；等待期间只递减本地剩余时间，不属于网络延迟补偿。
+- 实际片段由 Animator 的 current/next clip 判定；定位使用实际 state 的 `fullPathHash`，不假定 Trigger 名就是 state 名。
+- 远端实例还未激活时就禁用两个 Animator 的动画事件，避免首次 `Awake` / `Start` 推进时触发 `EnableHammer` 或声音逻辑；本地 Animator 不变。远端采用 `AlwaysAnimate`，避免隐藏 renderer 后裁剪改变出罐推进速度。归还实例时取消待应用请求并独立清理人物和罐子，人物状态识别失败也不能跳过罐子的结束处理。
+- 人物定位遵循上面的实测 2 倍换算。罐子 `Rattle` 使用自身的长度与速度，通过已过去的正常游戏时间定位，不套用人物的 2 倍倍率。这是新版映射方案，**不是已实测的跨平台结论**；尤其 Modpack 对 `potAnim` 的 FastStart 额外推进，需在实机验收中核对衔接。
+- 验收覆盖普通出罐、FastStart 各档、读档无需出罐、重开、中途入房、延后创建实例、实例池复用、离开视野后回来，以及 PC / Android 互看。新增动画 API 编译引用需要对应游戏版本的 `UnityEngine.AnimationModule.dll`，不能混用两个平台的游戏库。
+
 ## Pot Skin
 
 罐子的外观全在 `Player/Pot/Mesh` 那个 MeshRenderer 的材质上，贴图和金度是同一个材质上的两件事（已实机确认）：

@@ -39,6 +39,10 @@
       <HintPath>..\..\lib\Android\Original-1.9.2\UnityEngine.CoreModule.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>..\..\lib\Android\Original-1.9.2\UnityEngine.AnimationModule.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
       <HintPath>..\..\lib\Android\Original-1.9.2\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>True</Private>

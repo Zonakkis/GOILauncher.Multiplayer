@@ -161,6 +161,9 @@ namespace GOILauncher.Multiplayer.Unity.Player
                 instance = go.AddComponent<RemotePlayer>();
             }
             instance.LocalPlayer = _gameManager.Player;
+            // Before Rent activates the clone: PoseControl.Awake/Start may advance Animators
+            // before the one-frame-deferred opening seek is applied.
+            instance.PrepareOpening();
             go.SetActive(false);
             _all.Add(instance);
             return instance;
