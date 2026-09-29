@@ -130,7 +130,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
             Announce(SenderId, SkinTestData.State(body, 0f, SkinConstants.BodySlot));
             Upload(SenderId, body, SkinConstants.BodySlot);
 
-            _playerService.Players.Remove(SenderId);
+            _playerService.RemovePlayer(SenderId);
             _eventBus.Publish(new ClientDisconnectedEvent(SenderId, "left"));
             _networkServer.Sent.Clear();
 
@@ -335,7 +335,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
             Announce(SenderId, SkinTestData.State(payload));
             Upload(SenderId, payload);
 
-            _playerService.Players.Remove(SenderId);
+            _playerService.RemovePlayer(SenderId);
             _eventBus.Publish(new ClientDisconnectedEvent(SenderId, "left"));
             _networkServer.Sent.Clear();
             Request(OtherId, SenderId, SkinHash.Compute(payload));
@@ -387,16 +387,28 @@ namespace GOILauncher.Multiplayer.Tests.Server
 
         private void AddPlayer(int id)
         {
-            _playerService.Players[id] = new PlayerInfo(id, "p" + id, Platform.PC, true);
+            _playerService.AddPlayer(id);
         }
 
         private sealed class StubPlayerService : IPlayerService
         {
-            public Dictionary<int, PlayerInfo> Players { get; private set; }
+            private readonly Dictionary<int, PlayerInfo> _players = new Dictionary<int, PlayerInfo>();
 
-            public StubPlayerService()
+            public IEnumerable<PlayerInfo> Players { get { return _players.Values; } }
+
+            public bool TryGetPlayer(int playerId, out PlayerInfo player)
             {
-                Players = new Dictionary<int, PlayerInfo>();
+                return _players.TryGetValue(playerId, out player);
+            }
+
+            public void AddPlayer(int id)
+            {
+                _players[id] = new PlayerInfo(id, "p" + id, Platform.PC, true);
+            }
+
+            public void RemovePlayer(int id)
+            {
+                _players.Remove(id);
             }
         }
     }

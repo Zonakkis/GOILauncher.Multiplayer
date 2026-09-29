@@ -194,7 +194,7 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
         private bool IsKnownPlayer(int playerId)
         {
             PlayerInfo info;
-            return _playerService.Players.TryGetValue(playerId, out info) && info != null;
+            return _playerService.TryGetPlayer(playerId, out info) && info != null;
         }
 
     }

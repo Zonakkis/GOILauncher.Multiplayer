@@ -144,7 +144,7 @@ namespace GOILauncher.Multiplayer.Server.Services
             // A connection can exist before its handshake (PlayerService entry), and vice versa for
             // a beat; union both so a half-open peer is still visible with whatever we know.
             var ids = new HashSet<int>(_connections.Keys);
-            foreach (var id in _players.Players.Keys) ids.Add(id);
+            foreach (var knownPlayer in _players.Players) ids.Add(knownPlayer.Id);
 
             var rows = new List<ConnectionObservation>(ids.Count);
             foreach (var id in ids.OrderBy(x => x))
@@ -152,7 +152,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                 ConnState state;
                 _connections.TryGetValue(id, out state);
                 PlayerInfo player;
-                _players.Players.TryGetValue(id, out player);
+                _players.TryGetPlayer(id, out player);
 
                 TrafficObservation stats;
                 trafficById.TryGetValue(id, out stats);
@@ -183,7 +183,7 @@ namespace GOILauncher.Multiplayer.Server.Services
                 if (room.OwnerPlayerId.HasValue)
                 {
                     PlayerInfo owner;
-                    if (_players.Players.TryGetValue(room.OwnerPlayerId.Value, out owner)) ownerName = owner.Name;
+                    if (_players.TryGetPlayer(room.OwnerPlayerId.Value, out owner)) ownerName = owner.Name;
                 }
                 rooms.Add(new RoomObservation(room, ownerName));
             }

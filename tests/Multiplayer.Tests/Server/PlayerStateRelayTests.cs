@@ -6,6 +6,7 @@ using GOILauncher.Multiplayer.Server.Services;
 using GOILauncher.Multiplayer.Server.Synchronization;
 using LiteNetLib;
 using NUnit.Framework;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace GOILauncher.Multiplayer.Tests.Server
@@ -86,16 +87,23 @@ namespace GOILauncher.Multiplayer.Tests.Server
 
         private void AddPlayer(int id, bool isInGame)
         {
-            _playerService.Players[id] = new PlayerInfo(id, "p" + id, Platform.PC, isInGame);
+            _playerService.AddPlayer(id, isInGame);
         }
 
         private sealed class StubServerPlayerService : IPlayerService
         {
-            public System.Collections.Generic.Dictionary<int, PlayerInfo> Players { get; private set; }
+            private readonly Dictionary<int, PlayerInfo> _players = new Dictionary<int, PlayerInfo>();
 
-            public StubServerPlayerService()
+            public IEnumerable<PlayerInfo> Players { get { return _players.Values; } }
+
+            public bool TryGetPlayer(int playerId, out PlayerInfo player)
             {
-                Players = new System.Collections.Generic.Dictionary<int, PlayerInfo>();
+                return _players.TryGetValue(playerId, out player);
+            }
+
+            public void AddPlayer(int id, bool isInGame)
+            {
+                _players[id] = new PlayerInfo(id, "p" + id, Platform.PC, isInGame);
             }
         }
     }

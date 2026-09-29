@@ -37,9 +37,10 @@ namespace GOILauncher.Multiplayer.Tests.Server
         {
             Handshake(3, "alice", true);
 
-            _playerService.Players.Should().ContainKey(3);
-            _playerService.Players[3].Name.Should().Be("alice");
-            _playerService.Players[3].IsInGame.Should().BeTrue();
+            PlayerInfo player;
+            _playerService.TryGetPlayer(3, out player).Should().BeTrue();
+            player.Name.Should().Be("alice");
+            player.IsInGame.Should().BeTrue();
         }
 
         [Test]
@@ -80,7 +81,8 @@ namespace GOILauncher.Multiplayer.Tests.Server
 
             _eventBus.Publish(new ClientDisconnectedEvent(2, "test"));
 
-            _playerService.Players.Should().NotContainKey(2);
+            PlayerInfo removed;
+            _playerService.TryGetPlayer(2, out removed).Should().BeFalse();
             var left = _networkServer.Sent.Single(s => s.Packet is S2CPlayerLeftPacket);
             left.ClientId.Should().Be(1);
             ((S2CPlayerLeftPacket)left.Packet).PlayerId.Should().Be(2);
@@ -95,7 +97,9 @@ namespace GOILauncher.Multiplayer.Tests.Server
 
             _dispatcher.Receive(new C2SIsInGameUpdatePacket(true), 2);
 
-            _playerService.Players[2].IsInGame.Should().BeTrue();
+            PlayerInfo player;
+            _playerService.TryGetPlayer(2, out player).Should().BeTrue();
+            player.IsInGame.Should().BeTrue();
             var update = _networkServer.Sent.Single(s => s.Packet is S2CIsInGameUpdatePacket);
             update.ClientId.Should().Be(1);
             var payload = (S2CIsInGameUpdatePacket)update.Packet;

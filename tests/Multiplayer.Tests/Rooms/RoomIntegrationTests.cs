@@ -248,7 +248,10 @@ namespace GOILauncher.Multiplayer.Tests.Rooms
         {
             var link = new RoomLink(); var a = link.Add(1);
             a.Rooms.CreateRoom("new", null, 0); a.Players.SetIsInGame(false); link.Pump();
-            a.Players.LocalPlayer.IsInGame.Should().BeFalse(); link.Server.Players.Players[1].IsInGame.Should().BeFalse();
+            a.Players.LocalPlayer.IsInGame.Should().BeFalse();
+            PlayerInfo player;
+            link.Server.Players.TryGetPlayer(1, out player).Should().BeTrue();
+            player.IsInGame.Should().BeFalse();
         }
         [Test]
         public void DisconnectClearsRoomAndPendingState_ReconnectStartsInLobbyAndReuploadsOwnSkin()

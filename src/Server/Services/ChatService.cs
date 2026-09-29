@@ -36,7 +36,7 @@ namespace GOILauncher.Multiplayer.Server.Services
             // Server-side copy for the observation facade: the room the message belongs to
             // is known right here, and the server's clock is the only trustworthy one.
             PlayerInfo player;
-            var name = _players.Players.TryGetValue(sender.Id, out player) ? player.Name : "?";
+            var name = _players.TryGetPlayer(sender.Id, out player) ? player.Name : "?";
             _events.Publish(new ChatRelayedEvent(membership.RoomId, sender.Id, name,
                 packet.Content, DateTimeUtils.ToUnixTimeSeconds(DateTime.Now)));
         }

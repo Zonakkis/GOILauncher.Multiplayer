@@ -21,10 +21,10 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
         {
             PlayerInfo player;
             if (!_rooms.IsCurrentMembership(sender.Id, packet.MembershipId)
-                || !_players.Players.TryGetValue(sender.Id, out player) || !player.IsInGame) return;
+                || !_players.TryGetPlayer(sender.Id, out player) || !player.IsInGame) return;
             foreach (var peer in _rooms.Peers(sender.Id))
             {
-                if (!_players.Players.TryGetValue(peer.PlayerId, out player) || !player.IsInGame) continue;
+                if (!_players.TryGetPlayer(peer.PlayerId, out player) || !player.IsInGame) continue;
                 _network.Send(peer.PlayerId, new S2CPlayerStatePacket
                 {
                     Scope = peer.Scope, PlayerId = sender.Id,

@@ -5,6 +5,8 @@ namespace GOILauncher.Multiplayer.Server.Services
 {
     public interface IPlayerService
     {
-        Dictionary<int, PlayerInfo> Players { get; }
+        IEnumerable<PlayerInfo> Players { get; }
+
+        bool TryGetPlayer(int playerId, out PlayerInfo player);
     }
 }

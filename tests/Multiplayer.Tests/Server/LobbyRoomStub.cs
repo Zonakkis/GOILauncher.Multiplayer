@@ -10,26 +10,41 @@ namespace GOILauncher.Multiplayer.Tests.Server
     {
         private readonly IPlayerService _players;
         public LobbyRoomStub(IPlayerService players) { _players = players; }
-        public IEnumerable<RoomInfo> Rooms => new[] { new RoomInfo(0, "大厅", false, 0, _players.Players.Count, null) };
+        public IEnumerable<RoomInfo> Rooms => new[] { new RoomInfo(0, "大厅", false, 0, _players.Players.Count(), null) };
         public bool TryGetMembership(int playerId, out RoomMembership membership)
         {
-            membership = _players.Players.ContainsKey(playerId) ? new RoomMembership(playerId, 0, (ulong)playerId + 1) : null;
+            PlayerInfo player;
+            membership = _players.TryGetPlayer(playerId, out player) ? new RoomMembership(playerId, 0, (ulong)playerId + 1) : null;
             return membership != null;
         }
-        public bool IsCurrentMembership(int playerId, ulong membershipId) => _players.Players.ContainsKey(playerId) && membershipId == (ulong)playerId + 1;
-        public IEnumerable<RoomMembership> GetMembers(int playerId) => _players.Players.Keys.Select(id => new RoomMembership(id, 0, (ulong)id + 1));
+        public bool IsCurrentMembership(int playerId, ulong membershipId)
+        {
+            PlayerInfo player;
+            return _players.TryGetPlayer(playerId, out player) && membershipId == (ulong)playerId + 1;
+        }
+
+        public IEnumerable<RoomMembership> GetMembers(int playerId)
+        {
+            return _players.Players.Select(player => new RoomMembership(player.Id, 0, (ulong)player.Id + 1));
+        }
         public bool TryGetScope(int recipientId, int playerId, out RoomPacketScope scope)
         {
             scope = new RoomPacketScope((ulong)recipientId + 1, (ulong)playerId + 1);
-            return _players.Players.ContainsKey(recipientId) && _players.Players.ContainsKey(playerId);
+            PlayerInfo recipient;
+            PlayerInfo player;
+            return _players.TryGetPlayer(recipientId, out recipient) && _players.TryGetPlayer(playerId, out player);
         }
         public IEnumerable<RoomPeer> Peers(int subjectPlayerId)
         {
-            if (!_players.Players.ContainsKey(subjectPlayerId)) yield break;
+            PlayerInfo subject;
+            if (!_players.TryGetPlayer(subjectPlayerId, out subject)) yield break;
             var subjectMembership = (ulong)subjectPlayerId + 1;
-            foreach (var id in _players.Players.Keys)
+            foreach (var knownPlayer in _players.Players)
+            {
+                var id = knownPlayer.Id;
                 if (id != subjectPlayerId)
                     yield return new RoomPeer(id, new RoomPacketScope((ulong)id + 1, subjectMembership));
+            }
         }
     }
 }

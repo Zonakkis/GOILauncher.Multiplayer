@@ -66,7 +66,7 @@ namespace GOILauncher.Multiplayer.Server.Synchronization
         private void OnOpening(C2SOpeningStatePacket packet, PacketSender sender)
         {
             PlayerInfo player;
-            if (_disposed || !_players.Players.TryGetValue(sender.Id, out player)
+            if (_disposed || !_players.TryGetPlayer(sender.Id, out player)
                 || player == null || !player.IsInGame
                 || !_rooms.IsCurrentMembership(sender.Id, packet.MembershipId)) return;
             if (!packet.State.IsValid)

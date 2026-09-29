@@ -99,7 +99,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
             _network.Sent.Clear();
             _now = 101.0;
             // Deliberately no lifecycle event: packet rejection must not mutate the cache.
-            if (sourceIsUnknown) _players.Players.Remove(SenderId);
+            if (sourceIsUnknown) _players.RemovePlayer(SenderId);
             else AddPlayer(SenderId, false);
 
             Announce(SenderId, 90f);
@@ -283,7 +283,9 @@ namespace GOILauncher.Multiplayer.Tests.Server
             Announce(SenderId, 5f);
             _now = 101.0;
 
-            _events.Publish(new PlayerStatusChangedEvent(_players.Players[SenderId]));
+            PlayerInfo sender;
+            _players.TryGetPlayer(SenderId, out sender);
+            _events.Publish(new PlayerStatusChangedEvent(sender));
 
             _now = 102.0;
             AddPlayer(OtherId, false);
@@ -539,7 +541,7 @@ namespace GOILauncher.Multiplayer.Tests.Server
 
         private void AddPlayer(int id, bool isInGame = true)
         {
-            _players.Players[id] = new PlayerInfo(id, "p" + id, Platform.PC, isInGame);
+            _players.AddPlayer(id, isInGame);
         }
 
         private void Announce(int playerId, float seconds)
@@ -589,7 +591,24 @@ namespace GOILauncher.Multiplayer.Tests.Server
 
         private sealed class StubPlayerService : IPlayerService
         {
-            public Dictionary<int, PlayerInfo> Players { get; } = new Dictionary<int, PlayerInfo>();
+            private readonly Dictionary<int, PlayerInfo> _players = new Dictionary<int, PlayerInfo>();
+
+            public IEnumerable<PlayerInfo> Players { get { return _players.Values; } }
+
+            public bool TryGetPlayer(int playerId, out PlayerInfo player)
+            {
+                return _players.TryGetValue(playerId, out player);
+            }
+
+            public void AddPlayer(int id, bool isInGame)
+            {
+                _players[id] = new PlayerInfo(id, "p" + id, Platform.PC, isInGame);
+            }
+
+            public void RemovePlayer(int id)
+            {
+                _players.Remove(id);
+            }
         }
     }
 }

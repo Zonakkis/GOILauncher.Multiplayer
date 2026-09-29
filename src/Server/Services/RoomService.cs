@@ -174,17 +174,26 @@ namespace GOILauncher.Multiplayer.Server.Services
         }
         private void Move(int playerId, Room target)
         {
-            if (!_players.Players.ContainsKey(playerId)) return;
+            PlayerInfo player;
+            if (!_players.TryGetPlayer(playerId, out player)) return;
+            var members = new List<RoomMemberInfo>();
+            foreach (var targetMember in target.Members)
+            {
+                PlayerInfo memberPlayer;
+                if (!_players.TryGetPlayer(targetMember.PlayerId, out memberPlayer)) return;
+                members.Add(new RoomMemberInfo(memberPlayer, targetMember.Id));
+            }
+
             RemoveMember(playerId);
             var member = new RoomMembership(playerId, target.Id, _nextMembershipId++);
             _members.Add(playerId, member); target.Members.Add(member);
+            members.Add(new RoomMemberInfo(player, member.Id));
             if (target.Id != RoomConstants.LobbyId && !target.Owner.HasValue) target.Owner = playerId;
 
-            var player = _players.Players[playerId];
             _network.Send(playerId, new S2CPlayerListPacket
             {
                 Room = target.Snapshot,
-                Members = target.Members.Select(m => new RoomMemberInfo(_players.Players[m.PlayerId], m.Id)).ToList()
+                Members = members
             }, DeliveryMethod.ReliableOrdered);
             foreach (var peer in Peers(playerId))
                 _network.Send(peer.PlayerId, new S2CPlayerJoinedPacket

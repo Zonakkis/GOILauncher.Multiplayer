@@ -135,6 +135,7 @@ GameStartedEvent / GameRestartedEvent 后一帧
 远端实例的创建时机取决于名单，所以名单的归属规则和同步方案绑定在一起。
 
 - 客户端名单的唯一权威来源是 `Client/Services/IPlayerService`：只暴露 `IEnumerable<PlayerInfo> Players` 和 `TryGetPlayer`，其它模块只读取，不保存副本。
+- 服务端名单的唯一权威来源是 `Server/Services/IPlayerService`：同样只暴露 `IEnumerable<PlayerInfo> Players` 和 `TryGetPlayer`；字典写入只由 `PlayerService` 在握手、状态更新、断线和停服流程中执行。
 - `PlayerManager` 只保存"哪个玩家当前有 Unity 实例"，身份、名字和 `IsInGame` 一律现读；`MultiplayerClient` 不再持有名单。
 - `PlayerInfo` 是协议模型（`S2CPlayerListPacket` 逐字段序列化，服务端也在用），不要往里加距离这类只有客户端算得出来的派生值。
 - `PlayerService` 一律先写自己的状态、再发布事件，订阅者在处理器里读 `IPlayerService` 一定读到新值。不要依赖 `EventBus` 的订阅顺序来保证这一点。
