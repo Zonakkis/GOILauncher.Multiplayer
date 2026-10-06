@@ -40,7 +40,13 @@ namespace GOILauncher.Multiplayer.Unity.Models
 
         private bool _isInCamera;
         private readonly Camera _camera = Camera.main;
-        private bool _isRenderersEnabled;
+        /// <summary>
+        /// 刚 Instantiate 出来的实例，renderer 是跟着本地 Player 克隆来的，实际是启用状态。
+        /// 所以初值不能是 false——那等于撒谎，第一次 SetRenderersEnabled(false) 会被当成
+        /// "已经是这个状态" 而跳过，renderer 其实一直开着。用 null 表示 "还没应用过"，
+        /// 保证第一次调用必定真正写一遍。
+        /// </summary>
+        private bool? _isRenderersEnabled;
         private GUIStyle _labelStyle;
         private OpeningPlayback _openingPlayback;
         private Coroutine _openingRoutine;
@@ -109,6 +115,15 @@ namespace GOILauncher.Multiplayer.Unity.Models
 
         public void LateUpdate()
         {
+            UpdateInterpolation();
+            UpdateVisibility();
+        }
+
+        /// <summary>
+        /// 由对方的发包节奏驱动：没有状态、或这一段已经插完，就没有东西要推进。
+        /// </summary>
+        private void UpdateInterpolation()
+        {
             if (!_hasState || _interpolationElapsed >= StateInterval)
             {
                 return;
@@ -119,15 +134,22 @@ namespace GOILauncher.Multiplayer.Unity.Models
                 _interpolationElapsed + Time.deltaTime);
             ApplyInterpolated(_fromState, _targetState,
                 _interpolationElapsed / StateInterval);
+        }
 
-            var cameraPosition = _camera.transform.position;
-            var halfHeight = _camera.orthographicSize;
-            var halfWidth = _camera.aspect * halfHeight;
-            var _topLeft = new Vector2(cameraPosition.x - halfWidth, cameraPosition.y + halfHeight);
-            var _bottomRight = new Vector2(cameraPosition.x + halfWidth, cameraPosition.y - halfHeight);
-            _isInCamera = transform.position.IsInRectangle(
-                _topLeft.x - GameConstants.PlayerWidth, _topLeft.y + GameConstants.PlayerHeight,
-                _bottomRight.x + GameConstants.PlayerWidth, _bottomRight.y - GameConstants.PlayerWidth);
+        /// <summary>
+        /// 必须每帧都跑，不能并进 <see cref="UpdateInterpolation"/> 的条件里：可见性由
+        /// 本地相机的位置决定，而相机会在对方一个包都不发的时候继续移动。对方打开暂停菜单时
+        /// 原版会把 <c>Time.timeScale</c> 设为 0，发送端的节流器用的是缩放时间，于是上行彻底停住
+        /// （见 docs/agent/state-synchronization.md）。裁剪一旦跟着发包节奏走，暂停的玩家就会
+        /// 永远停在最后一次的显隐状态上——在屏幕外暂停的人，走到他面前也不会重新出现。
+        /// </summary>
+        private void UpdateVisibility()
+        {
+            _isInCamera = CameraVisibility.IsWithinView(
+                _camera.transform.position,
+                _camera.orthographicSize,
+                _camera.aspect,
+                transform.position);
             SetRenderersEnabled(_isInCamera);
         }
 
